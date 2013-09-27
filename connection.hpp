@@ -1,6 +1,8 @@
 #ifndef X_CONNECTION_HPP
 #define X_CONNECTION_HPP
 
+#include <vector>
+
 #include "request.hpp"
 
 namespace x {
@@ -32,6 +34,14 @@ class connection {
     xcb_window_t root(void)
     {
       return m_default_screen_of_display->root;
+    }
+
+    void
+    change_window_attributes(xcb_window_t window,
+                             const uint32_t & mask,
+                             const std::vector<uint32_t> & values)
+    {
+      xcb_change_window_attributes(m_c, window, mask, values.data());
     }
 
   private:
