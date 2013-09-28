@@ -50,10 +50,15 @@ class connection {
       xcb_change_window_attributes(m_c, window, mask, values.data());
     }
 
-    request::query_tree
+    std::vector<xcb_window_t>
     query_tree(xcb_window_t window)
     {
-      return request::query_tree(m_c, window);
+      auto reply = request::query_tree(m_c, window);
+      std::vector<xcb_window_t>
+        result(xcb_query_tree_children(*reply),
+               xcb_query_tree_children(*reply)
+               + xcb_query_tree_children_length(*reply));
+      return result;
     }
 
   private:
