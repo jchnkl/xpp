@@ -6,6 +6,8 @@
 
 namespace x {
 
+namespace generic {
+
 template<typename COOKIE,
          typename REPLY,
          REPLY * (*REPLY_FUN)(xcb_connection_t *, COOKIE, xcb_generic_error_t **)>
@@ -38,6 +40,8 @@ class request {
     COOKIE m_cookie;
     std::shared_ptr<REPLY> m_reply;
 };
+
+}; // namespace generic
 
 }; // namespace x
 

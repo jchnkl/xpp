@@ -5,12 +5,12 @@
 
 namespace x {
 
-namespace r {
+namespace request {
 
 class query_tree
-  :  request<xcb_query_tree_cookie_t,
-             xcb_query_tree_reply_t,
-             &xcb_query_tree_reply>
+  : generic::request<xcb_query_tree_cookie_t,
+                     xcb_query_tree_reply_t,
+                     &xcb_query_tree_reply>
 {
   public:
     query_tree(xcb_connection_t * c, xcb_window_t window)
@@ -18,7 +18,7 @@ class query_tree
     {}
 };
 
-}; // namespace r
+}; // namespace request
 
 }; // namespace x
 

@@ -44,10 +44,10 @@ class connection {
       xcb_change_window_attributes(m_c, window, mask, values.data());
     }
 
-    r::query_tree
+    request::query_tree
     query_tree(xcb_window_t window)
     {
-      return r::query_tree(m_c, window);
+      return request::query_tree(m_c, window);
     }
 
   private:
