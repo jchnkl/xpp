@@ -37,6 +37,12 @@ class connection {
     }
 
     void
+    flush(void)
+    {
+      xcb_flush(m_c);
+    }
+
+    void
     change_window_attributes(xcb_window_t window,
                              const uint32_t & mask,
                              const std::vector<uint32_t> & values)
