@@ -22,12 +22,12 @@ class request {
       m_cookie = cookie_fun(c, cookie_args ...);
     }
 
-    const REPLY & operator*(void)
+    const REPLY * const operator*(void)
     {
       if (! m_reply) {
         m_reply = std::shared_ptr<REPLY>(REPLY_FUN(m_c, m_cookie, NULL));
       }
-      return *m_reply.get();
+      return m_reply.get();
     }
 
     const REPLY * const operator->(void)
