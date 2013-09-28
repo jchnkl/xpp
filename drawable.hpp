@@ -13,7 +13,7 @@ class drawable {
     {}
 
     DRAWABLE
-    id(void)
+    id(void) const
     {
       return m_drawable;
     }
