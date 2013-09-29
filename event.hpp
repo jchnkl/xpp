@@ -45,7 +45,6 @@ class source : public interface::source
         }
 
         EVENT_HANDLE(else if, XCB_KEY_PRESS,         xcb_key_press_event_t)
-        EVENT_HANDLE(else if, XCB_KEY_PRESS,         xcb_key_press_event_t)
         EVENT_HANDLE(else if, XCB_KEY_RELEASE,       xcb_key_release_event_t)
         EVENT_HANDLE(else if, XCB_BUTTON_PRESS,      xcb_button_press_event_t)
         EVENT_HANDLE(else if, XCB_BUTTON_RELEASE,    xcb_button_release_event_t)
