@@ -31,6 +31,18 @@ class window : public drawable<xcb_window_t> {
       xcb_change_window_attributes(*m_c, m_window, mask, values.data());
     }
 
+    request::get_window_attributes
+    get_window_attributes(void)
+    {
+      return request::get_window_attributes(*m_c, m_window);
+    }
+
+    request::get_geometry
+    get_geometry(void)
+    {
+      return request::get_geometry(*m_c, m_window);
+    }
+
     void
     configure(const uint32_t & mask,
               const std::vector<uint32_t> & values)
