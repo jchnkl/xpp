@@ -50,6 +50,12 @@ class window : public drawable<xcb_window_t> {
     }
 
     void
+    warp_pointer(int16_t dst_x, int16_t dst_y)
+    {
+      m_c.warp_pointer(XCB_NONE, m_window, 0, 0, 0, 0, dst_x, dst_y);
+    }
+
+    void
     grab_button(bool owner_events, uint16_t event_mask, uint8_t pointer_mode,
                 uint8_t keyboard_mode, xcb_window_t confine_to,
                 xcb_cursor_t cursor, uint8_t button, uint16_t modifiers)

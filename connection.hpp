@@ -71,6 +71,16 @@ class connection {
       xcb_configure_window(m_c, window, mask, values.data());
     }
 
+    void
+    warp_pointer(xcb_window_t src_window, xcb_window_t dst_window,
+                 int16_t src_x, int16_t src_y,
+                 uint16_t src_width, uint16_t src_height,
+                 int16_t dst_x, int16_t dst_y)
+    {
+      xcb_warp_pointer(m_c, src_window, dst_window,
+                       src_x, src_y, src_width, src_height, dst_x, dst_y);
+    }
+
     std::vector<xcb_window_t>
     query_tree(xcb_window_t window)
     {
