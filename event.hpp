@@ -84,14 +84,28 @@ class source : public interface::source
 
     void insert(interface::dispatcher * h)
     {
-      for (auto & item : h->masks()) {
-        m_dispatcher[item.second].insert({ item.first, h });
-      }
+      insert(h->masks(), h);
     }
 
     void remove(interface::dispatcher * h)
     {
-      for (auto & item : h->masks()) {
+      remove(h->masks(), h);
+    }
+
+    void
+    insert(const interface::dispatcher::priority_masks & masks,
+           interface::dispatcher * h)
+    {
+      for (auto & item : masks) {
+        m_dispatcher[item.second].insert({ item.first, h });
+      }
+    }
+
+    void
+    remove(const interface::dispatcher::priority_masks & masks,
+           interface::dispatcher * h)
+    {
+      for (auto & item : masks) {
         try {
           auto & pmap = m_dispatcher.at(item.second);
           for (auto it = pmap.begin(); it != pmap.end(); ) {

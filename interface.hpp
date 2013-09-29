@@ -30,6 +30,8 @@ class source {
     virtual void run(void) = 0;
     virtual void insert(dispatcher *) = 0;
     virtual void remove(dispatcher *) = 0;
+    virtual void insert(const dispatcher::priority_masks &, dispatcher *) = 0;
+    virtual void remove(const dispatcher::priority_masks &, dispatcher *) = 0;
 }; // class source
 
 }; // namespace event
