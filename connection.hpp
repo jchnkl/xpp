@@ -57,9 +57,9 @@ class connection {
     }
 
     void
-    change_window_attributes(xcb_window_t window,
-                             const uint32_t & mask,
-                             const std::vector<uint32_t> & values)
+    change_attributes(xcb_window_t window,
+                      const uint32_t & mask,
+                      const std::vector<uint32_t> & values)
     {
       xcb_change_window_attributes(m_c, window, mask, values.data());
     }
