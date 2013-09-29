@@ -12,6 +12,18 @@ class window : public drawable<xcb_window_t> {
     {}
 
     void
+    map(void)
+    {
+      m_c.map(m_window);
+    }
+
+    void
+    unmap(void)
+    {
+      m_c.unmap(m_window);
+    }
+
+    void
     change_window_attributes(xcb_window_t window,
                              const uint32_t & mask,
                              const std::vector<uint32_t> & values)

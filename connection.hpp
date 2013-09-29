@@ -45,6 +45,18 @@ class connection {
     }
 
     void
+    map(xcb_window_t window)
+    {
+      xcb_map_window(m_c, window);
+    }
+
+    void
+    unmap(xcb_window_t window)
+    {
+      xcb_unmap_window(m_c, window);
+    }
+
+    void
     change_window_attributes(xcb_window_t window,
                              const uint32_t & mask,
                              const std::vector<uint32_t> & values)
