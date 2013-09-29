@@ -24,11 +24,10 @@ class window : public drawable<xcb_window_t> {
     }
 
     void
-    change_window_attributes(xcb_window_t window,
-                             const uint32_t & mask,
+    change_window_attributes(const uint32_t & mask,
                              const std::vector<uint32_t> & values)
     {
-      xcb_change_window_attributes(*m_c, m_window, mask, values.data());
+      m_c.change_window_attributes(m_window, mask, values);
     }
 
     request::get_window_attributes
