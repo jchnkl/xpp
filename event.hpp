@@ -37,6 +37,7 @@ class source : public interface::source
 
       while (true)
       {
+        m_c.flush();
         e = xcb_wait_for_event(*m_c);
 
         if (e == NULL) {
