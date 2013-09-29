@@ -24,15 +24,21 @@ class request {
 
     const REPLY * const operator*(void)
     {
-      if (! m_reply) {
-        m_reply = std::shared_ptr<REPLY>(REPLY_FUN(m_c, m_cookie, NULL));
-      }
-      return m_reply.get();
+      return this->get().get();
     }
 
     const REPLY * const operator->(void)
     {
-      return &*(*this);
+      return *(*this);
+    }
+
+    std::shared_ptr<REPLY>
+    get(void)
+    {
+      if (! m_reply) {
+        m_reply = std::shared_ptr<REPLY>(REPLY_FUN(m_c, m_cookie, NULL));
+      }
+      return m_reply;
     }
 
   private:
