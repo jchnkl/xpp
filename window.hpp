@@ -32,6 +32,13 @@ class window : public drawable<xcb_window_t> {
     }
 
     void
+    configure(const uint32_t & mask,
+              const std::vector<uint32_t> & values)
+    {
+      m_c.configure(m_window, mask, values);
+    }
+
+    void
     grab_button(bool owner_events, uint16_t event_mask, uint8_t pointer_mode,
                 uint8_t keyboard_mode, xcb_window_t confine_to,
                 xcb_cursor_t cursor, uint8_t button, uint16_t modifiers)
