@@ -64,6 +64,22 @@ class get_atom_name
     {}
 };
 
+class grab_pointer
+  : public generic::request<xcb_grab_pointer_cookie_t,
+                            xcb_grab_pointer_reply_t,
+                            &xcb_grab_pointer_reply>
+{
+  public:
+    grab_pointer(xcb_connection_t * c, uint8_t owner_events,
+                 xcb_window_t grab_window, uint16_t event_mask,
+                 uint8_t pointer_mode, uint8_t keyboard_mode,
+                 xcb_window_t confine_to, xcb_cursor_t cursor,
+                 xcb_timestamp_t time)
+      : request(c, &xcb_grab_pointer, owner_events, grab_window, event_mask,
+                pointer_mode, keyboard_mode, confine_to, cursor, time)
+  {}
+};
+
 }; // namespace request
 
 }; // namespace x
