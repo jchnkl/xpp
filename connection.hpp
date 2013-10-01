@@ -44,6 +44,57 @@ class connection {
       xcb_flush(m_c);
     }
 
+    uint32_t
+    generate_id(void)
+    {
+      return xcb_generate_id(m_c);
+    }
+
+    void
+    open_font(xcb_font_t fid, const std::string & name)
+    {
+      xcb_open_font(m_c, fid, name.length(), name.c_str());
+    }
+
+    void
+    close_font(xcb_font_t font)
+    {
+      xcb_close_font(m_c, font);
+    }
+
+    void
+    create_glyph_cursor(xcb_cursor_t cid, xcb_font_t source_font,
+                        xcb_font_t mask_font, uint16_t source_char,
+                        uint16_t mask_char, uint16_t fore_red,
+                        uint16_t fore_green, uint16_t fore_blue,
+                        uint16_t back_red, uint16_t back_green,
+                        uint16_t back_blue)
+    {
+      xcb_create_glyph_cursor(m_c, cid, source_font, mask_font, source_char,
+                              mask_char, fore_red, fore_green, fore_blue,
+                              back_red, back_green, back_blue);
+    }
+
+    void
+    free_cursor(xcb_cursor_t cursor)
+    {
+      xcb_free_cursor(m_c, cursor);
+    }
+
+    void
+    create_gc(xcb_gcontext_t cid, xcb_drawable_t drawable,
+              const uint32_t & mask,
+              const std::vector<uint32_t> & values)
+    {
+      xcb_create_gc(m_c, cid, drawable, mask, values.data());
+    }
+
+    void
+    free_gc(xcb_gcontext_t gc)
+    {
+      xcb_free_gc(m_c, gc);
+    }
+
     void
     map(xcb_window_t window)
     {
