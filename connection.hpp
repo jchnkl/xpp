@@ -206,7 +206,7 @@ class connection {
     }
 
   private:
-    xcb_screen_t * screen_of_display(int screen)
+    xcb_screen_t * const screen_of_display(int screen)
     {
       xcb_screen_iterator_t iter;
 
