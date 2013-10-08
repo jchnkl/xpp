@@ -211,7 +211,7 @@ class connection {
       xcb_screen_iterator_t iter;
 
       iter = xcb_setup_roots_iterator(xcb_get_setup(m_c));
-      for (; iter.rem; --screen, xcb_screen_next (&iter))
+      for (; iter.rem; --screen, xcb_screen_next(&iter))
         if (screen == 0)
           return iter.data;
 
