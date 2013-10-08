@@ -19,7 +19,6 @@ class connection {
 
     ~connection(void)
     {
-      delete m_default_screen_of_display;
       xcb_disconnect(m_c);
     }
 
