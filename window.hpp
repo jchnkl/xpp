@@ -55,6 +55,17 @@ class window : public drawable<xcb_window_t> {
       m_c.warp_pointer(XCB_NONE, m_window, 0, 0, 0, 0, dst_x, dst_y);
     }
 
+    request::grab_pointer
+    grab_pointer(bool owner_events, uint16_t event_mask, uint8_t pointer_mode,
+                 uint8_t keyboard_mode, xcb_window_t confine_to,
+                 xcb_cursor_t cursor,
+                 xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
+    {
+      return m_c.grab_pointer(owner_events, m_window, event_mask,
+                              pointer_mode, keyboard_mode, confine_to,
+                              cursor, time);
+    }
+
     void
     grab_button(bool owner_events, uint16_t event_mask, uint8_t pointer_mode,
                 uint8_t keyboard_mode, xcb_window_t confine_to,
