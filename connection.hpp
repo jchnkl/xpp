@@ -146,7 +146,8 @@ class connection {
     grab_pointer(bool owner_events, xcb_window_t grab_window,
                  uint16_t event_mask, uint8_t pointer_mode,
                  uint8_t keyboard_mode, xcb_window_t confine_to,
-                 xcb_cursor_t cursor, xcb_timestamp_t time)
+                 xcb_cursor_t cursor,
+                 xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
     {
       return request::grab_pointer(m_c, owner_events, grab_window, event_mask,
                                    pointer_mode, keyboard_mode, confine_to,
@@ -154,7 +155,7 @@ class connection {
     }
 
     void
-    ungrab_pointer(xcb_timestamp_t time)
+    ungrab_pointer(xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
     {
       xcb_ungrab_pointer(m_c, time);
     }
