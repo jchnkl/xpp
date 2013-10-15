@@ -142,6 +142,14 @@ class connection {
       return result;
     }
 
+    request::get_property
+    get_property(bool _delete, xcb_window_t window, xcb_atom_t property,
+                 xcb_atom_t type, uint32_t long_offset, uint32_t long_length)
+    {
+      return request::get_property(m_c, _delete, window, property,
+                                   type, long_offset, long_length);
+    }
+
     request::grab_pointer
     grab_pointer(bool owner_events, xcb_window_t grab_window,
                  uint16_t event_mask, uint8_t pointer_mode,

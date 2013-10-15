@@ -64,6 +64,20 @@ class get_atom_name
     {}
 };
 
+class get_property
+  : public generic::request<xcb_get_property_cookie_t,
+                            xcb_get_property_reply_t,
+                            &xcb_get_property_reply>
+{
+  public:
+    get_property(xcb_connection_t *c, bool _delete, xcb_window_t window,
+                 xcb_atom_t property, xcb_atom_t type, uint32_t long_offset,
+                 uint32_t long_length)
+      : request(c, &xcb_get_property, static_cast<uint8_t>(_delete), window,
+                property, type, long_offset, long_length)
+    {}
+};
+
 class grab_pointer
   : public generic::request<xcb_grab_pointer_cookie_t,
                             xcb_grab_pointer_reply_t,
