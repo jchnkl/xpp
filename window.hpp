@@ -95,6 +95,13 @@ class window : public drawable<xcb_window_t> {
       m_c.ungrab_key(key, m_window, modifiers);
     }
 
+    void
+    focus(xcb_input_focus_t revert_to,
+          xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
+    {
+      m_c.focus(revert_to, m_window, time);
+    }
+
   protected:
     xcb_window_t & m_window = m_drawable;
 }; // class window

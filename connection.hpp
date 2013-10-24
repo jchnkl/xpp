@@ -198,6 +198,14 @@ class connection {
       xcb_ungrab_key(m_c, key, grab_window, modifiers);
     }
 
+    void
+    focus(xcb_input_focus_t revert_to,
+          xcb_window_t focus,
+          xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
+    {
+      xcb_set_input_focus(m_c, revert_to, focus, time);
+    }
+
     xcb_keycode_t
     keysym_to_keycode(xcb_keysym_t keysym)
     {
