@@ -42,7 +42,7 @@ template<typename H, typename E>
 void x::interface::event::dispatcher::dispatch(H * h, E * e)
 {
   try {
-    dynamic_cast<x::interface::event::sink<E> &>(h).handle(e);
+    dynamic_cast<x::interface::event::sink<E> &>(*h).handle(e);
   } catch (...) {}
 }
 
