@@ -41,10 +41,9 @@ class source {
 template<typename H, typename E>
 void x::interface::event::dispatcher::dispatch(H * h, E * e)
 {
-  auto s = dynamic_cast<x::interface::event::sink<E> *>(h);
-  if (s) {
-    s->handle(e);
-  }
+  try {
+    dynamic_cast<x::interface::event::sink<E> &>(h).handle(e);
+  } catch (...) {}
 }
 
 #endif // X_INTERFACE_HPP
