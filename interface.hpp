@@ -15,7 +15,7 @@ class dispatcher {
   public:
     typedef unsigned int priority;
     typedef std::vector<std::pair<priority, type>> priority_masks;
-    virtual priority_masks masks(void) = 0;
+    virtual ~dispatcher(void) {}
     template<typename H, typename E> void dispatch(H *, E *);
 }; // class dispatcher
 
@@ -28,8 +28,6 @@ class sink {
 class source {
   public:
     virtual void run(void) = 0;
-    virtual void insert(dispatcher *) = 0;
-    virtual void remove(dispatcher *) = 0;
     virtual void insert(const dispatcher::priority_masks &, dispatcher *) = 0;
     virtual void remove(const dispatcher::priority_masks &, dispatcher *) = 0;
 }; // class source

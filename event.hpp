@@ -82,16 +82,6 @@ class source : public interface::source
       }
     }
 
-    void insert(interface::dispatcher * h)
-    {
-      insert(h->masks(), h);
-    }
-
-    void remove(interface::dispatcher * h)
-    {
-      remove(h->masks(), h);
-    }
-
     void
     insert(const interface::dispatcher::priority_masks & masks,
            interface::dispatcher * h)
