@@ -1,9 +1,26 @@
-DIRS=interface implementation
+LIBS=xcb
+CXXFLAGS=-g -std=c++11 -Wall -O3 $(shell pkg-config --cflags ${LIBS})
+LDFLAGS=$(shell pkg-config --libs ${LIBS})
 
-%: ${DIRS}
-	@ true
+HPPSRCS=$(shell find . -name '*.hpp')
+HPPOBJS=$(HPPSRCS:%.hpp=%.hpp.gch)
 
-${DIRS}:
-	${MAKE} -C $@ ${MAKECMDGOALS}
+all: ${DIRS} ${HPPOBJS}
 
-.PHONY: ${DIRS}
+%.hpp.gch: %.hpp
+	${CXX} ${CXXFLAGS} -MMD -c $<
+
+-include $(HPPSRCS:%.hpp=%.d)
+
+version: ${LIBS}
+	@echo -e "\nGCC version:"
+	@gcc -v 2>&1
+
+${LIBS}:
+	@printf "%-20s" "$@:"
+	@pkg-config --modversion $@
+
+clean:
+	rm -f ${HPPOBJS}
+
+.PHONY: clean version
