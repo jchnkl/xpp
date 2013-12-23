@@ -77,6 +77,51 @@ class adapter : public dispatcher
 // class mult : public adapter<ETC> ...
 // question: how to get multiple variadic template parameters?
 
+// with event object
+// Object object = container(window)
+// for (handler : handlers) handler->handle(object, event)
+namespace object {
+
+template <typename Object>
+class container {
+  public:
+    virtual ~container(void) {}
+    virtual Object * const at(const unsigned int &) = 0;
+};
+
+template<typename Object, typename Event,
+         int Type, int Priority,
+         unsigned int (* Window)(Event * const)>
+class adapter : public dispatcher
+              , public sink<Event>
+{
+  public:
+    adapter(source & source, container<Object> & container)
+      : m_source(source)
+      , m_container(container)
+    {
+      m_source.attach({ { Priority, Type } }, this);
+    }
+
+    ~adapter(void)
+    {
+      m_source.detach({ { Priority, Type } }, this);
+    }
+
+    void handle(Event * const e)
+    {
+      handle(m_container.at(Window(e)), e);
+    }
+
+    virtual void handle(Object * const, Event * const) = 0;
+
+  private:
+    source & m_source;
+    container<Object> & m_container;
+}; // class adapter
+
+}; // namespace object
+
 template<typename H, typename E>
 void dispatcher::dispatch(H * h, E * e)
 {
