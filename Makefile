@@ -1,4 +1,4 @@
-DIRS=src
+DIRS=src src/tests
 
 %: ${DIRS}
 	@ true
