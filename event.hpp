@@ -18,16 +18,13 @@
     } catch(...) {} \
   }
 
-namespace x
-{
+namespace x {
 
-namespace event
-{
+namespace event {
 
 namespace interface = x::interface::event;
 
-class source : public interface::source
-{
+class source : public interface::source {
   public:
     source(connection & c) : m_c(c) {}
 
@@ -35,8 +32,7 @@ class source : public interface::source
     {
       xcb_generic_event_t * e;
 
-      while (true)
-      {
+      while (true) {
         m_c.flush();
         e = xcb_wait_for_event(*m_c);
 
