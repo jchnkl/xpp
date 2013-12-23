@@ -35,6 +35,47 @@ class source {
     virtual void detach(const priorities &, dispatcher *) = 0;
 }; // class source
 
+class container {
+  public:
+    virtual ~container(void) {}
+    virtual dispatcher * const at(const unsigned int &) const = 0;
+}; // class container
+
+// O(1) event dispatcher
+// container[window]->dispatch(e) ..
+template<typename Event,
+         int Type, int Priority,
+         unsigned int (* Window)(Event * const)>
+class adapter : public dispatcher
+              , public sink<Event>
+{
+  public:
+    adapter(source & source, const container & container)
+      : m_source(source), m_container(container)
+    {
+      m_source.attach({ { Priority, Type } }, this);
+    }
+
+    ~adapter(void)
+    {
+      m_source.detach({ { Priority, Type } }, this);
+    }
+
+    void handle(Event * e)
+    {
+      auto * d = m_container.at(Window(e));
+      d->dispatch(d, e);
+    }
+
+  private:
+    source & m_source;
+    const container & m_container;
+}; // class adapter
+
+// TODO: multi - adapter:
+// template<typename ... ETC>
+// class mult : public adapter<ETC> ...
+// question: how to get multiple variadic template parameters?
 
 template<typename H, typename E>
 void dispatcher::dispatch(H * h, E * e)
