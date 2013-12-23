@@ -6,7 +6,7 @@
 
 #include <xcb/xcb.h>
 
-#include "interface.hpp"
+#include "../interface/interface.hpp"
 #include "connection.hpp"
 
 #define EVENT_HANDLE(IF, TYPE, POINTER) \
