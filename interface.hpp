@@ -9,12 +9,10 @@ namespace interface {
 
 namespace event {
 
-typedef int type;
 typedef std::vector<std::pair<unsigned int, int>> priorities;
 
 class dispatcher {
   public:
-    typedef unsigned int priority;
     virtual ~dispatcher(void) {}
     template<typename H, typename E> void dispatch(H *, E *);
 }; // class dispatcher

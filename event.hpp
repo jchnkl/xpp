@@ -109,7 +109,7 @@ class source : public interface::source {
     connection & m_c;
 
     typedef std::multimap<unsigned int, interface::dispatcher *> priorities;
-    std::unordered_map<interface::type, priorities> m_dispatcher;
+    std::unordered_map<int, priorities> m_dispatcher;
 }; // class source
 
 }; // namespace event
