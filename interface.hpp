@@ -35,18 +35,19 @@ class source {
     virtual void detach(const priorities &, dispatcher *) = 0;
 }; // class source
 
+
+template<typename H, typename E>
+void dispatcher::dispatch(H * h, E * e)
+{
+  try {
+    dynamic_cast<sink<E> &>(*h).handle(e);
+  } catch (...) {}
+}
+
 }; // namespace event
 
 }; // namespace interface
 
 }; // namespace x
-
-template<typename H, typename E>
-void x::interface::event::dispatcher::dispatch(H * h, E * e)
-{
-  try {
-    dynamic_cast<x::interface::event::sink<E> &>(*h).handle(e);
-  } catch (...) {}
-}
 
 #endif // X_INTERFACE_HPP
