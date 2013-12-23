@@ -1,6 +1,4 @@
-LIBS=xcb
-CXXFLAGS=-g -std=c++11 -Wall -O3 $(shell pkg-config --cflags ${LIBS})
-LDFLAGS=$(shell pkg-config --libs ${LIBS})
+CXXFLAGS=-std=c++11 -Wall -O3
 
 HPPSRCS=$(shell find . -name '*.hpp')
 HPPOBJS=$(HPPSRCS:%.hpp=%.hpp.gch)
@@ -11,6 +9,7 @@ all: ${DIRS} ${HPPOBJS}
 	${CXX} ${CXXFLAGS} -MMD -c $<
 
 -include $(HPPSRCS:%.hpp=%.d)
+include flags.makefile
 
 version: ${LIBS}
 	@echo -e "\nGCC version:"
