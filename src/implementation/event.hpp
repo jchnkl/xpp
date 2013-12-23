@@ -1,13 +1,15 @@
 #ifndef X_EVENT_HPP
 #define X_EVENT_HPP
 
+#include <climits>
 #include <map>
 #include <unordered_map>
 
 #include <xcb/xcb.h>
 
-#include "../interface/interface.hpp"
 #include "connection.hpp"
+
+#define MAX_PRIORITY UINT32_MAX
 
 #define EVENT_HANDLE(IF, TYPE, POINTER) \
   IF ((e->response_type & ~0x80) == TYPE) { \
@@ -22,9 +24,29 @@ namespace xpp {
 
 namespace event {
 
-namespace interface = xpp::interface::event;
+typedef std::vector<std::pair<unsigned int, int>> priorities;
 
-class source : public interface::source {
+class dispatcher {
+  public:
+    virtual ~dispatcher(void) {}
+    template<typename Handler, typename Event>
+      void dispatch(Handler *, Event *);
+}; // class dispatcher
+
+template<typename Event>
+class sink {
+  public:
+    virtual ~sink(void) {}
+    virtual void handle(Event * e) = 0;
+}; // class sink
+
+class container {
+  public:
+    virtual ~container(void) {}
+    virtual dispatcher * const at(const unsigned int &) const = 0;
+}; // class container
+
+class source {
   public:
     source(connection & c) : m_c(c) {}
 
@@ -79,8 +101,7 @@ class source : public interface::source {
     }
 
     void
-    attach(const interface::priorities & masks,
-           interface::dispatcher * h)
+    attach(const priorities & masks, dispatcher * h)
     {
       for (auto & item : masks) {
         m_dispatcher[item.second].insert({ item.first, h });
@@ -88,8 +109,7 @@ class source : public interface::source {
     }
 
     void
-    detach(const interface::priorities & masks,
-           interface::dispatcher * h)
+    detach(const priorities & masks, dispatcher * h)
     {
       for (auto & item : masks) {
         try {
@@ -108,9 +128,98 @@ class source : public interface::source {
   private:
     connection & m_c;
 
-    typedef std::multimap<unsigned int, interface::dispatcher *> priorities;
+    typedef std::multimap<unsigned int, dispatcher *> priorities;
     std::unordered_map<int, priorities> m_dispatcher;
 }; // class source
+
+// O(1) event dispatcher
+// container[window]->dispatch(e) ..
+template<typename Event,
+         int Type, int Priority,
+         unsigned int (* Window)(Event * const)>
+class adapter : public dispatcher
+              , public sink<Event>
+{
+  public:
+    adapter(source & source, const container & container)
+      : m_source(source), m_container(container)
+    {
+      m_source.attach({ { Priority, Type } }, this);
+    }
+
+    ~adapter(void)
+    {
+      m_source.detach({ { Priority, Type } }, this);
+    }
+
+    void handle(Event * e)
+    {
+      auto * d = m_container.at(Window(e));
+      d->dispatch(d, e);
+    }
+
+  private:
+    source & m_source;
+    const container & m_container;
+}; // class adapter
+
+// TODO: multi - adapter:
+// template<typename ... ETC>
+// class mult : public adapter<ETC> ...
+// question: how to get multiple variadic template parameters?
+
+// with event object
+// Object object = container(window)
+// for (handler : handlers) handler->handle(object, event)
+namespace object {
+
+template <typename Object>
+class container {
+  public:
+    virtual ~container(void) {}
+    virtual Object * const at(const unsigned int &) = 0;
+};
+
+template<typename Object, typename Event,
+         int Type, int Priority,
+         unsigned int (* Window)(Event * const)>
+class adapter : public dispatcher
+              , public sink<Event>
+{
+  public:
+    adapter(source & source, container<Object> & container)
+      : m_source(source)
+      , m_container(container)
+    {
+      m_source.attach({ { Priority, Type } }, this);
+    }
+
+    ~adapter(void)
+    {
+      m_source.detach({ { Priority, Type } }, this);
+    }
+
+    void handle(Event * const e)
+    {
+      handle(m_container.at(Window(e)), e);
+    }
+
+    virtual void handle(Object * const, Event * const) = 0;
+
+  private:
+    source & m_source;
+    container<Object> & m_container;
+}; // class adapter
+
+}; // namespace object
+
+template<typename Handler, typename Event>
+void dispatcher::dispatch(Handler * h, Event * e)
+{
+  try {
+    dynamic_cast<sink<Event> &>(*h).handle(e);
+  } catch (...) {}
+}
 
 }; // namespace event
 
