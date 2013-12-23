@@ -10,11 +10,11 @@ namespace interface {
 namespace event {
 
 typedef int type;
+typedef std::vector<std::pair<unsigned int, int>> priorities;
 
 class dispatcher {
   public:
     typedef unsigned int priority;
-    typedef std::vector<std::pair<priority, type>> priority_masks;
     virtual ~dispatcher(void) {}
     template<typename H, typename E> void dispatch(H *, E *);
 }; // class dispatcher
@@ -28,8 +28,8 @@ class sink {
 class source {
   public:
     virtual void run(void) = 0;
-    virtual void insert(const dispatcher::priority_masks &, dispatcher *) = 0;
-    virtual void remove(const dispatcher::priority_masks &, dispatcher *) = 0;
+    virtual void attach(const priorities &, dispatcher *) = 0;
+    virtual void detach(const priorities &, dispatcher *) = 0;
 }; // class source
 
 }; // namespace event

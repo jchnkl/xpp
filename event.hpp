@@ -79,7 +79,7 @@ class source : public interface::source {
     }
 
     void
-    insert(const interface::dispatcher::priority_masks & masks,
+    attach(const interface::priorities & masks,
            interface::dispatcher * h)
     {
       for (auto & item : masks) {
@@ -88,7 +88,7 @@ class source : public interface::source {
     }
 
     void
-    remove(const interface::dispatcher::priority_masks & masks,
+    detach(const interface::priorities & masks,
            interface::dispatcher * h)
     {
       for (auto & item : masks) {
