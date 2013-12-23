@@ -23,11 +23,13 @@ class dispatcher {
 template<typename E>
 class sink {
   public:
+    virtual ~sink(void) {}
     virtual void handle(E * e) = 0;
 }; // class sink
 
 class source {
   public:
+    virtual ~source(void) {}
     virtual void run(void) = 0;
     virtual void attach(const priorities &, dispatcher *) = 0;
     virtual void detach(const priorities &, dispatcher *) = 0;
