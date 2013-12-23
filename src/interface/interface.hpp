@@ -6,7 +6,7 @@
 
 #define MAX_PRIORITY UINT32_MAX
 
-namespace x {
+namespace xpp {
 
 namespace interface {
 
@@ -135,6 +135,6 @@ void dispatcher::dispatch(Handler * h, Event * e)
 
 }; // namespace interface
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_INTERFACE_HPP

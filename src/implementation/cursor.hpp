@@ -7,11 +7,11 @@
 
 #include "connection.hpp"
 
-namespace x {
+namespace xpp {
 
 class cursor {
   public:
-    cursor(x::connection & c) : m_c(c)
+    cursor(connection & c) : m_c(c)
     {
       m_font = m_c.generate_id();
       m_c.open_font(m_font, "cursor");
@@ -40,11 +40,11 @@ class cursor {
     }
 
   private:
-    x::connection & m_c;
+    connection & m_c;
     xcb_font_t m_font;
     std::unordered_map<uint16_t, xcb_cursor_t> m_cursors;
 }; // class cursors
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_CURSOR_HPP

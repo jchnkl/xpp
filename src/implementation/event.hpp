@@ -18,11 +18,11 @@
     } catch(...) {} \
   }
 
-namespace x {
+namespace xpp {
 
 namespace event {
 
-namespace interface = x::interface::event;
+namespace interface = xpp::interface::event;
 
 class source : public interface::source {
   public:
@@ -114,6 +114,6 @@ class source : public interface::source {
 
 }; // namespace event
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_EVENT_HPP

@@ -3,7 +3,7 @@
 
 #include "request.hpp"
 
-namespace x {
+namespace xpp {
 
 namespace request {
 
@@ -96,6 +96,6 @@ class grab_pointer
 
 }; // namespace request
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_REQUESTS_HPP

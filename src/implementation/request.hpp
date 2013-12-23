@@ -4,7 +4,7 @@
 #include <memory>
 #include <xcb/xcb.h>
 
-namespace x {
+namespace xpp {
 
 namespace generic {
 
@@ -49,6 +49,6 @@ class request {
 
 }; // namespace generic
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_REQUEST_HPP

@@ -3,7 +3,7 @@
 
 #include "drawable.hpp"
 
-namespace x {
+namespace xpp {
 
 class window : public drawable<xcb_window_t> {
   public:
@@ -106,6 +106,6 @@ class window : public drawable<xcb_window_t> {
     xcb_window_t & m_window = m_drawable;
 }; // class window
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_WINDOW_HPP

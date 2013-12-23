@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-namespace x {
+namespace xpp {
 
 class valueparam {
   public:
@@ -45,6 +45,6 @@ class valueparam {
     std::map<uint32_t, uint32_t> m_values_map;
 };
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_VALUEPARAM_HPP

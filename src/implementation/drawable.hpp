@@ -3,7 +3,7 @@
 
 #include "connection.hpp"
 
-namespace x {
+namespace xpp {
 
 template<typename DRAWABLE>
 class drawable {
@@ -23,6 +23,6 @@ class drawable {
     DRAWABLE m_drawable;
 }; // class drawable
 
-}; // namespace x
+}; // namespace xpp
 
 #endif // X_DRAWABLE_HPP

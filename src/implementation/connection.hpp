@@ -7,7 +7,7 @@
 
 #include "requests.hpp"
 
-namespace x {
+namespace xpp {
 
 class connection {
   public:
