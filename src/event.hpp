@@ -40,12 +40,6 @@ class sink {
     virtual void handle(Event * e) = 0;
 }; // class sink
 
-class container {
-  public:
-    virtual ~container(void) {}
-    virtual dispatcher * const at(const unsigned int &) const = 0;
-}; // class container
-
 class source {
   public:
     source(connection & c) : m_c(c) {}
@@ -132,6 +126,14 @@ class source {
     std::unordered_map<int, priorities> m_dispatcher;
 }; // class source
 
+namespace direct {
+
+class container {
+  public:
+    virtual ~container(void) {}
+    virtual dispatcher * const at(const unsigned int &) const = 0;
+}; // class container
+
 // O(1) event dispatcher
 // container[window]->dispatch(e) ..
 template<typename Event,
@@ -168,10 +170,12 @@ class adapter : public dispatcher
 // class mult : public adapter<ETC> ...
 // question: how to get multiple variadic template parameters?
 
-// with event object
+}; // namespace direct
+
+// with any object
 // Object object = container(window)
 // for (handler : handlers) handler->handle(object, event)
-namespace object {
+namespace any {
 
 template <typename Object>
 class container {
@@ -211,7 +215,7 @@ class adapter : public dispatcher
     container<Object> & m_container;
 }; // class adapter
 
-}; // namespace object
+}; // namespace any
 
 template<typename Handler, typename Event>
 void dispatcher::dispatch(Handler * h, Event * e)
