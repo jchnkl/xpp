@@ -1,7 +1,10 @@
 #ifndef X_INTERFACE_HPP
 #define X_INTERFACE_HPP
 
+#include <climits>
 #include <vector>
+
+#define MAX_PRIORITY UINT32_MAX
 
 namespace x {
 
