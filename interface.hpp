@@ -17,14 +17,15 @@ typedef std::vector<std::pair<unsigned int, int>> priorities;
 class dispatcher {
   public:
     virtual ~dispatcher(void) {}
-    template<typename H, typename E> void dispatch(H *, E *);
+    template<typename Handler, typename Event>
+      void dispatch(Handler *, Event *);
 }; // class dispatcher
 
-template<typename E>
+template<typename Event>
 class sink {
   public:
     virtual ~sink(void) {}
-    virtual void handle(E * e) = 0;
+    virtual void handle(Event * e) = 0;
 }; // class sink
 
 class source {
@@ -122,11 +123,11 @@ class adapter : public dispatcher
 
 }; // namespace object
 
-template<typename H, typename E>
-void dispatcher::dispatch(H * h, E * e)
+template<typename Handler, typename Event>
+void dispatcher::dispatch(Handler * h, Event * e)
 {
   try {
-    dynamic_cast<sink<E> &>(*h).handle(e);
+    dynamic_cast<sink<Event> &>(*h).handle(e);
   } catch (...) {}
 }
 
