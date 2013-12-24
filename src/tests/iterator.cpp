@@ -40,5 +40,15 @@ int main(int argc, char ** argv)
   std::cerr << "it  : " << *it     << std::endl;
   std::cerr << std::dec << std::endl;;
 
+  auto atom = c.intern_atom(false, "_NET_CLIENT_LIST_STACKING");
+  auto properties = c.get_property<xcb_window_t>(
+      false, c.root(), atom->atom, XCB_ATOM_WINDOW, 0, UINT32_MAX);
+
+  std::cerr << std::hex;
+  for (auto & window : properties) {
+    std::cerr << "0x" << window << "; ";
+  }
+  std::cerr << std::dec << std::endl;;
+
   return EXIT_SUCCESS;
 }
