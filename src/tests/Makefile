@@ -2,7 +2,8 @@ include ../flags.makefile
 
 CXXFLAGS+=-g
 
-CPPSRCS=event.cpp
+CPPSRCS=event.cpp \
+        iterator.cpp
 
 all: ${CPPSRCS}
 
