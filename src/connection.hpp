@@ -137,6 +137,12 @@ class connection {
       return request::core::query_tree(m_c, window);
     }
 
+    request::core::intern_atom
+    intern_atom(bool only_if_exists, const std::string & name)
+    {
+      return request::core::intern_atom(m_c, only_if_exists, name);
+    }
+
     template<typename T>
     request::core::get_property<T>
     get_property(bool _delete, xcb_window_t window, xcb_atom_t property,
