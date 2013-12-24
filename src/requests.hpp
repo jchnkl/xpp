@@ -26,6 +26,95 @@ NAMESPACE::NAME::NAME(xcb_connection_t * c,                                   \
   MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
 {}
 
+#define ITERATOR(NAME, MEMBER)                                                \
+class iterator {                                                              \
+public:                                                                       \
+    iterator(xcb_ ## NAME ## _reply_t * const reply, bool begin)              \
+      : m_reply(reply)                                                        \
+    {                                                                         \
+      m_elements = xcb_ ## NAME ## _ ## MEMBER (m_reply);                     \
+      if (! begin) m_position = m_reply-> MEMBER ## _len;                     \
+    }                                                                         \
+                                                                              \
+    bool operator==(const iterator & other)                                   \
+    {                                                                         \
+      return m_position == other.m_position;                                  \
+    }                                                                         \
+                                                                              \
+    bool operator!=(const iterator & other)                                   \
+    {                                                                         \
+      return ! (*this == other);                                              \
+    }                                                                         \
+                                                                              \
+    const xcb_window_t & operator*(void)                                      \
+    {                                                                         \
+      return m_elements[m_position];                                          \
+    }                                                                         \
+                                                                              \
+    /* prefix */                                                              \
+    iterator & operator++(void)                                               \
+    {                                                                         \
+      ++m_position;                                                           \
+      return *this;                                                           \
+    }                                                                         \
+                                                                              \
+    /* postfix */                                                             \
+    iterator operator++(int)                                                  \
+    {                                                                         \
+      auto copy = *this;                                                      \
+      ++(*this);                                                              \
+      return copy;                                                            \
+    }                                                                         \
+                                                                              \
+    /* prefix */                                                              \
+    iterator & operator--(void)                                               \
+    {                                                                         \
+      --m_position;                                                           \
+      return *this;                                                           \
+    }                                                                         \
+                                                                              \
+    /* postfix */                                                             \
+    iterator operator--(int)                                                  \
+    {                                                                         \
+      auto copy = *this;                                                      \
+      --(*this);                                                              \
+      return copy;                                                            \
+    }                                                                         \
+                                                                              \
+  private:                                                                    \
+    std::size_t m_position = 0;                                               \
+    xcb_window_t * m_elements = NULL;                                         \
+    xcb_ ## NAME ## _reply_t * m_reply;                                       \
+};
+
+#define ITERATOR_REQUEST_PROTO(NAMESPACE, NAME, ITERATOR_MEMBER, ...)         \
+namespace NAMESPACE {                                                         \
+class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
+                            xcb_ ## NAME ## _reply_t,                         \
+                            &xcb_ ## NAME ## _reply>                          \
+{                                                                             \
+  public:                                                                     \
+    ITERATOR(NAME, ITERATOR_MEMBER) \
+    NAME(xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));   \
+                                                                              \
+    iterator begin(void)                                                      \
+    {                                                                         \
+      return iterator(this->get().get(), true);                               \
+    }                                                                         \
+                                                                              \
+    iterator end(void)                                                        \
+    {                                                                         \
+      return iterator(this->get().get(), false);                              \
+    }                                                                         \
+}; /* class NAME */                                                           \
+}; /* namespace NAMESPACE */
+
+#define ITERATOR_SIMPLE_REQUEST(NAMESPACE, NAME, ITERATOR_MEMBER, ...)        \
+  ITERATOR_REQUEST_PROTO(NAMESPACE, NAME, ITERATOR_MEMBER, __VA_ARGS__)       \
+  REQUEST_BODY(NAMESPACE, NAME, __VA_ARGS__)                                  \
+  MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
+{}
+
 namespace xpp {
 
 namespace request {
