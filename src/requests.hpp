@@ -26,14 +26,15 @@ NAMESPACE::NAME::NAME(xcb_connection_t * c,                                   \
   MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
 {}
 
-#define ITERATOR(NAME, MEMBER, MEMBER_TYPE)                                   \
+#define ITERATOR(NAME, MEMBER)                                                \
+template<typename MemberType>                                                 \
 class iterator {                                                              \
 public:                                                                       \
     iterator(xcb_ ## NAME ## _reply_t * const reply, bool begin)              \
       : m_reply(reply)                                                        \
     {                                                                         \
       m_elements =                                                            \
-        static_cast<MEMBER_TYPE *>(xcb_ ## NAME ## _ ## MEMBER (m_reply));    \
+        static_cast<MemberType *>(xcb_ ## NAME ## _ ## MEMBER (m_reply));     \
       if (! begin) m_position = m_reply-> MEMBER ## _len;                     \
     }                                                                         \
                                                                               \
@@ -47,7 +48,7 @@ public:                                                                       \
       return ! (*this == other);                                              \
     }                                                                         \
                                                                               \
-    const MEMBER_TYPE & operator*(void)                                       \
+    const MemberType & operator*(void)                                        \
     {                                                                         \
       return m_elements[m_position];                                          \
     }                                                                         \
@@ -84,7 +85,7 @@ public:                                                                       \
                                                                               \
   private:                                                                    \
     std::size_t m_position = 0;                                               \
-    MEMBER_TYPE * m_elements = NULL;                                          \
+    MemberType * m_elements = NULL;                                           \
     xcb_ ## NAME ## _reply_t * m_reply;                                       \
 };
 
@@ -96,17 +97,17 @@ class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
                             &xcb_ ## NAME ## _reply>                          \
 {                                                                             \
   public:                                                                     \
-    ITERATOR(NAME, ITERATOR_MEMBER, ITERATOR_MEMBER_TYPE)                     \
+    ITERATOR(NAME, ITERATOR_MEMBER)                                           \
     NAME(xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));   \
                                                                               \
-    iterator begin(void)                                                      \
+    iterator<ITERATOR_MEMBER_TYPE> begin(void)                                \
     {                                                                         \
-      return iterator(this->get().get(), true);                               \
+      return iterator<ITERATOR_MEMBER_TYPE>(this->get().get(), true);         \
     }                                                                         \
                                                                               \
-    iterator end(void)                                                        \
+    iterator<ITERATOR_MEMBER_TYPE> end(void)                                  \
     {                                                                         \
-      return iterator(this->get().get(), false);                              \
+      return iterator<ITERATOR_MEMBER_TYPE>(this->get().get(), false);        \
     }                                                                         \
 }; /* class NAME */                                                           \
 }; /* namespace NAMESPACE */
