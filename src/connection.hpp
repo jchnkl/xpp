@@ -131,15 +131,10 @@ class connection {
                        src_x, src_y, src_width, src_height, dst_x, dst_y);
     }
 
-    std::vector<xcb_window_t>
+    request::core::query_tree
     query_tree(xcb_window_t window)
     {
-      auto reply = request::core::query_tree(m_c, window);
-      std::vector<xcb_window_t>
-        result(xcb_query_tree_children(*reply),
-               xcb_query_tree_children(*reply)
-               + xcb_query_tree_children_length(*reply));
-      return result;
+      return request::core::query_tree(m_c, window);
     }
 
     request::core::get_property
