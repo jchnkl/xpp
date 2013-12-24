@@ -134,7 +134,7 @@ class connection {
     std::vector<xcb_window_t>
     query_tree(xcb_window_t window)
     {
-      auto reply = request::query_tree(m_c, window);
+      auto reply = request::core::query_tree(m_c, window);
       std::vector<xcb_window_t>
         result(xcb_query_tree_children(*reply),
                xcb_query_tree_children(*reply)
@@ -142,22 +142,22 @@ class connection {
       return result;
     }
 
-    request::get_property
+    request::core::get_property
     get_property(bool _delete, xcb_window_t window, xcb_atom_t property,
                  xcb_atom_t type, uint32_t long_offset, uint32_t long_length)
     {
-      return request::get_property(m_c, _delete, window, property,
+      return request::core::get_property(m_c, _delete, window, property,
                                    type, long_offset, long_length);
     }
 
-    request::grab_pointer
+    request::core::grab_pointer
     grab_pointer(bool owner_events, xcb_window_t grab_window,
                  uint16_t event_mask, uint8_t pointer_mode,
                  uint8_t keyboard_mode, xcb_window_t confine_to,
                  xcb_cursor_t cursor,
                  xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
     {
-      return request::grab_pointer(m_c, owner_events, grab_window, event_mask,
+      return request::core::grab_pointer(m_c, owner_events, grab_window, event_mask,
                                    pointer_mode, keyboard_mode, confine_to,
                                    cursor, time);
     }
