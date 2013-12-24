@@ -12,13 +12,12 @@
 #define MAX_PRIORITY UINT32_MAX
 
 #define EVENT_OBJECT(CLASS, TYPE, POINTER)                                    \
-class CLASS {                                                                 \
-  public:                                                                     \
-    CLASS(POINTER * const event) : m_event(event) {}                          \
-    POINTER * const operator*(void) const { return m_event; }                 \
-    POINTER * const operator->(void) const { return m_event; }                \
-    static const int type = TYPE;                                             \
-    POINTER * const m_event;                                                  \
+struct CLASS {                                                                \
+  CLASS(POINTER * const event) : event(event) {}                              \
+  POINTER * const operator*(void) const { return event; }                     \
+  POINTER * const operator->(void) const { return event; }                    \
+  static const int type = TYPE;                                               \
+  POINTER * const event;                                                      \
 };
 
 #define NS_EVENT_OBJECT(NAMESPACE, CLASS, TYPE, STRUCT)                       \
@@ -190,7 +189,7 @@ class container {
 // O(1) event dispatcher
 // container[window]->dispatch(e) ..
 template<typename Event, int Priority,
-         unsigned int (* Window)(decltype(Event::m_event))>
+         unsigned int (* Window)(decltype(Event::event))>
 class adapter : public dispatcher
               , public sink<Event>
 {
@@ -237,7 +236,7 @@ class container {
 };
 
 template<typename Object, typename Event, int Priority,
-         unsigned int (* Window)(decltype(Event::m_event))>
+         unsigned int (* Window)(decltype(Event::event))>
 class adapter : public dispatcher
               , public sink<Event>
 {
