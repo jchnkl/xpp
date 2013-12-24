@@ -142,89 +142,8 @@ SIMPLE_REQUEST(core, get_window_attributes, xcb_window_t, window)
 
 SIMPLE_REQUEST(core, get_geometry, xcb_window_t, window)
 
-namespace core {
-
-class query_tree : public generic::request<xcb_query_tree_cookie_t,
-  xcb_query_tree_reply_t,
-  &xcb_query_tree_reply>
-{
-  public:
-    class iterator {
-      public:
-        iterator(xcb_query_tree_reply_t * const reply, bool begin)
-          : m_reply(reply)
-        {
-          m_elements = xcb_query_tree_children(m_reply);
-          if (! begin) m_position = m_reply->children_len;
-        }
-
-        bool operator==(const iterator & other)
-        {
-          return m_position == other.m_position;
-        }
-
-        bool operator!=(const iterator & other)
-        {
-          return ! (*this == other);
-        }
-
-        const xcb_window_t & operator*(void)
-        {
-          return m_elements[m_position];
-        }
-
-        // prefix
-        iterator & operator++(void)
-        {
-          ++m_position;
-          return *this;
-        }
-
-        // postfix
-        iterator operator++(int)
-        {
-          auto copy = *this;
-          ++(*this);
-          return copy;
-        }
-
-        // prefix
-        iterator & operator--(void)
-        {
-          --m_position;
-          return *this;
-        }
-
-        // postfix
-        iterator operator--(int)
-        {
-          auto copy = *this;
-          --(*this);
-          return copy;
-        }
-
-      private:
-        std::size_t m_position = 0;
-        xcb_window_t * m_elements = NULL;
-        xcb_query_tree_reply_t * m_reply;
-    };
-
-    query_tree(xcb_connection_t * c, xcb_window_t window)
-      : request(c, &xcb_query_tree, window)
-    {}
-
-    iterator begin(void)
-    {
-      return iterator(this->get().get(), true);
-    }
-
-    iterator end(void)
-    {
-      return iterator(this->get().get(), false);
-    }
-};
-
-};
+ITERATOR_SPECIALIZED_REQUEST(core, query_tree, children, xcb_window_t,
+                             xcb_window_t, window)
 
 REQUEST_PROT(core, intern_atom, bool, only_if_exists, const std::string &, name)
 REQUEST_BODY(core, intern_atom, bool, only_if_exists, const std::string &, name)
@@ -234,9 +153,10 @@ REQUEST_BODY(core, intern_atom, bool, only_if_exists, const std::string &, name)
 
 SIMPLE_REQUEST(core, get_atom_name, xcb_atom_t, atom)
 
-SIMPLE_REQUEST(core, get_property, uint8_t, _delete, xcb_window_t, window,
-               xcb_atom_t, property, xcb_atom_t, type,
-               uint32_t, long_offset, uint32_t, long_length)
+ITERATOR_TEMPLATE_REQUEST(core, get_property, value,
+                          uint8_t, _delete, xcb_window_t, window,
+                          xcb_atom_t, property, xcb_atom_t, type,
+                          uint32_t, long_offset, uint32_t, long_length)
 
 SIMPLE_REQUEST(core, grab_pointer,
                uint8_t, owner_events, xcb_window_t, grab_window,
