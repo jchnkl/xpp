@@ -137,12 +137,13 @@ class connection {
       return request::core::query_tree(m_c, window);
     }
 
-    request::core::get_property
+    template<typename T>
+    request::core::get_property<T>
     get_property(bool _delete, xcb_window_t window, xcb_atom_t property,
                  xcb_atom_t type, uint32_t long_offset, uint32_t long_length)
     {
-      return request::core::get_property(m_c, _delete, window, property,
-                                   type, long_offset, long_length);
+      return request::core::get_property<T>(m_c, _delete, window, property,
+                                            type, long_offset, long_length);
     }
 
     request::core::grab_pointer
