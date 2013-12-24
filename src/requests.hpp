@@ -89,35 +89,49 @@ public:                                                                       \
     xcb_ ## NAME ## _reply_t * m_reply;                                       \
 };
 
-#define ITERATOR_REQUEST_PROTO(NAMESPACE, NAME,                               \
-                               ITERATOR_MEMBER, ITERATOR_MEMBER_TYPE, ...)    \
-namespace NAMESPACE {                                                         \
+#define ITERATOR_REQUEST_PROTO_COMMON(NAME, MEMBER, TYPE, ...)\
 class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
-                            xcb_ ## NAME ## _reply_t,                         \
-                            &xcb_ ## NAME ## _reply>                          \
+                                     xcb_ ## NAME ## _reply_t,                \
+                                     &xcb_ ## NAME ## _reply>                 \
 {                                                                             \
   public:                                                                     \
-    ITERATOR(NAME, ITERATOR_MEMBER)                                           \
+    ITERATOR(NAME, MEMBER)                                           \
     NAME(xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));   \
                                                                               \
-    iterator<ITERATOR_MEMBER_TYPE> begin(void)                                \
+    iterator<TYPE> begin(void)                                         \
     {                                                                         \
-      return iterator<ITERATOR_MEMBER_TYPE>(this->get().get(), true);         \
+      return iterator<TYPE>(this->get().get(), true);                  \
     }                                                                         \
                                                                               \
-    iterator<ITERATOR_MEMBER_TYPE> end(void)                                  \
+    iterator<TYPE> end(void)                                           \
     {                                                                         \
-      return iterator<ITERATOR_MEMBER_TYPE>(this->get().get(), false);        \
+      return iterator<TYPE>(this->get().get(), false);                 \
     }                                                                         \
 }; /* class NAME */                                                           \
 }; /* namespace NAMESPACE */
 
-#define ITERATOR_SIMPLE_REQUEST(NAMESPACE, NAME,                              \
-                                ITERATOR_MEMBER, ITERATOR_MEMBER_TYPE, ...)   \
-  ITERATOR_REQUEST_PROTO(NAMESPACE, NAME, ITERATOR_MEMBER,                    \
-                         ITERATOR_MEMBER_TYPE, __VA_ARGS__)                   \
-  REQUEST_BODY(NAMESPACE, NAME, __VA_ARGS__)                                  \
-  MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
+#define ITERATOR_TEMPLATE_REQUEST_PROTO(NAMESPACE, NAME, MEMBER, ...)         \
+namespace NAMESPACE {                                                         \
+template<typename IteratorMember>                                             \
+  ITERATOR_REQUEST_PROTO_COMMON(NAME, MEMBER, IteratorMember, __VA_ARGS__)
+
+#define ITERATOR_SPECIALIZED_REQUEST_PROTO(NAMESPACE, NAME, MEMBER, TYPE, ...)\
+namespace NAMESPACE {                                                         \
+  ITERATOR_REQUEST_PROTO_COMMON(NAME, MEMBER, TYPE, __VA_ARGS__)
+
+#define ITERATOR_SPECIALIZED_REQUEST(NAMESPACE, NAME, MEMBER, TYPE, ...)      \
+ITERATOR_SPECIALIZED_REQUEST_PROTO(NAMESPACE, NAME, MEMBER, TYPE, __VA_ARGS__)\
+NAMESPACE::NAME::NAME(                                                        \
+    xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))         \
+      : request(c, &xcb_ ## NAME, MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__)) \
+{}
+
+#define ITERATOR_TEMPLATE_REQUEST(NAMESPACE, NAME, MEMBER, ...)               \
+  ITERATOR_TEMPLATE_REQUEST_PROTO(NAMESPACE, NAME, MEMBER, __VA_ARGS__)       \
+template<typename IteratorMember>                                             \
+NAMESPACE::NAME<IteratorMember>::NAME(                                        \
+    xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))         \
+  : request(c, &xcb_ ## NAME, MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))     \
 {}
 
 namespace xpp {
