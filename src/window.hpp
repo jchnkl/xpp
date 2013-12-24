@@ -30,16 +30,16 @@ class window : public drawable<xcb_window_t> {
       m_c.change_attributes(m_window, mask, values);
     }
 
-    request::get_window_attributes
+    request::core::get_window_attributes
     get_attributes(void)
     {
-      return request::get_window_attributes(*m_c, m_window);
+      return request::core::get_window_attributes(*m_c, m_window);
     }
 
-    request::get_geometry
+    request::core::get_geometry
     get_geometry(void)
     {
-      return request::get_geometry(*m_c, m_window);
+      return request::core::get_geometry(*m_c, m_window);
     }
 
     void
@@ -55,7 +55,7 @@ class window : public drawable<xcb_window_t> {
       m_c.warp_pointer(XCB_NONE, m_window, 0, 0, 0, 0, dst_x, dst_y);
     }
 
-    request::grab_pointer
+    request::core::grab_pointer
     grab_pointer(bool owner_events, uint16_t event_mask, uint8_t pointer_mode,
                  uint8_t keyboard_mode, xcb_window_t confine_to,
                  xcb_cursor_t cursor,
