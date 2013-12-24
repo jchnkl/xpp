@@ -26,13 +26,14 @@ NAMESPACE::NAME::NAME(xcb_connection_t * c,                                   \
   MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
 {}
 
-#define ITERATOR(NAME, MEMBER)                                                \
+#define ITERATOR(NAME, MEMBER, MEMBER_TYPE)                                   \
 class iterator {                                                              \
 public:                                                                       \
     iterator(xcb_ ## NAME ## _reply_t * const reply, bool begin)              \
       : m_reply(reply)                                                        \
     {                                                                         \
-      m_elements = xcb_ ## NAME ## _ ## MEMBER (m_reply);                     \
+      m_elements =                                                            \
+        static_cast<MEMBER_TYPE *>(xcb_ ## NAME ## _ ## MEMBER (m_reply));    \
       if (! begin) m_position = m_reply-> MEMBER ## _len;                     \
     }                                                                         \
                                                                               \
@@ -46,7 +47,7 @@ public:                                                                       \
       return ! (*this == other);                                              \
     }                                                                         \
                                                                               \
-    const xcb_window_t & operator*(void)                                      \
+    const MEMBER_TYPE & operator*(void)                                       \
     {                                                                         \
       return m_elements[m_position];                                          \
     }                                                                         \
@@ -83,18 +84,19 @@ public:                                                                       \
                                                                               \
   private:                                                                    \
     std::size_t m_position = 0;                                               \
-    xcb_window_t * m_elements = NULL;                                         \
+    MEMBER_TYPE * m_elements = NULL;                                          \
     xcb_ ## NAME ## _reply_t * m_reply;                                       \
 };
 
-#define ITERATOR_REQUEST_PROTO(NAMESPACE, NAME, ITERATOR_MEMBER, ...)         \
+#define ITERATOR_REQUEST_PROTO(NAMESPACE, NAME,                               \
+                               ITERATOR_MEMBER, ITERATOR_MEMBER_TYPE, ...)    \
 namespace NAMESPACE {                                                         \
 class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
                             xcb_ ## NAME ## _reply_t,                         \
                             &xcb_ ## NAME ## _reply>                          \
 {                                                                             \
   public:                                                                     \
-    ITERATOR(NAME, ITERATOR_MEMBER) \
+    ITERATOR(NAME, ITERATOR_MEMBER, ITERATOR_MEMBER_TYPE)                     \
     NAME(xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));   \
                                                                               \
     iterator begin(void)                                                      \
@@ -109,8 +111,10 @@ class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
 }; /* class NAME */                                                           \
 }; /* namespace NAMESPACE */
 
-#define ITERATOR_SIMPLE_REQUEST(NAMESPACE, NAME, ITERATOR_MEMBER, ...)        \
-  ITERATOR_REQUEST_PROTO(NAMESPACE, NAME, ITERATOR_MEMBER, __VA_ARGS__)       \
+#define ITERATOR_SIMPLE_REQUEST(NAMESPACE, NAME,                              \
+                                ITERATOR_MEMBER, ITERATOR_MEMBER_TYPE, ...)   \
+  ITERATOR_REQUEST_PROTO(NAMESPACE, NAME, ITERATOR_MEMBER,                    \
+                         ITERATOR_MEMBER_TYPE, __VA_ARGS__)                   \
   REQUEST_BODY(NAMESPACE, NAME, __VA_ARGS__)                                  \
   MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
 {}
