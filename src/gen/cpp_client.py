@@ -2889,16 +2889,28 @@ def c_error(self, name):
 
 # Main routine starts here
 
+# # Must create an "output" dictionary before any xcbgen imports.
+# output = {'open'    : c_open,
+#           'close'   : c_close,
+#           'simple'  : c_simple,
+#           'enum'    : c_enum,
+#           'struct'  : c_struct,
+#           'union'   : c_union,
+#           'request' : c_request,
+#           'event'   : c_event,
+#           'error'   : c_error, 
+#           }
+
 # Must create an "output" dictionary before any xcbgen imports.
-output = {'open'    : c_open,
-          'close'   : c_close,
-          'simple'  : c_simple,
-          'enum'    : c_enum,
-          'struct'  : c_struct,
-          'union'   : c_union,
-          'request' : c_request,
-          'event'   : c_event,
-          'error'   : c_error, 
+output = {'open'    : lambda x: None,
+          'close'   : lambda x: None,
+          'simple'  : lambda x, y: None,
+          'enum'    : lambda x, y: None,
+          'struct'  : lambda x, y: None,
+          'union'   : lambda x, y: None,
+          'request' : lambda x, y: None,
+          'event'   : lambda x, y: None,
+          'error'   : lambda x, y: None,
           }
 
 # Boilerplate below this point
