@@ -27,14 +27,14 @@ NAMESPACE::NAME::NAME(xcb_connection_t * c,                                   \
 {}
 
 #define ITERATOR(NAME, MEMBER)                                                \
-template<typename MemberType>                                                 \
+template<typename Member>                                                     \
 class iterator {                                                              \
 public:                                                                       \
     iterator(xcb_ ## NAME ## _reply_t * const reply, bool begin)              \
       : m_reply(reply)                                                        \
     {                                                                         \
       m_elements =                                                            \
-        static_cast<MemberType *>(xcb_ ## NAME ## _ ## MEMBER (m_reply));     \
+        static_cast<Member *>(xcb_ ## NAME ## _ ## MEMBER (m_reply));         \
       if (! begin) m_position = m_reply-> MEMBER ## _len;                     \
     }                                                                         \
                                                                               \
@@ -48,7 +48,7 @@ public:                                                                       \
       return ! (*this == other);                                              \
     }                                                                         \
                                                                               \
-    const MemberType & operator*(void)                                        \
+    const Member & operator*(void)                                            \
     {                                                                         \
       return m_elements[m_position];                                          \
     }                                                                         \
@@ -85,7 +85,7 @@ public:                                                                       \
                                                                               \
   private:                                                                    \
     std::size_t m_position = 0;                                               \
-    MemberType * m_elements = NULL;                                           \
+    Member * m_elements = NULL;                                               \
     xcb_ ## NAME ## _reply_t * m_reply;                                       \
 };
 
