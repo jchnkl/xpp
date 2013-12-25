@@ -1906,7 +1906,7 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
 
     # Output starts here
 
-    _h(' ')
+    _h('')
     # _h('%s', cookie_type)
 
     spacing = ' ' * (maxtypelen - len('xcb_connection_t'))
