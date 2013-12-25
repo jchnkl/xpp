@@ -1949,7 +1949,10 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
 
         # args += c_field_const_type + c_pointer + field.c_field_name + comma
 
-    _h('SIMPLE_REQUEST(%s, %s, %s)', _ns.header, func_name, args)
+    if len(args) > 0:
+        _h('SIMPLE_REQUEST(%s, %s, %s)', _ns.header, func_name, args)
+    else:
+        _h('SIMPLE_REQUEST(%s, %s)', _ns.header, func_name)
 
 
     count = 2
