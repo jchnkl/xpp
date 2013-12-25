@@ -159,11 +159,12 @@ def c_open(self):
     _h_setlevel(0)
     _c_setlevel(0)
 
-    _hc('/*')
-    _hc(' * This file generated automatically from %s by c_client.py.', _ns.file)
-    _hc(' * Edit at your peril.')
-    _hc(' */')
-    _hc('')
+    '''
+    _h('/*')
+    _h(' * This file generated automatically from %s by c_client.py.', _ns.file)
+    _h(' * Edit at your peril.')
+    _h(' */')
+    _h('')
 
     _h('/**')
     _h(' * @defgroup XCB_%s_API XCB %s API', _ns.ext_name, _ns.ext_name)
@@ -175,19 +176,6 @@ def c_open(self):
     _h('#define __%s_H', _ns.header.upper())
     _h('')
     _h('#include "xcb.h"')
-
-    _c('#ifdef HAVE_CONFIG_H')
-    _c('#include "config.h"')
-    _c('#endif')
-    _c('#include <stdlib.h>')
-    _c('#include <string.h>')
-    _c('#include <assert.h>')
-    _c('#include <stddef.h>  /* for offsetof() */')
-    _c('#include "xcbext.h"')
-    _c('#include "%s.h"', _ns.header)
-
-    _c('')
-    _c('#define ALIGNOF(type) offsetof(struct { char dummy; type member; }, member)')
 
     if _ns.is_ext:
         for (n, h) in self.imports:
@@ -204,9 +192,7 @@ def c_open(self):
         _h('#define XCB_%s_MINOR_VERSION %s', _ns.ext_name.upper(), _ns.minor_version)
         _h('  ') #XXX
         _h('extern xcb_extension_t %s;', _ns.c_ext_global_name)
-
-        _c('')
-        _c('xcb_extension_t %s = { "%s", 0 };', _ns.c_ext_global_name, _ns.ext_xname)
+    '''
 
 def c_close(self):
     '''
@@ -215,6 +201,8 @@ def c_close(self):
     '''
     _h_setlevel(2)
     _c_setlevel(2)
+
+    '''
     _hc('')
 
     _h('')
@@ -228,6 +216,7 @@ def c_close(self):
     _h('/**')
     _h(' * @}')
     _h(' */')
+    '''
 
     # Write header file
     # hfile = open('%s.h' % _ns.header, 'w')
