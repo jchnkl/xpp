@@ -11,14 +11,14 @@ class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
                             &xcb_ ## NAME ## _reply>                          \
 {                                                                             \
   public:                                                                     \
-    NAME(xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));   \
+    NAME(xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));    \
 };                                                                            \
 };
 
 #define REQUEST_BODY(NAMESPACE, NAME, ...)                                    \
-NAMESPACE::NAME::NAME(xcb_connection_t * c,                                   \
+NAMESPACE::NAME::NAME(xcb_connection_t * c                                    \
                       MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))             \
-  : request(c, &xcb_ ## NAME,
+  : request(c, &xcb_ ## NAME
 
 #define SIMPLE_REQUEST(NAMESPACE, NAME, ...)                                  \
   REQUEST_PROT(NAMESPACE, NAME, __VA_ARGS__)                                  \
@@ -96,7 +96,7 @@ class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
 {                                                                             \
   public:                                                                     \
     ITERATOR(NAME, MEMBER)                                           \
-    NAME(xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));   \
+    NAME(xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__));    \
                                                                               \
     iterator<TYPE> begin(void)                                         \
     {                                                                         \
@@ -122,16 +122,16 @@ namespace NAMESPACE {                                                         \
 #define ITERATOR_SPECIALIZED_REQUEST(NAMESPACE, NAME, MEMBER, TYPE, ...)      \
 ITERATOR_SPECIALIZED_REQUEST_PROTO(NAMESPACE, NAME, MEMBER, TYPE, __VA_ARGS__)\
 NAMESPACE::NAME::NAME(                                                        \
-    xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))         \
-      : request(c, &xcb_ ## NAME, MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__)) \
+    xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))          \
+      : request(c, &xcb_ ## NAME MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))  \
 {}
 
 #define ITERATOR_TEMPLATE_REQUEST(NAMESPACE, NAME, MEMBER, ...)               \
   ITERATOR_TEMPLATE_REQUEST_PROTO(NAMESPACE, NAME, MEMBER, __VA_ARGS__)       \
 template<typename IteratorMember>                                             \
 NAMESPACE::NAME<IteratorMember>::NAME(                                        \
-    xcb_connection_t * c, MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))         \
-  : request(c, &xcb_ ## NAME, MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))     \
+    xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))          \
+  : request(c, &xcb_ ## NAME MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))      \
 {}
 
 namespace xpp {
@@ -146,7 +146,7 @@ ITERATOR_SPECIALIZED_REQUEST(core, query_tree, children, xcb_window_t,
                              xcb_window_t, window)
 
 REQUEST_PROT(core, intern_atom, bool, only_if_exists, const std::string &, name)
-REQUEST_BODY(core, intern_atom, bool, only_if_exists, const std::string &, name)
+REQUEST_BODY(core, intern_atom, bool, only_if_exists, const std::string &, name),
       static_cast<uint8_t>(only_if_exists),
       static_cast<uint16_t>(name.length()), name.c_str())
 {}
