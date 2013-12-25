@@ -230,12 +230,13 @@ def c_close(self):
     _h(' */')
 
     # Write header file
-    hfile = open('%s.h' % _ns.header, 'w')
+    # hfile = open('%s.h' % _ns.header, 'w')
+    hfile = sys.stdout
     for list in _hlines:
         for line in list:
             hfile.write(line)
             hfile.write('\n')
-    hfile.close()
+    # hfile.close()
 
     # Write source file
     cfile = open('%s.c' % _ns.header, 'w')
