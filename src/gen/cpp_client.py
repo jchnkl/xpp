@@ -1907,14 +1907,20 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     # Output starts here
 
     _h(' ')
-    _h('%s', cookie_type)
+    # _h('%s', cookie_type)
 
     spacing = ' ' * (maxtypelen - len('xcb_connection_t'))
     comma = ',' if len(param_fields) else ');'
-    _h('%s (xcb_connection_t%s *c  /**< */%s', func_name, spacing, comma)
+
+    # _h('%s (xcb_connection_t%s *c  /**< */%s', func_name, spacing, comma)
 
     func_spacing = ' ' * (len(func_name) + 2)
     count = len(param_fields)
+
+    args = ""
+    args_indent = '               '
+    args_len = len(args_indent) + len(_ns.header) + len(func_name) + 4
+
     for field in param_fields:
         count = count - 1
         c_field_const_type = field.c_field_const_type
@@ -1924,8 +1930,27 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
             c_pointer = '*'
         spacing = ' ' * (maxtypelen - len(c_field_const_type))
         comma = ',' if count else ');'
-        _h('%s%s%s %s%s  /**< */%s', func_spacing, c_field_const_type,
-           spacing, c_pointer, field.c_field_name, comma)
+
+        # _h('%s%s%s %s%s  /**< */%s', func_spacing, c_field_const_type,
+        #    spacing, c_pointer, field.c_field_name, comma)
+
+        if c_pointer == " ": c_pointer = ", "
+        else: c_pointer += ", "
+        if count: comma = ", "
+        else: comma = ""
+
+        append = c_field_const_type + c_pointer + field.c_field_name + comma
+        if (args_len + len(append) > 72):
+            args_len = len(args_indent)
+            args += "\n" + args_indent + append
+        else:
+            args_len += len(append)
+            args += append
+
+        # args += c_field_const_type + c_pointer + field.c_field_name + comma
+
+    _h('SIMPLE_REQUEST(%s, %s, %s)', _ns.header, func_name, args)
+
 
     count = 2
     if not self.var_followed_by_fixed_fields:
