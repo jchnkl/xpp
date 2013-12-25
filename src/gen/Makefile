@@ -1,7 +1,14 @@
+PROTOS=xproto
+
 PYTHON=python2
 CLIENT=cpp_client.py
 XCBGEN=~/src/xcb/proto/xcbgen
-PROTO=~/src/xcb/proto/src/xproto.xml
+PROTODIR=~/src/xcb/proto/src
 
-all:
-	${PYTHON} ${CLIENT} -p ${XCBGEN} ${PROTO}
+%: ${PROTOS}
+	@ true
+
+${PROTOS}:
+	${PYTHON} ${CLIENT} -p ${XCBGEN} ${PROTODIR}/$@.xml > $@_requests.hpp
+
+.PHONY: ${PROTOS}
