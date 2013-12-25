@@ -302,8 +302,10 @@ def _c_type_setup(self, name, postfix):
     self.c_end_name = _n(name + ('end',))
 
     self.c_request_name = _n(name)
-    self.c_checked_name = _n(name + ('checked',))
-    self.c_unchecked_name = _n(name + ('unchecked',))
+    self.c_checked_name = _n(name)
+    self.c_unchecked_name = _n(name)
+    # self.c_checked_name = _n(name + ('checked',))
+    # self.c_unchecked_name = _n(name + ('unchecked',))
     self.c_reply_name = _n(name + ('reply',))
     self.c_reply_type = _t(name + ('reply',))
     self.c_cookie_type = _t(name + ('cookie',))
@@ -314,8 +316,10 @@ def _c_type_setup(self, name, postfix):
     self.need_sizeof = False
 
     self.c_aux_name = _n(name + ('aux',))
-    self.c_aux_checked_name = _n(name + ('aux', 'checked'))
-    self.c_aux_unchecked_name = _n(name + ('aux', 'unchecked'))
+    self.c_aux_checked_name = _n(name)
+    self.c_aux_unchecked_name = _n(name)
+    # self.c_aux_checked_name = _n(name + ('aux', 'checked'))
+    # self.c_aux_unchecked_name = _n(name + ('aux', 'unchecked'))
     self.c_serialize_name = _n(name + ('serialize',))
     self.c_unserialize_name = _n(name + ('unserialize',))
     self.c_unpack_name = _n(name + ('unpack',))
@@ -2657,24 +2661,24 @@ def c_request(self, name):
         # Request prototypes
         has_fds = _c_reply_has_fds(self.reply)
         _c_request_helper(self, name, self.c_cookie_type, False, True, False, has_fds)
-        _c_request_helper(self, name, self.c_cookie_type, False, False, False, has_fds)
+        # _c_request_helper(self, name, self.c_cookie_type, False, False, False, has_fds)
         if self.need_aux:
             _c_request_helper(self, name, self.c_cookie_type, False, True, True, has_fds)
-            _c_request_helper(self, name, self.c_cookie_type, False, False, True, has_fds)
+            # _c_request_helper(self, name, self.c_cookie_type, False, False, True, has_fds)
         # Reply accessors
         '''
         _c_accessors(self.reply, name + ('reply',), name)
-        '''
         _c_reply(self, name)
         if has_fds:
             _c_reply_fds(self, name)
+        '''
     else:
         # Request prototypes
         _c_request_helper(self, name, 'xcb_void_cookie_t', True, False)
-        _c_request_helper(self, name, 'xcb_void_cookie_t', True, True)
+        # _c_request_helper(self, name, 'xcb_void_cookie_t', True, True)
         if self.need_aux:
             _c_request_helper(self, name, 'xcb_void_cookie_t', True, False, True)
-            _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
+            # _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
 
 
     # We generate the manpage afterwards because _c_type_setup has been called.
