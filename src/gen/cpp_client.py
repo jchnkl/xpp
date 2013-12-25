@@ -2686,6 +2686,7 @@ def c_request(self, name):
         if has_fds:
             _c_reply_fds(self, name)
         '''
+    '''
     else:
         # Request prototypes
         _c_request_helper(self, name, 'xcb_void_cookie_t', True, False)
@@ -2693,6 +2694,7 @@ def c_request(self, name):
         if self.need_aux:
             _c_request_helper(self, name, 'xcb_void_cookie_t', True, False, True)
             # _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
+    '''
 
 
     # We generate the manpage afterwards because _c_type_setup has been called.
