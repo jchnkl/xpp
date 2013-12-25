@@ -423,11 +423,11 @@ def _c_type_setup(self, name, postfix):
                 if self.is_switch or self.var_followed_by_fixed_fields:
                     _c_serialize('unserialize', self)
 
-        if self.need_sizeof:
-            if self.c_sizeof_name not in finished_sizeof:
-                if not module.namespace.is_ext or self.name[:2] == module.namespace.prefix:
-                    finished_sizeof.append(self.c_sizeof_name)
-                    _c_serialize('sizeof', self)
+        # if self.need_sizeof:
+        #     if self.c_sizeof_name not in finished_sizeof:
+        #         if not module.namespace.is_ext or self.name[:2] == module.namespace.prefix:
+        #             finished_sizeof.append(self.c_sizeof_name)
+        #             _c_serialize('sizeof', self)
 # _c_type_setup()
 
 def _c_helper_absolute_name(prefix, field=None):
