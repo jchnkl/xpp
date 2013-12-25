@@ -1911,14 +1911,14 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         if field.type.is_list and not field.type.member.fixed_size():
             list_with_var_size_elems = True
 
-    _hc(' ')
-    _hc('%s', cookie_type)
+    # Output starts here
+
+    _h(' ')
+    _h('%s', cookie_type)
 
     spacing = ' ' * (maxtypelen - len('xcb_connection_t'))
     comma = ',' if len(param_fields) else ');'
     _h('%s (xcb_connection_t%s *c  /**< */%s', func_name, spacing, comma)
-    comma = ',' if len(param_fields) else ')'
-    _c('%s (xcb_connection_t%s *c  /**< */%s', func_name, spacing, comma)
 
     func_spacing = ' ' * (len(func_name) + 2)
     count = len(param_fields)
@@ -1933,9 +1933,6 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         comma = ',' if count else ');'
         _h('%s%s%s %s%s  /**< */%s', func_spacing, c_field_const_type,
            spacing, c_pointer, field.c_field_name, comma)
-        comma = ',' if count else ')'
-        _c('%s%s%s %s%s  /**< */%s', func_spacing, c_field_const_type,
-           spacing, c_pointer, field.c_field_name, comma)
 
     count = 2
     if not self.var_followed_by_fixed_fields:
@@ -1946,145 +1943,6 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
                     # _serialize() keeps track of padding automatically
                     count -= 1
     dimension = count + 2
-
-    _c('{')
-    _c('    static const xcb_protocol_request_t xcb_req = {')
-    _c('        /* count */ %d,', count)
-    _c('        /* ext */ %s,', func_ext_global)
-    _c('        /* opcode */ %s,', self.c_request_name.upper())
-    _c('        /* isvoid */ %d', 1 if void else 0)
-    _c('    };')
-    _c('    ')
-
-    _c('    struct iovec xcb_parts[%d];', dimension)
-    _c('    %s xcb_ret;', func_cookie)
-    _c('    %s xcb_out;', self.c_type)
-    if self.var_followed_by_fixed_fields:
-        _c('    /* in the protocol description, variable size fields are followed by fixed size fields */')
-        _c('    void *xcb_aux = 0;')
-
-
-    for idx, f in enumerate(serial_fields):
-        if aux:
-            _c('    void *xcb_aux%d = 0;' % (idx))
-    if list_with_var_size_elems:
-        _c('    unsigned int i;')
-        _c('    unsigned int xcb_tmp_len;')
-        _c('    char *xcb_tmp;')
-    _c('    ')
-    # simple request call tracing
-#    _c('    printf("in function %s\\n");' % func_name)
-
-    # fixed size fields
-    for field in wire_fields:
-        if field.type.fixed_size():
-            if field.type.is_expr:
-                _c('    xcb_out.%s = %s;', field.c_field_name, _c_accessor_get_expr(field.type.expr, None))
-            elif field.type.is_pad:
-                if field.type.nmemb == 1:
-                    _c('    xcb_out.%s = 0;', field.c_field_name)
-                else:
-                    _c('    memset(xcb_out.%s, 0, %d);', field.c_field_name, field.type.nmemb)
-            else:
-                if field.type.nmemb == 1:
-                    _c('    xcb_out.%s = %s;', field.c_field_name, field.c_field_name)
-                else:
-                    _c('    memcpy(xcb_out.%s, %s, %d);', field.c_field_name, field.c_field_name, field.type.nmemb)
-
-    def get_serialize_args(type_obj, c_field_name, aux_var, context='serialize'):
-        serialize_args = get_serialize_params(context, type_obj,
-                                              c_field_name,
-                                              aux_var)[2]
-        return reduce(lambda x,y: "%s, %s" % (x,y), [a[2] for a in serialize_args])
-
-    # calls in order to free dyn. all. memory
-    free_calls = []
-
-    _c('    ')
-    if not self.var_followed_by_fixed_fields:
-        _c('    xcb_parts[2].iov_base = (char *) &xcb_out;')
-        _c('    xcb_parts[2].iov_len = sizeof(xcb_out);')
-        _c('    xcb_parts[3].iov_base = 0;')
-        _c('    xcb_parts[3].iov_len = -xcb_parts[2].iov_len & 3;')
-
-        count = 4
-
-        for field in param_fields:
-            if not field.type.fixed_size():
-                _c('    /* %s %s */', field.type.c_type, field.c_field_name)
-                # default: simple cast to char *
-                if not field.type.need_serialize and not field.type.need_sizeof:
-                    _c('    xcb_parts[%d].iov_base = (char *) %s;', count, field.c_field_name)
-                    if field.type.is_list:
-                        if field.type.member.fixed_size():
-                            _c('    xcb_parts[%d].iov_len = %s * sizeof(%s);', count,
-                               _c_accessor_get_expr(field.type.expr, None),
-                               field.type.member.c_wiretype)
-                        else:
-                            list_length = _c_accessor_get_expr(field.type.expr, None)
-
-                            length = ''
-                            _c("    xcb_parts[%d].iov_len = 0;" % count)
-                            _c("    xcb_tmp = (char *)%s;", field.c_field_name)
-                            _c("    for(i=0; i<%s; i++) {" % list_length)
-                            _c("        xcb_tmp_len = %s(xcb_tmp);" %
-                                              (field.type.c_sizeof_name))
-                            _c("        xcb_parts[%d].iov_len += xcb_tmp_len;" % count)
-                            _c("        xcb_tmp += xcb_tmp_len;")
-                            _c("    }")
-                    else:
-                        # not supposed to happen
-                        raise Exception("unhandled variable size field %s" % field.c_field_name)
-                else:
-                    if not aux:
-                        _c('    xcb_parts[%d].iov_base = (char *) %s;', count, field.c_field_name)
-                    idx = serial_fields.index(field)
-                    aux_var = '&xcb_aux%d' % idx
-                    context = 'serialize' if aux else 'sizeof'
-                    _c('    xcb_parts[%d].iov_len = ', count)
-                    if aux:
-                        serialize_args = get_serialize_args(field.type, aux_var, field.c_field_name, context)
-                        _c('      %s (%s);', field.type.c_serialize_name, serialize_args)
-                        _c('    xcb_parts[%d].iov_base = xcb_aux%d;' % (count, idx))
-                        free_calls.append('    free(xcb_aux%d);' % idx)
-                    else:
-                        serialize_args = get_serialize_args(field.type, field.c_field_name, aux_var, context)
-                        func_name = field.type.c_sizeof_name
-                        _c('      %s (%s);', func_name, serialize_args)
-
-                count += 1
-                if not (field.type.need_serialize or field.type.need_sizeof):
-                    # the _serialize() function keeps track of padding automatically
-                    _c('    xcb_parts[%d].iov_base = 0;', count)
-                    _c('    xcb_parts[%d].iov_len = -xcb_parts[%d].iov_len & 3;', count, count-1)
-                    count += 1
-
-    # elif self.var_followed_by_fixed_fields:
-    else:
-        _c('    xcb_parts[2].iov_base = (char *) &xcb_out;')
-        # request header: opcodes + length
-        _c('    xcb_parts[2].iov_len = 2*sizeof(uint8_t) + sizeof(uint16_t);')
-        count += 1
-        # call _serialize()
-        buffer_var = '&xcb_aux'
-        serialize_args = get_serialize_args(self, buffer_var, '&xcb_out', 'serialize')
-        _c('    xcb_parts[%d].iov_len = %s (%s);', count, self.c_serialize_name, serialize_args)
-        _c('    xcb_parts[%d].iov_base = (char *) xcb_aux;', count)
-        free_calls.append('    free(xcb_aux);')
-        # no padding necessary - _serialize() keeps track of padding automatically
-
-    _c('    ')
-    for field in param_fields:
-        if field.isfd:
-            _c('    xcb_send_fd(c, %s);', field.c_field_name)
-
-    _c('    xcb_ret.sequence = xcb_send_request(c, %s, xcb_parts + 2, &xcb_req);', func_flags)
-
-    # free dyn. all. data, if any
-    for f in free_calls:
-        _c(f)
-    _c('    return xcb_ret;')
-    _c('}')
 
 def _c_reply(self, name):
     '''
