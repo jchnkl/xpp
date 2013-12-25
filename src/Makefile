@@ -1,6 +1,6 @@
 CXXFLAGS=-std=c++11 -Wall -O3
 
-HPPSRCS=$(shell find . -name '*.hpp')
+HPPSRCS=$(shell find . -maxdepth 1 -name '*.hpp')
 HPPOBJS=$(HPPSRCS:%.hpp=%.hpp.gch)
 
 all: ${DIRS} ${HPPOBJS}
