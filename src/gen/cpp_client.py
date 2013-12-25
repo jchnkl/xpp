@@ -283,6 +283,7 @@ def _c_type_setup(self, name, postfix):
     Recurses into child fields and list member types.
     '''
     # Do all the various names in advance
+
     self.c_type = _t(name + postfix)
     self.c_wiretype = 'char' if self.c_type == 'void' else self.c_type
 
@@ -1877,6 +1878,8 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         func_name = self.c_checked_name if not aux else self.c_aux_checked_name
     if unchecked:
         func_name = self.c_unchecked_name if not aux else self.c_aux_unchecked_name
+
+    func_name = func_name.replace("xcb_", "")
 
     param_fields = []
     wire_fields = []
