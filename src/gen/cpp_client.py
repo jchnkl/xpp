@@ -1943,8 +1943,9 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         else: comma = ""
 
         append = c_field_const_type + c_pointer + field.c_field_name + comma
-        if (args_len + len(append) > 72):
-            args_len = len(args_indent)
+
+        if (args_len + len(append) > 79):
+            args_len = len(args_indent) + len(append)
             args += "\n" + args_indent + append
         else:
             args_len += len(append)
