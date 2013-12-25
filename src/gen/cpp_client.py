@@ -1911,6 +1911,7 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         if field.type.is_list and not field.type.member.fixed_size():
             list_with_var_size_elems = True
 
+    '''
     _h_setlevel(1)
     _c_setlevel(1)
     _h('')
@@ -1997,6 +1998,7 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     _hc(' ** @returns %s', cookie_type)
     _hc(' **')
     _hc(' *****************************************************************************/')
+    '''
     _hc(' ')
     _hc('%s', cookie_type)
 
@@ -2202,6 +2204,7 @@ def _c_reply(self, name):
 
     unserialize_fields = look_for_special_cases(self.reply)
 
+    '''
     _h('')
     _h('/**')
     _h(' * Return the reply')
@@ -2229,6 +2232,8 @@ def _c_reply(self, name):
     _hc(' ** @returns %s *', self.c_reply_type)
     _hc(' **')
     _hc(' *****************************************************************************/')
+    '''
+
     _hc(' ')
     _hc('%s *', self.c_reply_type)
     _hc('%s (xcb_connection_t%s  *c  /**< */,', self.c_reply_name, spacing1)
@@ -2855,7 +2860,11 @@ def c_request(self, name):
     '''
     Exported function that handles request declarations.
     '''
+
+
     _c_type_setup(self, name, ('request',))
+
+    '''
 
     if self.reply:
         # Cookie type declaration
@@ -2867,10 +2876,14 @@ def c_request(self, name):
     # Request structure declaration
     _c_complex(self)
 
+    '''
+
     if self.reply:
         _c_type_setup(self.reply, name, ('reply',))
         # Reply structure definition
+        '''
         _c_complex(self.reply)
+        '''
         # Request prototypes
         has_fds = _c_reply_has_fds(self.reply)
         _c_request_helper(self, name, self.c_cookie_type, False, True, False, has_fds)
@@ -2879,7 +2892,9 @@ def c_request(self, name):
             _c_request_helper(self, name, self.c_cookie_type, False, True, True, has_fds)
             _c_request_helper(self, name, self.c_cookie_type, False, False, True, has_fds)
         # Reply accessors
+        '''
         _c_accessors(self.reply, name + ('reply',), name)
+        '''
         _c_reply(self, name)
         if has_fds:
             _c_reply_fds(self, name)
@@ -2891,10 +2906,11 @@ def c_request(self, name):
             _c_request_helper(self, name, 'xcb_void_cookie_t', True, False, True)
             _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
 
+
     # We generate the manpage afterwards because _c_type_setup has been called.
     # TODO: what about aux helpers?
-    cookie_type = self.c_cookie_type if self.reply else 'xcb_void_cookie_t'
-    _man_request(self, name, cookie_type, not self.reply, False)
+    # cookie_type = self.c_cookie_type if self.reply else 'xcb_void_cookie_t'
+    # _man_request(self, name, cookie_type, not self.reply, False)
 
 def c_event(self, name):
     '''
@@ -2930,7 +2946,7 @@ def c_event(self, name):
         _h('')
         _h('typedef %s %s;', _t(self.name + ('event',)), _t(name + ('event',)))
 
-    _man_event(self, name)
+    # _man_event(self, name)
 
 def c_error(self, name):
     '''
@@ -2965,13 +2981,13 @@ def c_error(self, name):
 #           }
 
 # Must create an "output" dictionary before any xcbgen imports.
-output = {'open'    : lambda x: None,
-          'close'   : lambda x: None,
+output = {'open'    : c_open,
+          'close'   : c_close,
           'simple'  : lambda x, y: None,
           'enum'    : lambda x, y: None,
           'struct'  : lambda x, y: None,
           'union'   : lambda x, y: None,
-          'request' : lambda x, y: None,
+          'request' : c_request,
           'event'   : lambda x, y: None,
           'error'   : lambda x, y: None,
           }
