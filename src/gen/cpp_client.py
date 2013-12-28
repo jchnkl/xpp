@@ -1755,15 +1755,12 @@ def _c_accessors(self, name, base):
     '''
     # no accessors for switch itself -
     # switch always needs to be unpacked explicitly
-#    if self.is_switch:
-#        pass
-#    else:
-    if True:
-        for field in self.fields:
-            if field.type.is_list and not field.type.fixed_size():
-                _c_accessors_list(self, field)
-            elif field.prev_varsized_field is not None or not field.type.fixed_size():
-                _c_accessors_field(self, field)
+
+    for field in self.fields:
+        if field.type.is_list and not field.type.fixed_size():
+            _c_accessors_list(self, field)
+        elif field.prev_varsized_field is not None or not field.type.fixed_size():
+            _c_accessors_field(self, field)
 
 def c_simple(self, name):
     '''
