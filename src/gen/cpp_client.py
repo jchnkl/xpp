@@ -194,6 +194,18 @@ def c_open(self):
         _h('extern xcb_extension_t %s;', _ns.c_ext_global_name)
     '''
 
+    _h('#ifndef XPP_%s_HPP', _ns.header.upper())
+    _h('#define XPP_%s_HPP', _ns.header.upper())
+    _h('')
+    _h('#include "../macros.hpp"')
+    _h('#include "../request.hpp"')
+    _h('#include "../request_macros.hpp"')
+    _h('#include "../request_iterator.hpp"')
+    _h('')
+    _h('namespace xpp {')
+    _h('namespace request {')
+    _h('namespace %s {', _ns.header)
+
 def c_close(self):
     '''
     Exported function that handles module close.
@@ -217,6 +229,12 @@ def c_close(self):
     _h(' * @}')
     _h(' */')
     '''
+
+    _h('}; // namespace xpp')
+    _h('}; // namespace request')
+    _h('}; // namespace %s', _ns.header)
+    _h('')
+    _h('#endif // XPP_%s_HPP', _ns.header.upper())
 
     # Write header file
     # hfile = open('%s.h' % _ns.header, 'w')
