@@ -1784,12 +1784,15 @@ def _c_complex(self):
     Helper function for handling all structure types.
     Called for all structs, requests, replies, events, errors.
     '''
+
+    '''
     _h_setlevel(0)
     _h('')
     _h('/**')
     _h(' * @brief %s', self.c_type)
     _h(' **/')
     _h('typedef %s %s {', self.c_container, self.c_type)
+    '''
 
     struct_fields = []
     maxtypelen = 0
@@ -1815,10 +1818,11 @@ def _c_complex(self):
             # necessary for unserialize to work
             (self.is_switch and field.type.is_switch)):
             spacing = ' ' * (maxtypelen - len(field.c_field_type))
-            _h('%s    %s%s %s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
+            # _h('%s    %s%s %s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
+            _h("%s %s" % (field.field_type, field.field_name))
         else:
             spacing = ' ' * (maxtypelen - (len(field.c_field_type) + 1))
-            _h('%s    %s%s *%s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
+            # _h('%s    %s%s *%s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
 
     if not self.is_switch:
         for field in struct_fields:
@@ -1827,14 +1831,14 @@ def _c_complex(self):
         for b in self.bitcases:
             space = ''
             if b.type.has_name:
-                _h('    struct _%s {', b.c_field_name)
+                # _h('    struct _%s {', b.c_field_name)
                 space = '    '
             for field in b.type.fields:
                 _c_complex_field(self, field, space)
-            if b.type.has_name:
-                _h('    } %s;', b.c_field_name)
+            # if b.type.has_name:
+                # _h('    } %s;', b.c_field_name)
 
-    _h('} %s;', self.c_type)
+    # _h('} %s;', self.c_type)
 
 def c_struct(self, name):
     '''
