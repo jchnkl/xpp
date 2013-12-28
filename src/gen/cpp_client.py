@@ -1719,6 +1719,30 @@ def _c_accessors_list(self, field):
             sys.stderr.write('%s (const %s *R  /**< */);\n' % ( field.c_iterator_name,
                 c_type))
 
+    # if not (type(field.type.member) == Struct and field.type.name[1] == 'STR'):
+    if list.member.fixed_size():
+        # sys.stderr.write("HERE HERE HERE: %s, %s, %s, %s, %s, %s\n"
+        #         % (name, field.field_name, field.c_accessor_name,
+        #             _n(("","") + (field.field_name,)),
+        #             _n( (field.field_name,)),
+        c_request_name = self.c_request_name.replace("xcb_", "")
+        # c_request_name = self.c_request_name.replace(self.request_name + "_", "")
+        _h('REQUEST_FIXED_SIZE_ACCESSOR(%s, %s, %s)',
+                # MEMBER, TYPE, C_NAME
+                # _ext(_n_item(self.name[-1])),
+                _ext(_n_item(field.field_name)),
+                field.c_field_type,
+                _n(self.name))
+
+    else:
+        _h('REQUEST_VARIABLE_SIZE_ACCESSOR(%s, %s, %s, %s)',
+                # MEMBER, TYPE, ITER_NAME, C_NAME)
+                _ext(_n_item(field.field_name)),
+                field.c_field_type,
+                # _ext(field.field_type),
+                # _ext(_n_item(field.field_type)),
+                _n(field.type.name),
+                _n(self.name))
 
     sys.stderr.write('c_iterator_name:\n%s;\nc_end_name:\n%s\n' % (field.c_iterator_name,
         field.c_end_name))
