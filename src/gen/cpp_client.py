@@ -1902,8 +1902,6 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     if unchecked:
         func_name = self.c_unchecked_name if not aux else self.c_aux_unchecked_name
 
-    func_name = func_name.replace("xcb_", "")
-
     param_fields = []
     wire_fields = []
     maxtypelen = len('xcb_connection_t')
@@ -1932,9 +1930,10 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
 
     # Output starts here
 
-    _h('')
+    # _h('')
     # _h('%s', cookie_type)
 
+    # func_name = func_name.replace("xcb_", "")
     spacing = ' ' * (maxtypelen - len('xcb_connection_t'))
     comma = ',' if len(param_fields) else ');'
 
@@ -1976,10 +1975,14 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
 
         # args += c_field_const_type + c_pointer + field.c_field_name + comma
 
+    request_name = _ext(_n_item(self.name[-1]))
+    c_func_name = _n(self.name)
     if len(args) > 0:
-        _h('SIMPLE_REQUEST(%s, %s, %s)', _ns.header, func_name, args)
+        _h('REQUEST_CLASS_BODY(%s, %s, %s)', request_name, c_func_name, args)
+        # _h('SIMPLE_REQUEST(%s, %s, %s)', _ns.header, func_name, args)
     else:
-        _h('SIMPLE_REQUEST(%s, %s)', _ns.header, func_name)
+        # _h('SIMPLE_REQUEST(%s, %s)', _ns.header, func_name)
+        _h('REQUEST_CLASS_BODY(%s, %s)', request_name, c_func_name)
 
 
     count = 2
@@ -2679,11 +2682,10 @@ def c_request(self, name):
     Exported function that handles request declarations.
     '''
 
-
     _c_type_setup(self, name, ('request',))
 
-    '''
 
+    '''
     if self.reply:
         # Cookie type declaration
         _c_cookie(self, name)
