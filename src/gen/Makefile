@@ -2,7 +2,7 @@ PROTOS=xproto
 
 PYTHON=python2
 CLIENT=cpp_client.py
-XCBGEN=~/src/xcb/proto/xcbgen
+XCBGEN=~/src/xcb/proto
 PROTODIR=~/src/xcb/proto/src
 
 %: ${PROTOS}
