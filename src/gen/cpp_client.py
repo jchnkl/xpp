@@ -1977,12 +1977,46 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
 
     request_name = _ext(_n_item(self.name[-1]))
     c_func_name = _n(self.name)
+
     if len(args) > 0:
         _h('REQUEST_CLASS_BODY(%s, %s, %s)', request_name, c_func_name, args)
         # _h('SIMPLE_REQUEST(%s, %s, %s)', _ns.header, func_name, args)
     else:
         # _h('SIMPLE_REQUEST(%s, %s)', _ns.header, func_name)
         _h('REQUEST_CLASS_BODY(%s, %s)', request_name, c_func_name)
+
+    make_it_so = False
+    call_args = []
+    proto_args = []
+    count = len(param_fields)
+    for field in param_fields:
+        count = count - 1
+        c_field_const_type = field.c_field_const_type
+        c_pointer = field.c_pointer
+        if field.type.need_serialize and not aux:
+            c_field_const_type = "const void"
+            c_pointer = ' *'
+        comma = ', ' if count else ''
+
+        # call_args = c_field_const_type + c_pointer + field.c_field_name + comma
+
+        if c_field_const_type == 'const char':
+            make_it_so = True
+            call_args.pop() # remove 'name_len' parameter
+            proto_args.pop()
+            call = field.c_field_name + '.length(), ' + field.c_field_name + '.c_str()' + comma
+            proto = 'const std::string & ' + field.c_field_name + comma
+        else:
+            call = field.c_field_name + comma
+            proto = c_field_const_type + c_pointer + field.c_field_name + comma
+
+        call_args.append(call)
+        proto_args.append(proto)
+
+    if make_it_so:
+        _h('%s(xcb_connection_t * c, %s)', request_name, "".join(proto_args))
+        _h('  : %s(c, %s)', request_name, "".join(call_args))
+        _h('{}')
 
 
     count = 2
