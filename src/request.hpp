@@ -41,7 +41,7 @@ class request {
       return m_reply;
     }
 
-  private:
+  protected:
     xcb_connection_t * m_c;
     COOKIE m_cookie;
     std::shared_ptr<REPLY> m_reply;
