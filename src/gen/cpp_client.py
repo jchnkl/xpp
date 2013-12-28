@@ -2693,17 +2693,25 @@ def c_request(self, name):
     # Opcode define
     _c_opcode(name, self.opcode)
 
-    # Request structure declaration
-    _c_complex(self)
-
     '''
 
+    # Request structure declaration
+    # _c_complex(self)
+
+    request_name = _ext(_n_item(self.name[-1]))
+    c_func_name = _n(self.name)
+    # self.c_request_name.replace("xcb_", "")
     if self.reply:
+
+
+        _h('')
+        # _h('REQUEST_NS_HEAD(%s)', _ns.header)
+        _h('REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
+
         _c_type_setup(self.reply, name, ('reply',))
         # Reply structure definition
-        '''
-        _c_complex(self.reply)
-        '''
+        # _c_complex(self.reply)
+
         # Request prototypes
         has_fds = _c_reply_has_fds(self.reply)
         _c_request_helper(self, name, self.c_cookie_type, False, True, False, has_fds)
@@ -2712,12 +2720,17 @@ def c_request(self, name):
             _c_request_helper(self, name, self.c_cookie_type, False, True, True, has_fds)
             # _c_request_helper(self, name, self.c_cookie_type, False, False, True, has_fds)
         # Reply accessors
-        '''
         _c_accessors(self.reply, name + ('reply',), name)
+        '''
         _c_reply(self, name)
         if has_fds:
             _c_reply_fds(self, name)
         '''
+
+        _h('REQUEST_CLASS_TAIL(%s)', request_name)
+        # _h('REQUEST_NS_TAIL(%s)', _ns.header)
+        _h('')
+
     '''
     else:
         # Request prototypes
@@ -2727,7 +2740,6 @@ def c_request(self, name):
             _c_request_helper(self, name, 'xcb_void_cookie_t', True, False, True)
             # _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
     '''
-
 
     # We generate the manpage afterwards because _c_type_setup has been called.
     # TODO: what about aux helpers?
