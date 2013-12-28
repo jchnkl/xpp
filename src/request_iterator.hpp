@@ -123,6 +123,135 @@ class variable {
     std::shared_ptr<Reply> m_reply;
 }; // class variable
 
+template<typename Reply, xcb_str_iterator_t (*GetIterator)(const Reply *)>
+class variable<xcb_str_t,
+               Reply,
+               xcb_str_iterator_t,
+               &xcb_str_next,
+               &xcb_str_sizeof,
+               GetIterator>
+{
+  public:
+    class iterator {
+      public:
+        iterator(void) {}
+
+        bool operator==(const iterator & other)
+        {
+          return m_iterator.rem == other.m_iterator.rem;
+        }
+
+        bool operator!=(const iterator & other)
+        {
+          return ! (*this == other);
+        }
+
+        const std::string & operator*(void)
+        {
+          if (m_string.empty()) {
+            m_string = std::string((char *)xcb_str_name(m_iterator.data),
+                                   xcb_str_name_length(m_iterator.data));
+          }
+          return m_string;
+        }
+
+        const std::string * operator->(void)
+        {
+          if (m_string.empty()) {
+            m_string = std::string((char *)xcb_str_name(m_iterator.data),
+                                   xcb_str_name_length(m_iterator.data));
+          }
+          return &m_string;
+        }
+
+        // prefix
+        iterator & operator++(void)
+        {
+          m_lengths.push(xcb_str_sizeof(m_iterator.data));
+          xcb_str_next(&m_iterator);
+          m_string.clear();
+          return *this;
+        }
+
+        // postfix
+        iterator operator++(int)
+        {
+          auto copy = *this;
+          ++(*this);
+          return copy;
+        }
+
+        // prefix
+        iterator & operator--(void)
+        {
+          if (m_lengths.empty()) {
+            xcb_str_t * data = m_iterator.data;
+            xcb_str_t * prev = data - m_lengths.top();
+            m_lengths.pop();
+
+            m_iterator.index = (char *)m_iterator.data - (char *)prev;
+            m_iterator.data = prev;
+            ++m_iterator.rem;
+
+            m_string.clear();
+          }
+
+          return *this;
+        }
+
+        // postfix
+        iterator operator--(int)
+        {
+          auto copy = *this;
+          --(*this);
+          return copy;
+        }
+
+        static
+        iterator
+        begin(const std::shared_ptr<Reply> & reply)
+        {
+          return iterator(reply);
+        }
+
+        static
+        iterator
+        end(const std::shared_ptr<Reply> & reply)
+        {
+          auto it = iterator(reply);
+          it.m_iterator.rem = 0;
+          return it;
+        }
+
+      private:
+        std::shared_ptr<Reply> m_reply;
+        std::stack<std::size_t> m_lengths;
+        xcb_str_iterator_t m_iterator;
+        std::string m_string;
+
+        iterator(const std::shared_ptr<Reply> & reply)
+          : m_reply(reply), m_iterator(GetIterator(reply.get()))
+        {}
+    };
+
+    variable(const std::shared_ptr<Reply> & reply)
+      : m_reply(reply)
+    {}
+
+    iterator begin(void)
+    {
+      return iterator::begin(m_reply);
+    }
+
+    iterator end(void)
+    {
+      return iterator::end(m_reply);
+    }
+
+  private:
+    std::shared_ptr<Reply> m_reply;
+}; // class variable
+
 template<typename Data,
          typename Reply,
          Data * (*Accessor)(const Reply *),
