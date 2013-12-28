@@ -1607,143 +1607,123 @@ def _c_accessors_list(self, field):
         S_obj = parents[1]
 
     _h_setlevel(1)
-    _c_setlevel(1)
+
     if list.member.fixed_size():
         idx = 1 if switch_obj is not None else 0
-        _hc('')
-        _hc('')
-        _hc('/*****************************************************************************')
-        _hc(' **')
-        _hc(' ** %s * %s', field.c_field_type, field.c_accessor_name)
-        _hc(' ** ')
-        _hc(' ** @param %s', params[idx][0])
-        _hc(' ** @returns %s *', field.c_field_type)
-        _hc(' **')
-        _hc(' *****************************************************************************/')
-        _hc(' ')
-        _hc('%s *', field.c_field_type)
+        # _h('')
+        # _h('%s *', field.c_field_type)
 
-        _h('%s (%s  /**< */);', field.c_accessor_name, params[idx][0])
-        _c('%s (%s  /**< */)', field.c_accessor_name, params[idx][0])
+        # _h('%s (%s  /**< */);', field.c_accessor_name, params[idx][0])
+        sys.stderr.write('FIXED_SIZE\n');
+        sys.stderr.write('%s (%s  /**< */);\n' % (field.c_accessor_name,
+            params[idx][0]))
 
-        _c('{')
-        if switch_obj is not None:
-            _c('    return %s;', fields[field.c_field_name][0])
-        elif field.prev_varsized_field is None:
-            _c('    return (%s *) (R + 1);', field.c_field_type)
-        else:
-            _c('    xcb_generic_iterator_t prev = %s;', _c_iterator_get_end(field.prev_varsized_field, 'R'))
-            _c('    return (%s *) ((char *) prev.data + XCB_TYPE_PAD(%s, prev.index) + %d);',
-               field.c_field_type, type_pad_type(field.first_field_after_varsized.type.c_type), field.prev_varsized_offset)
-        _c('}')
+    else:
+        sys.stderr.write('VARIABLE_SIZE\n');
 
-    _hc('')
-    _hc('')
-    _hc('/*****************************************************************************')
-    _hc(' **')
-    _hc(' ** int %s', field.c_length_name)
-    _hc(' ** ')
-    _hc(' ** @param const %s *R', c_type)
-    _hc(' ** @returns int')
-    _hc(' **')
-    _hc(' *****************************************************************************/')
-    _hc(' ')
-    _hc('int')
+    # _h('')
+    # _h('int')
+    sys.stderr.write('int\n')
     if switch_obj is not None:
-        _hc('%s (const %s *R  /**< */,', field.c_length_name, R_obj.c_type)
+        # _h('%s (const %s *R  /**< */,', field.c_length_name, R_obj.c_type)
         spacing = ' '*(len(field.c_length_name)+2)
-        _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
-        _c('%sconst %s *S  /**< */)', spacing, S_obj.c_type)
+        # _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
         length = _c_accessor_get_expr(field.type.expr, fields)
     else:
-        _h('%s (const %s *R  /**< */);', field.c_length_name, c_type)
-        _c('%s (const %s *R  /**< */)', field.c_length_name, c_type)
+        # _h('%s (const %s *R  /**< */);', field.c_length_name, c_type)
         length = _c_accessor_get_expr(field.type.expr, fields)
-    _c('{')
-    _c('    return %s;', length)
-    _c('}')
+
+    sys.stderr.write(
+            "self.name      : %s\n"
+            "_ext(_n_item(^^: %s\n"
+            "type.name      : %s\n"
+            "is_simple      : %s\n"
+            "type           : %s\n"
+            "c_iterator_name: %s\n"
+            "c_iterator_type: %s\n"
+            "c_accessor_name: %s\n"
+            "c_field_name   : %s\n"
+            % (
+                self.name,
+                _ext(_n_item(self.name[-1])),
+                field.type.name,
+                field.type.member.is_simple,
+                field.type.member,
+                field.c_iterator_name,
+                field.c_iterator_type,
+                field.c_accessor_name,
+                field.c_field_name))
+
+        # _h('%s (const %s *R  /**< */);', field.c_accessor_name, c_type)
+
+    '''
+    if type(field.type.member) == Struct:
+        sys.stderr.write('>>> STRUCT!!!\n')
+        for f in field.type.member.fields:
+            sys.stderr.write('field: %s\n' % (f))
+        sys.stderr.write('<<< STRUCT!!!\n')
+    '''
 
     if field.type.member.is_simple:
-        _hc('')
-        _hc('')
-        _hc('/*****************************************************************************')
-        _hc(' **')
-        _hc(' ** xcb_generic_iterator_t %s', field.c_end_name)
-        _hc(' ** ')
-        _hc(' ** @param const %s *R', c_type)
-        _hc(' ** @returns xcb_generic_iterator_t')
-        _hc(' **')
-        _hc(' *****************************************************************************/')
-        _hc(' ')
-        _hc('xcb_generic_iterator_t')
+        # SimpleType needs a strong typedef for c++ iterator
+        # xcb_generic_iterator_t
+        # SimpleType: xcb _ ## NAME ## _end
+        # ^^ _end iterator
+
+        sys.stderr.write('SIMPLE\n')
+        # _h('')
+        # _h('xcb_generic_iterator_t')
+        sys.stderr.write('xcb_generic_iterator_t\n')
         if switch_obj is not None:
-            _hc('%s (const %s *R  /**< */,', field.c_end_name, R_obj.c_type)
+            # _h('%s (const %s *R  /**< */,', field.c_end_name, R_obj.c_type)
+            sys.stderr.write('SWITCH\n')
+            sys.stderr.write('%s (const %s *R  ,\n' % ( field.c_end_name, R_obj.c_type))
             spacing = ' '*(len(field.c_end_name)+2)
-            _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
-            _c('%sconst %s *S  /**< */)', spacing, S_obj.c_type)
+            # _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
+            sys.stderr.write('%sconst %s *S );\n' %( spacing, S_obj.c_type))
         else:
-            _h('%s (const %s *R  /**< */);', field.c_end_name, c_type)
-            _c('%s (const %s *R  /**< */)', field.c_end_name, c_type)
-        _c('{')
-        _c('    xcb_generic_iterator_t i;')
+            # _h('%s (const %s *R  /**< */);', field.c_end_name, c_type)
+            sys.stderr.write('NO SWITCH\n')
+            sys.stderr.write('%s (const %s *R  );\n' % ( field.c_end_name, c_type))
 
-        param = 'R' if switch_obj is None else 'S'
-        if switch_obj is not None:
-            _c('    i.data = %s + %s;', fields[field.c_field_name][0],
-               _c_accessor_get_expr(field.type.expr, fields))
-        elif field.prev_varsized_field == None:
-            _c('    i.data = ((%s *) (R + 1)) + (%s);', field.type.c_wiretype,
-               _c_accessor_get_expr(field.type.expr, fields))
-        else:
-            _c('    xcb_generic_iterator_t child = %s;',
-               _c_iterator_get_end(field.prev_varsized_field, 'R'))
-            _c('    i.data = ((%s *) child.data) + (%s);', field.type.c_wiretype,
-               _c_accessor_get_expr(field.type.expr, fields))
-
-        _c('    i.rem = 0;')
-        _c('    i.index = (char *) i.data - (char *) %s;', param)
-        _c('    return i;')
-        _c('}')
+        # param = 'R' if switch_obj is None else 'S'
+        # if switch_obj is not None:
+        #     _c_accessor_get_expr(field.type.expr, fields)
+        # elif field.prev_varsized_field == None:
+        #        _c_accessor_get_expr(field.type.expr, fields))
+        # else:
+        #        _c_iterator_get_end(field.prev_varsized_field, 'R'))
+        #        _c_accessor_get_expr(field.type.expr, fields))
 
     else:
-        _hc('')
-        _hc('')
-        _hc('/*****************************************************************************')
-        _hc(' **')
-        _hc(' ** %s %s', field.c_iterator_type, field.c_iterator_name)
-        _hc(' ** ')
-        _hc(' ** @param const %s *R', c_type)
-        _hc(' ** @returns %s', field.c_iterator_type)
-        _hc(' **')
-        _hc(' *****************************************************************************/')
-        _hc(' ')
+        # ComplexType can be used as is for iteration
+        # field.c_iterator_type (e.g. xcb_str_iterator_t)
+        # ComplexType: xcb _ ## NAME ## _iterator
+        # ^^ _iterator iterator
 
-        _hc('%s', field.c_iterator_type)
+        # _h('')
+        # _h('%s', field.c_iterator_type)
+        sys.stderr.write('NOT SIMPLE\n')
+        sys.stderr.write('%s\n' % ( field.c_iterator_type))
         if switch_obj is not None:
-            _hc('%s (const %s *R  /**< */,', field.c_iterator_name, R_obj.c_type)
+            # _h('%s (const %s *R  /**< */,', field.c_iterator_name, R_obj.c_type)
+            sys.stderr.write('SWITCH_OBJ\n')
+            sys.stderr.write('%s (const %s *R  /**< */,\n' % ( field.c_iterator_name,
+                R_obj.c_type))
             spacing = ' '*(len(field.c_iterator_name)+2)
-            _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
-            _c('%sconst %s *S  /**< */)', spacing, S_obj.c_type)
+            # _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
+            sys.stderr.write('%sconst %s *S /**< */);\n' % ( spacing, S_obj.c_type))
         else:
-            _h('%s (const %s *R  /**< */);', field.c_iterator_name, c_type)
-            _c('%s (const %s *R  /**< */)', field.c_iterator_name, c_type)
-        _c('{')
-        _c('    %s i;', field.c_iterator_type)
+            sys.stderr.write('NO SWITCH_OBJ\n')
+            # _h('%s (const %s *R  /**< */);', field.c_iterator_name, c_type)
+            sys.stderr.write('%s (const %s *R  /**< */);\n' % ( field.c_iterator_name,
+                c_type))
 
-        if switch_obj is not None:
-            _c('    i.data = %s;', fields[field.c_field_name][0])
-            _c('    i.rem = %s;', _c_accessor_get_expr(field.type.expr, fields))
-        elif field.prev_varsized_field == None:
-            _c('    i.data = (%s *) (R + 1);', field.c_field_type)
-        else:
-            _c('    xcb_generic_iterator_t prev = %s;', _c_iterator_get_end(field.prev_varsized_field, 'R'))
-            _c('    i.data = (%s *) ((char *) prev.data + XCB_TYPE_PAD(%s, prev.index));',
-               field.c_field_type, type_pad_type(field.c_field_type))
-        if switch_obj is None:
-            _c('    i.rem = %s;', _c_accessor_get_expr(field.type.expr, fields))
-        _c('    i.index = (char *) i.data - (char *) %s;', 'R' if switch_obj is None else 'S' )
-        _c('    return i;')
-        _c('}')
+
+    sys.stderr.write('c_iterator_name:\n%s;\nc_end_name:\n%s\n' % (field.c_iterator_name,
+        field.c_end_name))
+    sys.stderr.write('field: %s\n' % (field))
+    sys.stderr.write('\n\n')
 
 def _c_accessors(self, name, base):
     '''
