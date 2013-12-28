@@ -23,6 +23,20 @@ NAMESPACE::NAME::NAME(xcb_connection_t * c                                    \
   MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
 {}
 
+#define REQUEST_CLASS_HEAD(NAME, C_NAME)                                      \
+class NAME : public generic::request<C_NAME ## _cookie_t,                     \
+                                     C_NAME ## _reply_t,                      \
+                                     &C_NAME ## _reply>                       \
+{                                                                             \
+  public:
+
+#define REQUEST_CLASS_BODY(NAME, C_NAME, ...)                                 \
+  NAME(xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))       \
+    : request(c, &C_NAME MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))          \
+{}
+
+#define REQUEST_CLASS_TAIL(NAME)                                              \
+}; /* class NAME */
 
 #define ITERATOR_REQUEST_PROTO_COMMON(NAME, MEMBER, TYPE, ...)\
 class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
