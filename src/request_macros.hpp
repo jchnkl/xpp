@@ -35,6 +35,36 @@ class NAME : public generic::request<C_NAME ## _cookie_t,                     \
     : request(c, &C_NAME MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))          \
 {}
 
+#define REQUEST_FIXED_SIZE_ACCESSOR(MEMBER, TYPE, C_NAME)                     \
+  container::fixed<TYPE,                                                      \
+                   C_NAME ## _reply_t,                                        \
+                   C_NAME ## _ ## MEMBER,                                     \
+                   C_NAME ## _ ## MEMBER ## _length>                          \
+  MEMBER(void)                                                                \
+  {                                                                           \
+    return container::fixed<TYPE,                                             \
+                            C_NAME ## _reply_t,                               \
+                            C_NAME ## _ ## MEMBER,                            \
+                            C_NAME ## _ ## MEMBER ## _length>(this->get());   \
+  }
+
+#define REQUEST_VARIABLE_SIZE_ACCESSOR(MEMBER, TYPE, ITER_NAME, C_NAME)       \
+  container::variable<TYPE,                                                   \
+                   C_NAME ## _reply_t,                                        \
+                   ITER_NAME ## _iterator_t,                                  \
+                   &ITER_NAME ## _next,                                       \
+                   &ITER_NAME ## _sizeof,                                     \
+                   &C_NAME ## _ ## MEMBER ## _iterator>                       \
+  MEMBER(void)                                                                \
+  {                                                                           \
+    return container::variable<TYPE,                                          \
+                   C_NAME ## _reply_t,                                        \
+                   ITER_NAME ## _iterator_t,                                  \
+                   &ITER_NAME ## _next,                                       \
+                   &ITER_NAME ## _sizeof,                                     \
+                   &C_NAME ## _ ## MEMBER ## _iterator>(this->get());         \
+  }
+
 #define REQUEST_CLASS_TAIL(NAME)                                              \
 }; /* class NAME */
 
