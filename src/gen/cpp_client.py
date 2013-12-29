@@ -161,41 +161,6 @@ def c_open(self):
     _h_setlevel(0)
     _c_setlevel(0)
 
-    '''
-    _h('/*')
-    _h(' * This file generated automatically from %s by c_client.py.', _ns.file)
-    _h(' * Edit at your peril.')
-    _h(' */')
-    _h('')
-
-    _h('/**')
-    _h(' * @defgroup XCB_%s_API XCB %s API', _ns.ext_name, _ns.ext_name)
-    _h(' * @brief %s XCB Protocol Implementation.', _ns.ext_name)
-    _h(' * @{')
-    _h(' **/')
-    _h('')
-    _h('#ifndef __%s_H', _ns.header.upper())
-    _h('#define __%s_H', _ns.header.upper())
-    _h('')
-    _h('#include "xcb.h"')
-
-    if _ns.is_ext:
-        for (n, h) in self.imports:
-            _hc('#include "%s.h"', h)
-
-    _h('')
-    _h('#ifdef __cplusplus')
-    _h('extern "C" {')
-    _h('#endif')
-
-    if _ns.is_ext:
-        _h('')
-        _h('#define XCB_%s_MAJOR_VERSION %s', _ns.ext_name.upper(), _ns.major_version)
-        _h('#define XCB_%s_MINOR_VERSION %s', _ns.ext_name.upper(), _ns.minor_version)
-        _h('  ') #XXX
-        _h('extern xcb_extension_t %s;', _ns.c_ext_global_name)
-    '''
-
     _h('#ifndef XPP_%s_HPP', _ns.header.upper())
     _h('#define XPP_%s_HPP', _ns.header.upper())
     _h('')
@@ -212,24 +177,6 @@ def c_close(self):
     Exported function that handles module close.
     Writes out all the stored content lines, then closes the files.
     '''
-    _h_setlevel(2)
-    _c_setlevel(2)
-
-    '''
-    _hc('')
-
-    _h('')
-    _h('#ifdef __cplusplus')
-    _h('}')
-    _h('#endif')
-
-    _h('')
-    _h('#endif')
-    _h('')
-    _h('/**')
-    _h(' * @}')
-    _h(' */')
-    '''
 
     _h('}; // namespace xpp')
     _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
@@ -237,24 +184,12 @@ def c_close(self):
     _h('#endif // XPP_%s_HPP', _ns.header.upper())
 
     # Write header file
-    # hfile = open('%s.h' % _ns.header, 'w')
     hfile = sys.stdout
     for list in _hlines:
         for line in list:
             hfile.write(line)
             hfile.write('\n')
     # hfile.close()
-
-    # Write source file
-    # cfile = open('%s.c' % _ns.header, 'w')
-
-    # cfile = sys.stdout
-    # for list in _clines:
-    #     for line in list:
-    #         cfile.write(line)
-    #         cfile.write('\n')
-
-    # cfile.close()
 
 def build_collision_table():
     global namecount
