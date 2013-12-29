@@ -2651,17 +2651,6 @@ def c_request(self, name):
 
     _c_type_setup(self, name, ('request',))
 
-
-    '''
-    if self.reply:
-        # Cookie type declaration
-        _c_cookie(self, name)
-
-    # Opcode define
-    _c_opcode(name, self.opcode)
-
-    '''
-
     # Request structure declaration
     # _c_complex(self)
 
