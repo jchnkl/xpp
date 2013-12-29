@@ -17,6 +17,8 @@ _cname_special_cases = {'DECnet':'decnet'}
 
 _extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
 
+_namespace = { "xproto" : "core" }
+
 _cplusplus_annoyances = {'class' : '_class',
                          'new'   : '_new',
                          'delete': '_delete'}
@@ -203,8 +205,7 @@ def c_open(self):
     _h('#include "../request_iterator.hpp"')
     _h('')
     _h('namespace xpp {')
-    _h('namespace request {')
-    _h('namespace %s {', _ns.header)
+    _h('namespace %s {', _namespace.get(_ns.header, _ns.header))
 
 def c_close(self):
     '''
@@ -231,8 +232,7 @@ def c_close(self):
     '''
 
     _h('}; // namespace xpp')
-    _h('}; // namespace request')
-    _h('}; // namespace %s', _ns.header)
+    _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
     _h('')
     _h('#endif // XPP_%s_HPP', _ns.header.upper())
 
@@ -2707,7 +2707,7 @@ def c_request(self, name):
 
 
         _h('')
-        # _h('REQUEST_NS_HEAD(%s)', _ns.header)
+        _h('NS_HEAD(request)')
         _h('REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
 
         _c_type_setup(self.reply, name, ('reply',))
@@ -2730,7 +2730,7 @@ def c_request(self, name):
         '''
 
         _h('REQUEST_CLASS_TAIL(%s)', request_name)
-        # _h('REQUEST_NS_TAIL(%s)', _ns.header)
+        _h('NS_TAIL(request)')
         _h('')
 
     '''
