@@ -1866,11 +1866,16 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
 
     # Output starts here
 
+    all_args = []
+    skipped_args = []
+    not_skipped_args = []
+
     wrap_string = False
     call_args = []
     proto_args = []
+    skipped_call_args = []
+    skipped_proto_args = []
 
-    args = ""
     args_indent = '               '
     args_len = len(args_indent) + len(_ns.header) + len(func_name) + 4
 
@@ -1878,33 +1883,44 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     for field in param_fields:
         count = count - 1
         c_field_const_type = field.c_field_const_type
-        c_pointer = field.c_pointer
+
+        if field.c_pointer == " ": c_pointer = ""
+        else: c_pointer = " " + field.c_pointer
+
         if field.type.need_serialize and not aux:
             c_field_const_type = "const void"
             c_pointer = ' *'
 
         comma = ', ' if count else ''
-        if c_pointer == " ": c_pointer = ", "
-        else: c_pointer += ", "
 
-        append = c_field_const_type + c_pointer + field.c_field_name + comma
+        arg_type = c_field_const_type + c_pointer
+        arg_name = field.c_field_name
+        arg = arg_type + ", " + arg_name
+        all_args.append(arg)
 
-        if (args_len + len(append) > 79):
-            args_len = len(args_indent) + len(append)
-            args += "\n" + args_indent + append
+        skip = field.c_field_const_type == "xcb_timestamp_t" \
+                and field.c_field_name == "time"
+        if skip:
+            skip_type = c_field_const_type
+            skip_name = field.c_field_name + " = XCB_TIME_CURRENT_TIME"
+            skipped_args.append(skip_type + ", " + skip_name)
         else:
-            args_len += len(append)
-            args += append
+            not_skipped_args.append(arg)
 
         if c_field_const_type == 'const char':
             wrap_string = True
             call_args.pop() # remove 'name_len' parameter
             proto_args.pop()
-            call = field.c_field_name + '.length(), ' + field.c_field_name + '.c_str()' + comma
-            proto = 'const std::string & ' + field.c_field_name + comma
+            call = field.c_field_name + '.length(), ' + field.c_field_name + '.c_str()'
+            proto = 'const std::string & ' + field.c_field_name
+
         else:
-            call = field.c_field_name + comma
-            proto = c_field_const_type + c_pointer + field.c_field_name + comma
+            call = field.c_field_name
+            proto = arg_type + " " + arg_name
+
+        if skip:
+            skipped_call_args.append(field.c_field_name)
+            skipped_proto_args.append(skip_type + " " + skip_name)
 
         call_args.append(call)
         proto_args.append(proto)
@@ -1912,14 +1928,27 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     request_name = _ext(_n_item(self.name[-1]))
     c_func_name = _n(self.name)
 
-    if len(args) > 0:
-        _h('REQUEST_CLASS_BODY(%s, %s, %s)', request_name, c_func_name, args)
+    reordered_args = []
+    if len(skipped_args) > 0:
+        reordered_args = not_skipped_args + skipped_args
     else:
-        _h('REQUEST_CLASS_BODY(%s, %s)', request_name, c_func_name)
+        reordered_args = all_args
+
+    if len(all_args) == 0:
+        _h('REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
+        _h('REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
+    else:
+        _h('REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', request_name, c_func_name,
+                ", ".join(reordered_args))
+        _h('REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', request_name, c_func_name,
+                ", ".join(all_args))
+
+    call_args += skipped_call_args
+    proto_args += skipped_proto_args
 
     if wrap_string:
-        _h('%s(xcb_connection_t * c, %s)', request_name, "".join(proto_args))
-        _h('  : %s(c, %s)', request_name, "".join(call_args))
+        _h('%s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
+        _h('  : %s(c, %s)', request_name, ", ".join(call_args))
         _h('{}')
 
 
