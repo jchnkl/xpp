@@ -19,6 +19,24 @@ _extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
 
 _namespace = { "xproto" : "core" }
 
+_type_objects = { "DRAWABLE": []
+                , "WINDOW": []
+                , "PIXMAP": []
+                , "ATOM": []
+                , "CURSOR": []
+                , "FONT": []
+                , "GCCONTEXT": []
+                , "FONTABLE": []
+                # , "KEYCODE" : []
+
+                # >>> RANDR
+                , "MODE" : []
+                , "CRTC" : []
+                , "OUTPUT" : []
+                , "PROVIDER" : []
+                # <<< RANDR
+                }
+
 _cplusplus_annoyances = {'class' : '_class',
                          'new'   : '_new',
                          'delete': '_delete'}
