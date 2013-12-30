@@ -1819,6 +1819,118 @@ def c_union(self, name):
     _c_complex(self)
     _c_iterator(self, name)
 
+def _c_void_request_helper(self, name):
+    '''
+    Declares a request function.
+    '''
+
+    request_name = _ext(_n_item(self.name[-1]))
+    c_func_name = _n(self.name)
+
+    param_fields = []
+
+    for field in self.fields:
+        if field.visible:
+            param_fields.append(field)
+
+    for field in param_fields:
+        c_field_const_type = field.c_field_const_type
+        if field.type.need_serialize:
+            c_field_const_type = "const void"
+
+    all_args = []
+    skipped_args = []
+    not_skipped_args = []
+
+    wrap_string = False
+    call_args = []
+    proto_args = []
+    skipped_call_args = []
+    skipped_proto_args = []
+
+    is_obj_func = False
+    if (len(param_fields) > 0 and len(param_fields[0].field_type) > 1):
+        # e.g.: DRAWABLE in { "DRAWABLE" : [], .. }
+        obj_name = param_fields[0].field_type[-1]
+        is_obj_func = obj_name in  _type_objects
+
+        # sys.stderr.write("name: %s, type: %s\n" %  (field.type_name, field.type.name))
+        # sys.stderr.write("name: %s, type: %s\n" %  (field.field_name, field.field_type))
+        # sys.stderr.write("param_fields[0]: " %  param_fields[0])
+
+    if is_obj_func:
+        sys.stderr.write("OBJECT FUNCTION: %s in %s\n" %  (request_name, obj_name))
+
+    for field in param_fields:
+        c_field_const_type = field.c_field_const_type
+
+        if field.c_pointer == " ": c_pointer = ""
+        else: c_pointer = " " + field.c_pointer
+
+        if field.type.need_serialize:
+            c_field_const_type = "const void"
+            c_pointer = ' *'
+
+        arg_type = c_field_const_type + c_pointer
+        arg_name = field.c_field_name
+        arg = arg_type + ", " + arg_name
+        all_args.append(arg)
+
+        skip = field.c_field_const_type == "xcb_timestamp_t" \
+                and field.c_field_name == "time"
+        if skip:
+            skip_type = c_field_const_type
+            skip_name = field.c_field_name + " = XCB_TIME_CURRENT_TIME"
+            skipped_args.append(skip_type + ", " + skip_name)
+        else:
+            not_skipped_args.append(arg)
+
+        if (c_field_const_type == 'const char'
+                and call_args[-1] == field.c_field_name + "_len"):
+            wrap_string = True
+            call_args.pop() # remove 'name_len' parameter
+            proto_args.pop()
+            call = field.c_field_name + '.length(), ' + field.c_field_name + '.c_str()'
+            proto = 'const std::string & ' + field.c_field_name
+
+        else:
+            call = field.c_field_name
+            proto = arg_type + " " + arg_name
+
+        if skip:
+            skipped_call_args.append(field.c_field_name)
+            skipped_proto_args.append(skip_type + " " + skip_name)
+
+        call_args.append(call)
+        proto_args.append(proto)
+
+    request_name = _ext(_n_item(self.name[-1]))
+    c_func_name = _n(self.name)
+
+    reordered_args = []
+    if len(skipped_args) > 0:
+        reordered_args = not_skipped_args + skipped_args
+    else:
+        reordered_args = all_args
+
+    _h('VOID_REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
+    if len(all_args) == 0:
+        _h('VOID_REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
+        _h('VOID_REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
+    else:
+        _h('VOID_REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', request_name, c_func_name,
+                ", ".join(reordered_args))
+        _h('VOID_REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', request_name, c_func_name,
+                ", ".join(all_args))
+
+    call_args += skipped_call_args
+    proto_args += skipped_proto_args
+
+    if wrap_string:
+        _h('%s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
+        _h('  : %s(c, %s)', request_name, ", ".join(call_args))
+        _h('{}')
+
 def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_fds=False):
     '''
     Declares a request function.
