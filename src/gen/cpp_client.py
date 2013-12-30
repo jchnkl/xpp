@@ -1819,7 +1819,7 @@ def c_union(self, name):
     _c_complex(self)
     _c_iterator(self, name)
 
-def _c_void_request_helper(self, name):
+def _cpp_request_helper(self, name, is_void):
     '''
     Declares a request function.
     '''
@@ -1853,10 +1853,6 @@ def _c_void_request_helper(self, name):
         # e.g.: DRAWABLE in { "DRAWABLE" : [], .. }
         obj_name = param_fields[0].field_type[-1]
         is_obj_func = obj_name in  _type_objects
-
-        # sys.stderr.write("name: %s, type: %s\n" %  (field.type_name, field.type.name))
-        # sys.stderr.write("name: %s, type: %s\n" %  (field.field_name, field.field_type))
-        # sys.stderr.write("param_fields[0]: " %  param_fields[0])
 
     if is_obj_func:
         sys.stderr.write("OBJECT FUNCTION: %s in %s\n" %  (request_name, obj_name))
@@ -1913,178 +1909,17 @@ def _c_void_request_helper(self, name):
     else:
         reordered_args = all_args
 
-    _h('VOID_REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
+    prefix = "VOID" if is_void else "REPLY"
+
+    _h(prefix + '_REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
     if len(all_args) == 0:
-        _h('VOID_REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
-        _h('VOID_REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
+        _h(prefix + '_REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
+        _h(prefix + '_REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
     else:
-        _h('VOID_REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', request_name, c_func_name,
-                ", ".join(reordered_args))
-        _h('VOID_REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', request_name, c_func_name,
-                ", ".join(all_args))
-
-    call_args += skipped_call_args
-    proto_args += skipped_proto_args
-
-    if wrap_string:
-        _h('%s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
-        _h('  : %s(c, %s)', request_name, ", ".join(call_args))
-        _h('{}')
-
-def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_fds=False):
-    '''
-    Declares a request function.
-    '''
-
-    # Four stunningly confusing possibilities here:
-    #
-    #   Void            Non-void
-    # ------------------------------
-    # "req"            "req"
-    # 0 flag           CHECKED flag   Normal Mode
-    # void_cookie      req_cookie
-    # ------------------------------
-    # "req_checked"    "req_unchecked"
-    # CHECKED flag     0 flag         Abnormal Mode
-    # void_cookie      req_cookie
-    # ------------------------------
-
-
-    request_name = _ext(_n_item(self.name[-1]))
-    c_func_name = _n(self.name)
-
-    # Whether we are _checked or _unchecked
-    checked = void and not regular
-    unchecked = not void and not regular
-
-    # What kind of cookie we return
-    func_cookie = 'xcb_void_cookie_t' if void else self.c_cookie_type
-
-    # What flag is passed to xcb_request
-    func_flags = '0' if (void and regular) or (not void and not regular) else 'XCB_REQUEST_CHECKED'
-
-    if reply_fds:
-        if func_flags == '0':
-            func_flags = 'XCB_REQUEST_REPLY_FDS'
-        else:
-            func_flags = func_flags + '|XCB_REQUEST_REPLY_FDS'
-
-    # Global extension id variable or NULL for xproto
-    func_ext_global = '&' + _ns.c_ext_global_name if _ns.is_ext else '0'
-
-    # What our function name is
-    func_name = self.c_request_name if not aux else self.c_aux_name
-    if checked:
-        func_name = self.c_checked_name if not aux else self.c_aux_checked_name
-    if unchecked:
-        func_name = self.c_unchecked_name if not aux else self.c_aux_unchecked_name
-
-    param_fields = []
-    wire_fields = []
-    maxtypelen = len('xcb_connection_t')
-    serial_fields = []
-    # special case: list with variable size elements
-    list_with_var_size_elems = False
-
-    for field in self.fields:
-        if field.visible:
-            # The field should appear as a call parameter
-            param_fields.append(field)
-        if field.wire and not field.auto:
-            # We need to set the field up in the structure
-            wire_fields.append(field)
-        if field.type.need_serialize or field.type.need_sizeof:
-            serial_fields.append(field)
-
-    for field in param_fields:
-        c_field_const_type = field.c_field_const_type
-        if field.type.need_serialize and not aux:
-            c_field_const_type = "const void"
-        if len(c_field_const_type) > maxtypelen:
-            maxtypelen = len(c_field_const_type)
-        if field.type.is_list and not field.type.member.fixed_size():
-            list_with_var_size_elems = True
-
-    # Output starts here
-
-    all_args = []
-    skipped_args = []
-    not_skipped_args = []
-
-    wrap_string = False
-    call_args = []
-    proto_args = []
-    skipped_call_args = []
-    skipped_proto_args = []
-
-    args_indent = '               '
-    args_len = len(args_indent) + len(_ns.header) + len(func_name) + 4
-
-    count = len(param_fields)
-    for field in param_fields:
-        count = count - 1
-        c_field_const_type = field.c_field_const_type
-
-        if field.c_pointer == " ": c_pointer = ""
-        else: c_pointer = " " + field.c_pointer
-
-        if field.type.need_serialize and not aux:
-            c_field_const_type = "const void"
-            c_pointer = ' *'
-
-        comma = ', ' if count else ''
-
-        arg_type = c_field_const_type + c_pointer
-        arg_name = field.c_field_name
-        arg = arg_type + ", " + arg_name
-        all_args.append(arg)
-
-        skip = field.c_field_const_type == "xcb_timestamp_t" \
-                and field.c_field_name == "time"
-        if skip:
-            skip_type = c_field_const_type
-            skip_name = field.c_field_name + " = XCB_TIME_CURRENT_TIME"
-            skipped_args.append(skip_type + ", " + skip_name)
-        else:
-            not_skipped_args.append(arg)
-
-        if (c_field_const_type == 'const char'
-                and call_args[-1] == field.c_field_name + "_len"):
-            wrap_string = True
-            call_args.pop() # remove 'name_len' parameter
-            proto_args.pop()
-            call = field.c_field_name + '.length(), ' + field.c_field_name + '.c_str()'
-            proto = 'const std::string & ' + field.c_field_name
-
-        else:
-            call = field.c_field_name
-            proto = arg_type + " " + arg_name
-
-        if skip:
-            skipped_call_args.append(field.c_field_name)
-            skipped_proto_args.append(skip_type + " " + skip_name)
-
-        call_args.append(call)
-        proto_args.append(proto)
-
-    request_name = _ext(_n_item(self.name[-1]))
-    c_func_name = _n(self.name)
-
-    reordered_args = []
-    if len(skipped_args) > 0:
-        reordered_args = not_skipped_args + skipped_args
-    else:
-        reordered_args = all_args
-
-    _h('REPLY_REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
-    if len(all_args) == 0:
-        _h('REPLY_REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
-        _h('REPLY_REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
-    else:
-        _h('REPLY_REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', request_name, c_func_name,
-                ", ".join(reordered_args))
-        _h('REPLY_REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', request_name, c_func_name,
-                ", ".join(all_args))
+        _h(prefix + '_REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', \
+                request_name, c_func_name, ", ".join(reordered_args))
+        _h(prefix + '_REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', \
+                request_name, c_func_name, ", ".join(all_args))
 
     call_args += skipped_call_args
     proto_args += skipped_proto_args
@@ -2801,8 +2636,7 @@ def c_request(self, name):
         # _c_complex(self.reply)
 
         # Request prototypes
-        has_fds = _c_reply_has_fds(self.reply)
-        _c_request_helper(self, name, self.c_cookie_type, False, True, False, has_fds)
+        _cpp_request_helper(self, name, False)
 
         # Reply accessors
         _c_accessors(self.reply, name + ('reply',), name)
@@ -2814,7 +2648,7 @@ def c_request(self, name):
 
     else:
         # Request prototypes
-        _c_void_request_helper(self, name)
+        _cpp_request_helper(self, name, True)
 
     _h('REQUEST_CLASS_TAIL(%s)', request_name)
     _h('NS_TAIL(request)')
