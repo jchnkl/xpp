@@ -9,6 +9,11 @@ import errno
 import time
 import re
 
+from templates import ns_head, \
+                      ns_tail, \
+                      void_requests, \
+                      reply_requests
+
 # Jump to the bottom of this file for the main routine
 
 # Some hacks to make the API more readable, and to keep backwards compability
@@ -1909,25 +1914,26 @@ def _cpp_request_helper(self, name, is_void):
     else:
         reordered_args = all_args
 
-    prefix = "VOID" if is_void else "REPLY"
+    all_args = map(lambda x: x.split(", "), all_args)
+    reordered_args = map(lambda x: x.split(", "), reordered_args)
 
-    _h(prefix + '_REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
+    req = void_requests if is_void else reply_requests
+
+    _h(req['head'](request_name, c_func_name, ""))
     if len(all_args) == 0:
-        _h(prefix + '_REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
-        _h(prefix + '_REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
+        _h(req['class'](request_name, c_func_name, ""))
+        _h(req['body'](request_name, c_func_name, ""))
     else:
-        _h(prefix + '_REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', \
-                request_name, c_func_name, ", ".join(reordered_args))
-        _h(prefix + '_REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', \
-                request_name, c_func_name, ", ".join(all_args))
+        _h(req['class'](request_name, c_func_name, reordered_args))
+        _h(req['body'](request_name, c_func_name, all_args))
 
     call_args += skipped_call_args
     proto_args += skipped_proto_args
 
     if wrap_string:
-        _h('%s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
-        _h('  : %s(c, %s)', request_name, ", ".join(call_args))
-        _h('{}')
+        _h('    %s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
+        _h('      : %s(c, %s)', request_name, ", ".join(call_args))
+        _h('    {}')
 
 def _c_reply(self, name):
     '''
@@ -2625,11 +2631,10 @@ def c_request(self, name):
     c_func_name = _n(self.name)
 
     _h('')
-    _h('NS_HEAD(request)')
+    _h(ns_head("request"))
 
     # self.c_request_name.replace("xcb_", "")
     if self.reply:
-
 
         _c_type_setup(self.reply, name, ('reply',))
         # Reply structure definition
@@ -2640,18 +2645,13 @@ def c_request(self, name):
 
         # Reply accessors
         _c_accessors(self.reply, name + ('reply',), name)
-        '''
-        _c_reply(self, name)
-        if has_fds:
-            _c_reply_fds(self, name)
-        '''
 
     else:
         # Request prototypes
         _cpp_request_helper(self, name, True)
 
-    _h('REQUEST_CLASS_TAIL(%s)', request_name)
-    _h('NS_TAIL(request)')
+    _h(void_requests['tail'](request_name, "", ""))
+    _h(ns_tail("request"))
     _h('')
 
     # We generate the manpage afterwards because _c_type_setup has been called.
