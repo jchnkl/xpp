@@ -1,3 +1,9 @@
+/*
+ * vim macro for aligning backslashes:
+ * f\:exe ":normal i" . repeat(' ', 79-col("."))j0
+ * save to "a to repeat: @f@a
+ */
+
 #ifndef X_REQUEST_MACROS_HPP
 #define X_REQUEST_MACROS_HPP
 
@@ -23,50 +29,104 @@ NAMESPACE::NAME::NAME(xcb_connection_t * c                                    \
   MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))                                 \
 {}
 
-#define REQUEST_CLASS_HEAD(NAME, C_NAME)                                      \
+#define NS_HEAD(NAME)                                                         \
+namespace NAME {
+
+#define NS_TAIL(NAME)                                                         \
+}; /* NAME */
+
+#define REPLY_REQUEST_CLASS_HEAD(NAME, C_NAME)                                \
 class NAME : public generic::request<C_NAME ## _cookie_t,                     \
                                      C_NAME ## _reply_t,                      \
                                      &C_NAME ## _reply>                       \
 {                                                                             \
   public:
 
-#define REQUEST_CLASS_BODY(NAME, C_NAME, ...)                                 \
-  NAME(xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))       \
+#define REPLY_REQUEST_CLASS_BODY_CLASS(NAME, C_NAME, ...)                     \
+  NAME(xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))
+
+#define REPLY_REQUEST_CLASS_BODY_REQUEST(NAME, C_NAME, ...)                   \
     : request(c, &C_NAME MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__))          \
 {}
 
-#define REQUEST_FIXED_SIZE_ACCESSOR(MEMBER, TYPE, C_NAME)                     \
-  container::fixed<TYPE,                                                      \
-                   C_NAME ## _reply_t,                                        \
-                   C_NAME ## _ ## MEMBER,                                     \
-                   C_NAME ## _ ## MEMBER ## _length>                          \
-  MEMBER(void)                                                                \
-  {                                                                           \
-    return container::fixed<TYPE,                                             \
-                            C_NAME ## _reply_t,                               \
-                            C_NAME ## _ ## MEMBER,                            \
-                            C_NAME ## _ ## MEMBER ## _length>(this->get());   \
-  }
 
-#define REQUEST_VARIABLE_SIZE_ACCESSOR(MEMBER, TYPE, ITER_NAME, C_NAME)       \
-  container::variable<TYPE,                                                   \
-                   C_NAME ## _reply_t,                                        \
-                   ITER_NAME ## _iterator_t,                                  \
-                   &ITER_NAME ## _next,                                       \
-                   &ITER_NAME ## _sizeof,                                     \
-                   &C_NAME ## _ ## MEMBER ## _iterator>                       \
-  MEMBER(void)                                                                \
-  {                                                                           \
-    return container::variable<TYPE,                                          \
-                   C_NAME ## _reply_t,                                        \
-                   ITER_NAME ## _iterator_t,                                  \
-                   &ITER_NAME ## _next,                                       \
-                   &ITER_NAME ## _sizeof,                                     \
-                   &C_NAME ## _ ## MEMBER ## _iterator>(this->get());         \
-  }
+
+#define VOID_REQUEST_CLASS_HEAD(NAME, C_NAME)                                 \
+class NAME {                                                                  \
+  public:
+
+#define VOID_REQUEST_CLASS_BODY_CLASS(NAME, C_NAME, ...)                      \
+    NAME(xcb_connection_t * c MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))     \
+    {                                                                         \
+      C_NAME(c MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__));                   \
+    }
+
+#define VOID_REQUEST_CLASS_BODY_REQUEST(NAME, C_NAME, ...)                    \
+    void                                                                      \
+    operator()(xcb_connection_t * c                                           \
+               MACRO_DISPATCHER(TYPE_ARG_CC, __VA_ARGS__))                    \
+    {                                                                         \
+      C_NAME(c MACRO_DISPATCHER(ARGN_PASTER, __VA_ARGS__));                   \
+    }
+
+
 
 #define REQUEST_CLASS_TAIL(NAME)                                              \
 }; /* class NAME */
+
+
+
+#define REQUEST_FIXED_SIZE_LIST_ACCESSOR(MEMBER, TYPE, C_NAME)                \
+  typedef xpp::generic::fixed_size::iterator<                                 \
+              TYPE,                                                           \
+              C_NAME ## _reply_t,                                             \
+              C_NAME ## _ ## MEMBER,                                          \
+              C_NAME ## _ ## MEMBER ## _length>                               \
+            MEMBER ## _iterator;                                              \
+                                                                              \
+  xpp::generic::list<C_NAME ## _reply_t, MEMBER ## _iterator>                 \
+  MEMBER(void)                                                                \
+  {                                                                           \
+    return xpp::generic::list<C_NAME ## _reply_t,                             \
+                              MEMBER ## _iterator>(this->get());              \
+  }
+
+
+
+#define REQUEST_VARIABLE_SIZE_LIST_ACCESSOR(MEMBER, TYPE, ITER_NAME, C_NAME)  \
+  typedef xpp::generic::variable_size::iterator<                              \
+                TYPE,                                                         \
+                C_NAME ## _reply_t,                                           \
+                ITER_NAME ## _iterator_t,                                     \
+                &ITER_NAME ## _next,                                          \
+                &ITER_NAME ## _sizeof,                                        \
+                &C_NAME ## _ ## MEMBER ## _iterator>                          \
+            MEMBER ## _iterator;                                              \
+                                                                              \
+  xpp::generic::list<C_NAME ## _reply_t, MEMBER ## _iterator>                 \
+  MEMBER(void)                                                                \
+  {                                                                           \
+    return xpp::generic::list<C_NAME ## _reply_t,                             \
+                              MEMBER ## _iterator>(this->get());              \
+  }
+
+
+
+#define REQUEST_STRING_ACCESSOR(MEMBER, C_NAME)                               \
+  xpp::generic::string<C_NAME ## _reply_t,                                    \
+                       &C_NAME ## _ ## MEMBER,                                \
+                       &C_NAME ## _ ## MEMBER ## _length>                     \
+  MEMBER(void)                                                                \
+  {                                                                           \
+    return xpp::generic::string<C_NAME ## _reply_t,                           \
+                                &C_NAME ## _ ## MEMBER,                       \
+                                &C_NAME ## _ ## MEMBER ## _length>            \
+                                  (this->get());                              \
+  }
+
+#define TYPE_CLASS(NAME)
+
+
 
 #define ITERATOR_REQUEST_PROTO_COMMON(NAME, MEMBER, TYPE, ...)\
 class NAME : public generic::request<xcb_ ## NAME ## _cookie_t,               \
