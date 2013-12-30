@@ -1950,6 +1950,9 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     # ------------------------------
 
 
+    request_name = _ext(_n_item(self.name[-1]))
+    c_func_name = _n(self.name)
+
     # Whether we are _checked or _unchecked
     checked = void and not regular
     unchecked = not void and not regular
