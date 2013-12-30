@@ -89,7 +89,7 @@ int main(int argc, char ** argv)
   connection c("");
   source source(c);
 
-  auto windows = c.query_tree(c.root());
+  auto tree = c.query_tree(c.root());
 
   test::handler handler;
   test::container container;
@@ -97,7 +97,7 @@ int main(int argc, char ** argv)
   test::foo_container foo_container;
   test::foo_handler foo_handler(source, foo_container);
 
-  for (auto & window : windows) {
+  for (auto & window : tree.children()) {
     *(c.grab_pointer(false, window,
                      XCB_EVENT_MASK_BUTTON_PRESS
                      | XCB_EVENT_MASK_BUTTON_RELEASE
