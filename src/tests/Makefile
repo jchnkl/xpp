@@ -3,6 +3,7 @@ include ../flags.makefile
 CXXFLAGS+=-g
 
 CPPSRCS=event.cpp \
+        requests.cpp \
         iterator.cpp
 
 all: ${CPPSRCS}
