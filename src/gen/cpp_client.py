@@ -1679,17 +1679,25 @@ def _c_accessors_list(self, field):
         #         % (name, field.field_name, field.c_accessor_name,
         #             _n(("","") + (field.field_name,)),
         #             _n( (field.field_name,)),
+
         c_request_name = self.c_request_name.replace("xcb_", "")
-        # c_request_name = self.c_request_name.replace(self.request_name + "_", "")
-        _h('REQUEST_FIXED_SIZE_ACCESSOR(%s, %s, %s)',
-                # MEMBER, TYPE, C_NAME
-                # _ext(_n_item(self.name[-1])),
-                _ext(_n_item(field.field_name)),
-                field.c_field_type,
-                _n(self.name))
+
+        if field.c_field_type == "char":
+            _h('REQUEST_STRING_ACCESSOR(%s, %s)',
+                    _ext(_n_item(field.field_name)),
+                    # field.c_field_type,
+                    _n(self.name))
+
+        else:
+            _h('REQUEST_FIXED_SIZE_LIST_ACCESSOR(%s, %s, %s)',
+                    # MEMBER, TYPE, C_NAME
+                    # _ext(_n_item(self.name[-1])),
+                    _ext(_n_item(field.field_name)),
+                    field.c_field_type,
+                    _n(self.name))
 
     else:
-        _h('REQUEST_VARIABLE_SIZE_ACCESSOR(%s, %s, %s, %s)',
+        _h('REQUEST_VARIABLE_SIZE_LIST_ACCESSOR(%s, %s, %s, %s)',
                 # MEMBER, TYPE, ITER_NAME, C_NAME)
                 _ext(_n_item(field.field_name)),
                 field.c_field_type,
@@ -1952,13 +1960,14 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
     else:
         reordered_args = all_args
 
+    _h('REPLY_REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
     if len(all_args) == 0:
-        _h('REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
-        _h('REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
+        _h('REPLY_REQUEST_CLASS_BODY_CLASS(%s, %s)', request_name, c_func_name)
+        _h('REPLY_REQUEST_CLASS_BODY_REQUEST(%s, %s)', request_name, c_func_name)
     else:
-        _h('REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', request_name, c_func_name,
+        _h('REPLY_REQUEST_CLASS_BODY_CLASS(%s, %s, %s)', request_name, c_func_name,
                 ", ".join(reordered_args))
-        _h('REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', request_name, c_func_name,
+        _h('REPLY_REQUEST_CLASS_BODY_REQUEST(%s, %s, %s)', request_name, c_func_name,
                 ", ".join(all_args))
 
     call_args += skipped_call_args
@@ -1968,17 +1977,6 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         _h('%s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
         _h('  : %s(c, %s)', request_name, ", ".join(call_args))
         _h('{}')
-
-
-    count = 2
-    if not self.var_followed_by_fixed_fields:
-        for field in param_fields:
-            if not field.type.fixed_size():
-                count = count + 2
-                if field.type.need_serialize:
-                    # _serialize() keeps track of padding automatically
-                    count -= 1
-    dimension = count + 2
 
 def _c_reply(self, name):
     '''
@@ -2674,13 +2672,13 @@ def c_request(self, name):
 
     request_name = _ext(_n_item(self.name[-1]))
     c_func_name = _n(self.name)
+
+    _h('')
+    _h('NS_HEAD(request)')
+
     # self.c_request_name.replace("xcb_", "")
     if self.reply:
 
-
-        _h('')
-        _h('NS_HEAD(request)')
-        _h('REQUEST_CLASS_HEAD(%s, %s)', request_name, c_func_name)
 
         _c_type_setup(self.reply, name, ('reply',))
         # Reply structure definition
@@ -2689,10 +2687,7 @@ def c_request(self, name):
         # Request prototypes
         has_fds = _c_reply_has_fds(self.reply)
         _c_request_helper(self, name, self.c_cookie_type, False, True, False, has_fds)
-        # _c_request_helper(self, name, self.c_cookie_type, False, False, False, has_fds)
-        if self.need_aux:
-            _c_request_helper(self, name, self.c_cookie_type, False, True, True, has_fds)
-            # _c_request_helper(self, name, self.c_cookie_type, False, False, True, has_fds)
+
         # Reply accessors
         _c_accessors(self.reply, name + ('reply',), name)
         '''
@@ -2701,19 +2696,13 @@ def c_request(self, name):
             _c_reply_fds(self, name)
         '''
 
-        _h('REQUEST_CLASS_TAIL(%s)', request_name)
-        _h('NS_TAIL(request)')
-        _h('')
-
-    '''
     else:
         # Request prototypes
-        _c_request_helper(self, name, 'xcb_void_cookie_t', True, False)
-        # _c_request_helper(self, name, 'xcb_void_cookie_t', True, True)
-        if self.need_aux:
-            _c_request_helper(self, name, 'xcb_void_cookie_t', True, False, True)
-            # _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
-    '''
+        _c_void_request_helper(self, name)
+
+    _h('REQUEST_CLASS_TAIL(%s)', request_name)
+    _h('NS_TAIL(request)')
+    _h('')
 
     # We generate the manpage afterwards because _c_type_setup has been called.
     # TODO: what about aux helpers?
