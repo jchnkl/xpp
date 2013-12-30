@@ -2048,7 +2048,8 @@ def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_f
         else:
             not_skipped_args.append(arg)
 
-        if c_field_const_type == 'const char':
+        if (c_field_const_type == 'const char'
+                and call_args[-1] == field.c_field_name + "_len"):
             wrap_string = True
             call_args.pop() # remove 'name_len' parameter
             proto_args.pop()
