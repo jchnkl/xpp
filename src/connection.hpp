@@ -5,7 +5,7 @@
 
 #include <xcb/xcb_keysyms.h>
 
-#include "requests.hpp"
+#include "gen/xproto.hpp"
 
 namespace xpp {
 
@@ -131,35 +131,34 @@ class connection {
                        src_x, src_y, src_width, src_height, dst_x, dst_y);
     }
 
-    request::core::query_tree
+    core::request::query_tree
     query_tree(xcb_window_t window)
     {
-      return request::core::query_tree(m_c, window);
+      return core::request::query_tree(m_c, window);
     }
 
-    request::core::intern_atom
+    core::request::intern_atom
     intern_atom(bool only_if_exists, const std::string & name)
     {
-      return request::core::intern_atom(m_c, only_if_exists, name);
+      return core::request::intern_atom(m_c, only_if_exists, name.length(), name.c_str());
     }
 
-    template<typename T>
-    request::core::get_property<T>
+    core::request::get_property
     get_property(bool _delete, xcb_window_t window, xcb_atom_t property,
                  xcb_atom_t type, uint32_t long_offset, uint32_t long_length)
     {
-      return request::core::get_property<T>(m_c, _delete, window, property,
+      return core::request::get_property(m_c, _delete, window, property,
                                             type, long_offset, long_length);
     }
 
-    request::core::grab_pointer
+    core::request::grab_pointer
     grab_pointer(bool owner_events, xcb_window_t grab_window,
                  uint16_t event_mask, uint8_t pointer_mode,
                  uint8_t keyboard_mode, xcb_window_t confine_to,
                  xcb_cursor_t cursor,
                  xcb_timestamp_t time = XCB_TIME_CURRENT_TIME)
     {
-      return request::core::grab_pointer(m_c, owner_events, grab_window, event_mask,
+      return core::request::grab_pointer(m_c, owner_events, grab_window, event_mask,
                                    pointer_mode, keyboard_mode, confine_to,
                                    cursor, time);
     }
