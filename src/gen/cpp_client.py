@@ -12,7 +12,11 @@ import re
 from templates import ns_head, \
                       ns_tail, \
                       void_requests, \
-                      reply_requests
+                      reply_requests, \
+                      list_accessor, \
+                      string_accessor, \
+                      fixed_size_iterator, \
+                      variable_size_iterator
 
 # Jump to the bottom of this file for the main routine
 
@@ -1688,28 +1692,27 @@ def _c_accessors_list(self, field):
         c_request_name = self.c_request_name.replace("xcb_", "")
 
         if field.c_field_type == "char":
-            _h('REQUEST_STRING_ACCESSOR(%s, %s)',
-                    _ext(_n_item(field.field_name)),
-                    # field.c_field_type,
-                    _n(self.name))
+            _h(string_accessor(
+                _ext(_n_item(field.field_name)),
+                _n(self.name)))
 
         else:
-            _h('REQUEST_FIXED_SIZE_LIST_ACCESSOR(%s, %s, %s)',
-                    # MEMBER, TYPE, C_NAME
-                    # _ext(_n_item(self.name[-1])),
-                    _ext(_n_item(field.field_name)),
-                    field.c_field_type,
-                    _n(self.name))
-
-    else:
-        _h('REQUEST_VARIABLE_SIZE_LIST_ACCESSOR(%s, %s, %s, %s)',
-                # MEMBER, TYPE, ITER_NAME, C_NAME)
+            _h(list_accessor(
+                # member, type, iter_name, c_name
                 _ext(_n_item(field.field_name)),
                 field.c_field_type,
-                # _ext(field.field_type),
-                # _ext(_n_item(field.field_type)),
-                _n(field.type.name),
-                _n(self.name))
+                "",
+                _n(self.name),
+                fixed_size_iterator))
+
+    else:
+        _h(list_accessor(
+            # member, type, iter_name, c_name
+            _ext(_n_item(field.field_name)),
+            field.c_field_type,
+            _n(field.type.name),
+            _n(self.name),
+            variable_size_iterator))
 
     # sys.stderr.write('c_iterator_name:\n%s;\nc_end_name:\n%s\n' % (field.c_iterator_name,
     #     field.c_end_name))
