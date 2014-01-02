@@ -9,14 +9,12 @@ import errno
 import time
 import re
 
-from templates import ns_head, \
-                      ns_tail, \
-                      void_requests, \
-                      reply_requests, \
-                      list_accessor, \
-                      string_accessor, \
-                      fixed_size_iterator, \
-                      variable_size_iterator
+from templates import CppRequest, \
+                      Parameter, \
+                      Accessor
+
+_cpp_request_names = []
+_cpp_request_objects = {}
 
 # Jump to the bottom of this file for the main routine
 
@@ -28,7 +26,14 @@ _extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
 
 _namespace = { "xproto" : "core" }
 
-_type_objects = { "DRAWABLE": []
+_xcb_includes =\
+    { "xproto" : "xcb.h"
+    , "randr" : "randr.h"
+    }
+
+_type_objects =\
+        { "xproto" :
+                { "DRAWABLE": []
                 , "WINDOW": []
                 , "PIXMAP": []
                 , "ATOM": []
@@ -37,14 +42,14 @@ _type_objects = { "DRAWABLE": []
                 , "GCONTEXT": []
                 , "FONTABLE": []
                 # , "KEYCODE" : []
-
-                # >>> RANDR
-                , "MODE" : []
+                }
+        , "randr" :
+                { "MODE" : []
                 , "CRTC" : []
                 , "OUTPUT" : []
                 , "PROVIDER" : []
-                # <<< RANDR
                 }
+        }
 
 _cplusplus_annoyances = {'class' : '_class',
                          'new'   : '_new',
@@ -188,16 +193,24 @@ def c_open(self):
     _h_setlevel(0)
     _c_setlevel(0)
 
-    _h('#ifndef XPP_%s_HPP', _ns.header.upper())
-    _h('#define XPP_%s_HPP', _ns.header.upper())
+    _h('#ifndef XPP_%s_HPP', _namespace.get(_ns.header, _ns.header).upper())
+    _h('#define XPP_%s_HPP', _namespace.get(_ns.header, _ns.header).upper())
     _h('')
-    _h('#include "../macros.hpp"')
+    _h('#include <string>')
+    _h('#include <vector>')
+    _h('')
+
+    try: _h('#include <xcb/' + _xcb_includes[_ns.header] + '>')
+    except: pass
+
+    _h('')
+    _h('#include "../connection.hpp"')
     _h('#include "../request.hpp"')
-    _h('#include "../request_macros.hpp"')
     _h('#include "../request_iterator.hpp"')
     _h('')
     _h('namespace xpp {')
     _h('namespace %s {', _namespace.get(_ns.header, _ns.header))
+    _h('')
 
 def c_close(self):
     '''
@@ -205,10 +218,23 @@ def c_close(self):
     Writes out all the stored content lines, then closes the files.
     '''
 
-    _h('}; // namespace xpp')
-    _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
+    _h('namespace request {')
+    for name in _cpp_request_names:
+        _h('%s', _cpp_request_objects[name].make_proto())
+    _h('}; // namespace request')
+
     _h('')
-    _h('#endif // XPP_%s_HPP', _ns.header.upper())
+
+    _h('namespace request {')
+    for name in _cpp_request_names:
+        _h("%s\n", _cpp_request_objects[name].make_class())
+    _h('}; // namespace request')
+
+    _h('')
+    _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
+    _h('}; // namespace xpp')
+    _h('')
+    _h('#endif // XPP_%s_HPP', _namespace.get(_ns.header, _ns.header).upper())
 
     # Write header file
     hfile = sys.stdout
@@ -1572,147 +1598,42 @@ def _c_accessors_list(self, field):
 
     if list.member.fixed_size():
         idx = 1 if switch_obj is not None else 0
-        # _h('')
-        # _h('%s *', field.c_field_type)
 
-        # _h('%s (%s  /**< */);', field.c_accessor_name, params[idx][0])
-
-        # sys.stderr.write('FIXED_SIZE\n');
-        # sys.stderr.write('%s (%s  /**< */);\n' % (field.c_accessor_name,
-        #     params[idx][0]))
-
-    # else:
-        # sys.stderr.write('VARIABLE_SIZE\n');
-
-    # _h('')
-    # _h('int')
-    # sys.stderr.write('int\n')
     if switch_obj is not None:
-        # _h('%s (const %s *R  /**< */,', field.c_length_name, R_obj.c_type)
         spacing = ' '*(len(field.c_length_name)+2)
-        # _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
         length = _c_accessor_get_expr(field.type.expr, fields)
     else:
-        # _h('%s (const %s *R  /**< */);', field.c_length_name, c_type)
         length = _c_accessor_get_expr(field.type.expr, fields)
 
-    # sys.stderr.write(
-    #         "self.name      : %s\n"
-    #         "_ext(_n_item(^^: %s\n"
-    #         "type.name      : %s\n"
-    #         "is_simple      : %s\n"
-    #         "type           : %s\n"
-    #         "c_iterator_name: %s\n"
-    #         "c_iterator_type: %s\n"
-    #         "c_accessor_name: %s\n"
-    #         "c_field_name   : %s\n"
-    #         % (
-    #             self.name,
-    #             _ext(_n_item(self.name[-1])),
-    #             field.type.name,
-    #             field.type.member.is_simple,
-    #             field.type.member,
-    #             field.c_iterator_name,
-    #             field.c_iterator_type,
-    #             field.c_accessor_name,
-    #             field.c_field_name))
+    request_name = _ext(_n_item(self.name[-1]))
 
-        # _h('%s (const %s *R  /**< */);', field.c_accessor_name, c_type)
-
-    '''
-    if type(field.type.member) == Struct:
-        sys.stderr.write('>>> STRUCT!!!\n')
-        for f in field.type.member.fields:
-            sys.stderr.write('field: %s\n' % (f))
-        sys.stderr.write('<<< STRUCT!!!\n')
-    '''
-
-    # if field.type.member.is_simple:
-    #     # SimpleType needs a strong typedef for c++ iterator
-    #     # xcb_generic_iterator_t
-    #     # SimpleType: xcb _ ## NAME ## _end
-    #     # ^^ _end iterator
-
-    #     sys.stderr.write('SIMPLE\n')
-    #     # _h('')
-    #     # _h('xcb_generic_iterator_t')
-    #     sys.stderr.write('xcb_generic_iterator_t\n')
-    #     if switch_obj is not None:
-    #         # _h('%s (const %s *R  /**< */,', field.c_end_name, R_obj.c_type)
-    #         sys.stderr.write('SWITCH\n')
-    #         sys.stderr.write('%s (const %s *R  ,\n' % ( field.c_end_name, R_obj.c_type))
-    #         spacing = ' '*(len(field.c_end_name)+2)
-    #         # _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
-    #         sys.stderr.write('%sconst %s *S );\n' %( spacing, S_obj.c_type))
-    #     else:
-    #         # _h('%s (const %s *R  /**< */);', field.c_end_name, c_type)
-    #         sys.stderr.write('NO SWITCH\n')
-    #         sys.stderr.write('%s (const %s *R  );\n' % ( field.c_end_name, c_type))
-
-    #     # param = 'R' if switch_obj is None else 'S'
-    #     # if switch_obj is not None:
-    #     #     _c_accessor_get_expr(field.type.expr, fields)
-    #     # elif field.prev_varsized_field == None:
-    #     #        _c_accessor_get_expr(field.type.expr, fields))
-    #     # else:
-    #     #        _c_iterator_get_end(field.prev_varsized_field, 'R'))
-    #     #        _c_accessor_get_expr(field.type.expr, fields))
-
-    # else:
-    #     # ComplexType can be used as is for iteration
-    #     # field.c_iterator_type (e.g. xcb_str_iterator_t)
-    #     # ComplexType: xcb _ ## NAME ## _iterator
-    #     # ^^ _iterator iterator
-
-    #     # _h('')
-    #     # _h('%s', field.c_iterator_type)
-    #     sys.stderr.write('NOT SIMPLE\n')
-    #     sys.stderr.write('%s\n' % ( field.c_iterator_type))
-    #     if switch_obj is not None:
-    #         # _h('%s (const %s *R  /**< */,', field.c_iterator_name, R_obj.c_type)
-    #         sys.stderr.write('SWITCH_OBJ\n')
-    #         sys.stderr.write('%s (const %s *R  /**< */,\n' % ( field.c_iterator_name,
-    #             R_obj.c_type))
-    #         spacing = ' '*(len(field.c_iterator_name)+2)
-    #         # _h('%sconst %s *S /**< */);', spacing, S_obj.c_type)
-    #         sys.stderr.write('%sconst %s *S /**< */);\n' % ( spacing, S_obj.c_type))
-    #     else:
-    #         sys.stderr.write('NO SWITCH_OBJ\n')
-    #         # _h('%s (const %s *R  /**< */);', field.c_iterator_name, c_type)
-    #         sys.stderr.write('%s (const %s *R  /**< */);\n' % ( field.c_iterator_name,
-    #             c_type))
-
-    # if not (type(field.type.member) == Struct and field.type.name[1] == 'STR'):
     if list.member.fixed_size():
-        # sys.stderr.write("HERE HERE HERE: %s, %s, %s, %s, %s, %s\n"
-        #         % (name, field.field_name, field.c_accessor_name,
-        #             _n(("","") + (field.field_name,)),
-        #             _n( (field.field_name,)),
-
-        c_request_name = self.c_request_name.replace("xcb_", "")
-
         if field.c_field_type == "char":
-            _h(string_accessor(
-                _ext(_n_item(field.field_name)),
-                _n(self.name)))
+            _cpp_request_objects[request_name].accessors.append( \
+            Accessor(is_string=True,
+                     member=_ext(_n_item(field.field_name)),
+                     c_name=_n(self.name))
+            )
 
         else:
-            _h(list_accessor(
-                # member, type, iter_name, c_name
-                _ext(_n_item(field.field_name)),
-                field.c_field_type,
-                "",
-                _n(self.name),
-                fixed_size_iterator))
+            _cpp_request_objects[request_name].accessors.append( \
+            Accessor(is_fixed=True,
+                     member=_ext(_n_item(field.field_name)),
+                     type=field.c_field_type,
+                     return_type='Type' if field.c_field_type == 'void' else field.c_field_type,
+                     iter_name="",
+                     c_name=_n(self.name))
+            )
 
     else:
-        _h(list_accessor(
-            # member, type, iter_name, c_name
-            _ext(_n_item(field.field_name)),
-            field.c_field_type,
-            _n(field.type.name),
-            _n(self.name),
-            variable_size_iterator))
+        _cpp_request_objects[request_name].accessors.append( \
+        Accessor(is_variable=True,
+                 member=_ext(_n_item(field.field_name)),
+                 type=field.c_field_type,
+                 return_type='Type' if field.c_field_type == 'void' else field.c_field_type,
+                 iter_name=_n(field.type.name),
+                 c_name=_n(self.name))
+        )
 
     # sys.stderr.write('c_iterator_name:\n%s;\nc_end_name:\n%s\n' % (field.c_iterator_name,
     #     field.c_end_name))
@@ -1743,11 +1664,18 @@ def c_simple(self, name):
         # Typedef
         _h_setlevel(0)
         my_name = _t(name)
-        _h('')
-        _h('typedef %s %s;', _t(self.name), my_name)
+        # _h('')
+        # _h('typedef %s %s;', _t(self.name), my_name)
+        # if field.type.is_simple:
+        #     if len(name) == 2:
+        # _h('NS_HEAD(type)')
+        # _h("TYPE_CLASS(%s)", _ext(_n_item(name[-1])))
+        # _h('NS_TAIL(type)')
+        # sys.stderr.write('type: %s, name: %s\n' % (field.field_type, field.field_name))
+        # sys.stderr.write('simple: %s\n' % (field))
 
         # Iterator
-        _c_iterator(self, name)
+        # _c_iterator(self, name)
 
 def _c_complex(self):
     '''
@@ -1846,24 +1774,16 @@ def _cpp_request_helper(self, name, is_void):
         if field.type.need_serialize:
             c_field_const_type = "const void"
 
-    all_args = []
-    skipped_args = []
-    not_skipped_args = []
-
-    wrap_string = False
-    call_args = []
-    proto_args = []
-    skipped_call_args = []
-    skipped_proto_args = []
+    _cpp_request_names.append(request_name)
+    _cpp_request_objects[request_name] = CppRequest(
+            request_name, is_void,
+            c_namespace="" if _ns.header == "xproto" else _ns.header)
 
     is_obj_func = False
     if (len(param_fields) > 0 and len(param_fields[0].field_type) > 1):
         # e.g.: DRAWABLE in { "DRAWABLE" : [], .. }
         obj_name = param_fields[0].field_type[-1]
-        is_obj_func = obj_name in  _type_objects
-
-    if is_obj_func:
-        sys.stderr.write("OBJECT FUNCTION: %s in %s\n" %  (request_name, obj_name))
+        is_obj_func = obj_name in _type_objects[_ns.header]
 
     for field in param_fields:
         c_field_const_type = field.c_field_const_type
@@ -1875,68 +1795,12 @@ def _cpp_request_helper(self, name, is_void):
             c_field_const_type = "const void"
             c_pointer = ' *'
 
-        arg_type = c_field_const_type + c_pointer
-        arg_name = field.c_field_name
-        arg = arg_type + ", " + arg_name
-        all_args.append(arg)
+        param = Parameter(type=field.c_field_type,
+                          name=field.c_field_name,
+                          is_const=field.c_field_const_type == "const " + field.c_field_type,
+                          is_pointer=c_pointer != "")
 
-        skip = field.c_field_const_type == "xcb_timestamp_t" \
-                and field.c_field_name == "time"
-        if skip:
-            skip_type = c_field_const_type
-            skip_name = field.c_field_name + " = XCB_TIME_CURRENT_TIME"
-            skipped_args.append(skip_type + ", " + skip_name)
-        else:
-            not_skipped_args.append(arg)
-
-        if (c_field_const_type == 'const char'
-                and call_args[-1] == field.c_field_name + "_len"):
-            wrap_string = True
-            call_args.pop() # remove 'name_len' parameter
-            proto_args.pop()
-            call = field.c_field_name + '.length(), ' + field.c_field_name + '.c_str()'
-            proto = 'const std::string & ' + field.c_field_name
-
-        else:
-            call = field.c_field_name
-            proto = arg_type + " " + arg_name
-
-        if skip:
-            skipped_call_args.append(field.c_field_name)
-            skipped_proto_args.append(skip_type + " " + skip_name)
-
-        call_args.append(call)
-        proto_args.append(proto)
-
-    request_name = _ext(_n_item(self.name[-1]))
-    c_func_name = _n(self.name)
-
-    reordered_args = []
-    if len(skipped_args) > 0:
-        reordered_args = not_skipped_args + skipped_args
-    else:
-        reordered_args = all_args
-
-    all_args = map(lambda x: x.split(", "), all_args)
-    reordered_args = map(lambda x: x.split(", "), reordered_args)
-
-    req = void_requests if is_void else reply_requests
-
-    _h(req['head'](request_name, c_func_name, ""))
-    if len(all_args) == 0:
-        _h(req['class'](request_name, c_func_name, ""))
-        _h(req['body'](request_name, c_func_name, ""))
-    else:
-        _h(req['class'](request_name, c_func_name, reordered_args))
-        _h(req['body'](request_name, c_func_name, all_args))
-
-    call_args += skipped_call_args
-    proto_args += skipped_proto_args
-
-    if wrap_string:
-        _h('    %s(xcb_connection_t * c, %s)', request_name, ", ".join(proto_args))
-        _h('      : %s(c, %s)', request_name, ", ".join(call_args))
-        _h('    {}')
+        _cpp_request_objects[request_name].add(param)
 
 def _c_reply(self, name):
     '''
@@ -2633,10 +2497,6 @@ def c_request(self, name):
     request_name = _ext(_n_item(self.name[-1]))
     c_func_name = _n(self.name)
 
-    _h('')
-    _h(ns_head("request"))
-
-    # self.c_request_name.replace("xcb_", "")
     if self.reply:
 
         _c_type_setup(self.reply, name, ('reply',))
@@ -2652,10 +2512,6 @@ def c_request(self, name):
     else:
         # Request prototypes
         _cpp_request_helper(self, name, True)
-
-    _h(void_requests['tail'](request_name, "", ""))
-    _h(ns_tail("request"))
-    _h('')
 
     # We generate the manpage afterwards because _c_type_setup has been called.
     # TODO: what about aux helpers?
@@ -2715,6 +2571,68 @@ def c_error(self, name):
         _h('')
         _h('typedef %s %s;', _t(self.name + ('error',)), _t(name + ('error',)))
 
+def cpp_prototypes():
+    _h("namespace request {")
+    for request in _request_classes:
+        _h("  class %s;", request)
+    _h("}; // namespace request")
+    _h("")
+
+    def ctor(name, type):
+        return """\
+    %s(const xcb_%s_t & %s)
+      : m_%s(%s)
+    {}\
+""" % (name, type, name, name, name)
+
+    for key in _type_objects[_ns.header].keys():
+        name = _ext(_n_item(key))
+        type = ("" if _ns.header == "xproto" else _ns.header + "_") + name
+
+        if len(_type_objects[_ns.header][key]) > 0:
+            _h("class %s {", name)
+            _h("  public:")
+            _h(ctor(name, type))
+            _h("")
+            _h("    const xcb_%s_t & operator*(void)", type)
+            _h("    {")
+            _h("      return m_%s;", name)
+            _h("    }")
+            _h("")
+
+            for (proto, body) in _type_objects[_ns.header][key]:
+                _h("%s", proto)
+                _h("")
+
+            _h("  private:")
+            _h("    connection m_c;")
+            _h("    xcb_%s_t m_%s;", type, name)
+            _h("}; // class %s", name)
+            _h("")
+
+def cpp_type_classes():
+    for key in _type_objects[_ns.header].keys():
+        type = _ext(_n_item(key))
+        if len(_type_objects[_ns.header][key]) > 0:
+            # _h("")
+            # _h("class %s {", type)
+            # _h("  public:")
+            # _h("    const xcb_%s_t & operator*(void)", type)
+            # _h("    {")
+            # _h("      return m_%s;", type)
+            # _h("    }")
+            # _h("")
+
+            for (proto, body) in _type_objects[_ns.header][key]:
+                # _h("%s", proto)
+                _h("%s", body)
+                _h("")
+
+            # _h("  private:")
+            # _h("    connection m_c;")
+            # _h("    xcb_%s_t m_%s;", type, type)
+            # _h("}; // class %s", type)
+            # _h("")
 
 # Main routine starts here
 
@@ -2733,7 +2651,7 @@ def c_error(self, name):
 # Must create an "output" dictionary before any xcbgen imports.
 output = {'open'    : c_open,
           'close'   : c_close,
-          'simple'  : lambda x, y: None,
+          'simple'  : c_simple, # lambda x, y: None,
           'enum'    : lambda x, y: None,
           'struct'  : lambda x, y: None,
           'union'   : lambda x, y: None,
