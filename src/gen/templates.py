@@ -2,6 +2,7 @@
 #       valueparams
 
 import sys # sys.stderr.write
+import copy # deepcopy
 
 
 ########## ACCESSORS ##########
@@ -112,6 +113,52 @@ xpp::generic::string<
 
 
 
+########## OBJECTCLASS ##########
+
+class ObjectClass(object):
+    def __init__(self, namespace, name):
+        self.name = name
+        # self.namespace = namespace
+        self.c_name = 'xcb_' + ("" if namespace == "" else namespace + "_") + name.lower() + '_t'
+        self.requests = []
+
+    def add(self, request):
+        if (len(request.parameter_list.parameter) > 0
+                and request.parameter_list.parameter[0].type == self.c_name):
+            request_copy = copy.deepcopy(request)
+            request_copy.parameter_list.parameter.pop(0)
+            request_copy.make_wrapped()
+            self.requests.append(request_copy)
+
+    def make_proto(self):
+        name = self.name.lower()
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_proto()
+
+        return \
+"""\
+class %s {
+  %s(connection & c)
+    : m_c(c)
+  {}
+%s
+  private:
+    connection & m_c;
+    %s m_%s;
+}; // class %s
+""" % (name, name, methods, self.c_name, name, name)
+
+    def make_methods(self):
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_call(self.name.lower()) + "\n"
+        return methods
+
+########## OBJECTCLASS ##########
+
+
+
 ########## REQUESTS  ##########
 
 class CppRequest(object):
@@ -122,12 +169,47 @@ class CppRequest(object):
         self.accessors = []
         self.parameter_list = ParameterList()
 
+    def make_wrapped(self):
+        self.parameter_list.make_wrapped()
+
     def make_proto(self):
-        return "class " + self.name + ";"
+        return "  class " + self.name + ";"
 
     def make_class(self):
-        self.parameter_list.make_wrapped()
         return self.void_request() if self.is_void else self.reply_request()
+
+    def make_object_class_proto(self):
+        return_type = self.template(indent="  ") \
+                + "  void" if self.is_void else "  request::" + self.name
+        return \
+"""\
+%s %s(%s);
+""" % (return_type, self.name, self.wrapped_protos())
+
+    def make_object_class_call(self, class_name):
+        return_type = self.template(indent="") \
+                + "void" if self.is_void else "request::" + self.name
+
+        for parameter in parameter_list.parameter:
+            parameter.with_default = False
+        wrapped_protos = self.wrapped_protos()
+
+        for parameter in parameter_list.parameter:
+            parameter.with_default = True
+        wrapped_calls = self.comma() + self.wrapped_calls()
+
+        return \
+"""\
+%s
+%s::%s(%s)
+{
+  %s%s(*m_c, m_%s%s);
+}
+""" % (return_type,
+       class_name, self.name, wrapped_protos,
+       "" if self.is_void else "return ",
+           "request::" + self.name + ("()" if self.is_void else ""),
+           class_name, wrapped_calls)
 
     def add(self, param):
         self.parameter_list.parameter.append(param)
@@ -145,13 +227,12 @@ class CppRequest(object):
     def protos(self):
         return self.parameter_list.protos()
 
-    def template(self):
-        return "    template<typename " \
+    def template(self, indent="    "):
+        return indent + "template<typename " \
                 + ", typename ".join(self.parameter_list.templates) \
                 + ">\n" \
                 if len(self.parameter_list.templates) > 0 \
                 else ""
-
 
     def wrapped_calls(self):
         return self.parameter_list.wrapped_calls()
@@ -352,6 +433,7 @@ class Parameter(object):
         self.is_const = is_const
         self.is_pointer = is_pointer
         self.default = _default_parameter_values.get(self.type)
+        self.with_default = True
 
     def call(self):
         return self.name
@@ -360,7 +442,7 @@ class Parameter(object):
         type = ("const " if self.is_const else "") \
              + self.type \
              + (" *" if self.is_pointer else "")
-        return type + " " + self.name \
-                + ("" if self.default == None else " = " + self.default)
+        param = " = " + self.default if self.with_default and self.default != None else ""
+        return type + " " + self.name + param
 
 ########## PARAMETER ##########

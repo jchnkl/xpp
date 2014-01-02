@@ -11,10 +11,32 @@ import re
 
 from templates import CppRequest, \
                       Parameter, \
-                      Accessor
+                      Accessor, \
+                      ObjectClass
 
 _cpp_request_names = []
 _cpp_request_objects = {}
+
+_object_classes =\
+        { "xproto" :
+                { "DRAWABLE": ObjectClass("", "DRAWABLE")
+                , "WINDOW": ObjectClass("", "WINDOW")
+                , "PIXMAP": ObjectClass("", "PIXMAP")
+                , "ATOM": ObjectClass("", "ATOM")
+                , "CURSOR": ObjectClass("", "CURSOR")
+                , "FONT": ObjectClass("", "FONT")
+                , "GCONTEXT": ObjectClass("", "GCONTEXT")
+                , "FONTABLE": ObjectClass("", "FONTABLE")
+                # , "KEYCODE" : []
+                }
+
+        , "randr" :
+                { "MODE" : ObjectClass("randr", "MODE")
+                , "CRTC" : ObjectClass("randr", "CRTC")
+                , "OUTPUT" : ObjectClass("randr", "OUTPUT")
+                , "PROVIDER" : ObjectClass("randr", "PROVIDER")
+                }
+        }
 
 # Jump to the bottom of this file for the main routine
 
@@ -223,12 +245,24 @@ def c_close(self):
         _h('%s', _cpp_request_objects[name].make_proto())
     _h('}; // namespace request')
 
-    _h('')
+    try:
+        _h('')
+        for key in _object_classes[_ns.header]:
+            _h(_object_classes[_ns.header][key].make_proto())
+        _h('')
+    except: pass
 
     _h('namespace request {')
     for name in _cpp_request_names:
         _h("%s\n", _cpp_request_objects[name].make_class())
     _h('}; // namespace request')
+
+    try:
+        _h('')
+        for key in _object_classes[_ns.header]:
+            _h(_object_classes[_ns.header][key].make_methods())
+        _h('')
+    except: pass
 
     _h('')
     _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
@@ -1801,6 +1835,13 @@ def _cpp_request_helper(self, name, is_void):
                           is_pointer=c_pointer != "")
 
         _cpp_request_objects[request_name].add(param)
+
+    _cpp_request_objects[request_name].make_wrapped()
+
+    try:
+        for key in _object_classes[_ns.header]:
+            _object_classes[_ns.header][key].add(_cpp_request_objects[request_name])
+    except: pass
 
 def _c_reply(self, name):
     '''
