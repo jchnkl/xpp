@@ -34,7 +34,7 @@ _type_objects = { "DRAWABLE": []
                 , "ATOM": []
                 , "CURSOR": []
                 , "FONT": []
-                , "GCCONTEXT": []
+                , "GCONTEXT": []
                 , "FONTABLE": []
                 # , "KEYCODE" : []
 
