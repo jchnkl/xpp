@@ -11,6 +11,12 @@ namespace xpp {
 
 class connection {
   public:
+    connection(void)
+    {
+      m_c = xcb_connect(NULL, &m_default_screen_number);
+      m_default_screen_of_display = screen_of_display(m_default_screen_number);
+    }
+
     connection(const std::string & displayname)
     {
       m_c = xcb_connect(displayname.c_str(), &m_default_screen_number);
