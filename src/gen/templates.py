@@ -36,35 +36,43 @@ class Accessor(object):
 """\
 xpp::generic::fixed_size::iterator<
                                    %s,
+                                   %s,
                                    %s_reply_t,
                                    %s_%s,
                                    %s_%s_length>\
-""" % (type, \
-       c_name, \
-       c_name, member, \
-       c_name, member)
+""" % (self.type, \
+       self.return_type, \
+       self.c_name, \
+       self.c_name, self.member, \
+       self.c_name, self.member)
 
 
-def variable_size_iterator(member, type, iter_name, c_name):
-    return """\
+    def iter_variable(self):
+        return \
+"""\
 xpp::generic::variable_size::iterator<
+                                      %s,
                                       %s,
                                       %s_reply_t,
                                       %s_iterator_t,
                                       &%s_next,
                                       &%s_sizeof,
                                       &%s_%s_iterator>\
-""" % (type, \
-       c_name, \
-       iter_name, \
-       iter_name, \
-       iter_name, \
-       c_name, member)
+""" % (self.type, \
+       self.return_type, \
+       self.c_name, \
+       self.iter_name, \
+       self.iter_name, \
+       self.iter_name, \
+       self.c_name, self.member)
 
 
-def list_accessor(member, type, iter_name, c_name, iterator_func):
-    iterator = iterator_func(member, type, iter_name, c_name)
-    return """\
+    def list(self, iterator):
+        self.return_type = "Type" if self.type == "void" else self.type
+        template = "    template<typename Type>\n" if self.type == "void" else ""
+
+        return template + \
+"""\
     xpp::generic::list<%s_reply_t,
                        %s
                       >
@@ -74,27 +82,33 @@ def list_accessor(member, type, iter_name, c_name, iterator_func):
                                 %s
                                >(this->get());
     }\
-""" % (c_name, iterator, \
-       member, \
-       c_name, iterator)
+""" % (self.c_name, iterator, \
+       self.member, \
+       self.c_name, iterator)
 
 
-def string_accessor(member, c_name):
-    string = """\
+    def string(self):
+        string = \
+"""\
 xpp::generic::string<
                      %s_reply_t,
                      &%s_%s,
                      &%s_%s_length>\
-""" % (c_name, c_name, member, c_name, member)
+""" % (self.c_name, \
+       self.c_name, self.member, \
+       self.c_name, self.member)
 
-    return """\
+        return \
+"""\
     %s
     %s(void)
     {
       return %s
                (this->get());
     }\
-""" % (string, member, string)
+""" % (string, self.member, string)
+
+########## ACCESSORS ##########
 
 
 
