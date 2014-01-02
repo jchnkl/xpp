@@ -94,6 +94,39 @@ void_requests = {
 
 def fixed_size_iterator(member, type, iter_name, c_name):
     return """\
+
+
+
+########## ACCESSORS ##########
+
+class Accessor(object):
+    def __init__(self, is_fixed=False, is_string=False, is_variable=False, \
+                 member="", type="", return_type="", iter_name="", c_name=""):
+
+        self.is_fixed = is_fixed
+        self.is_string = is_string
+        self.is_variable = is_variable
+
+        self.member = member
+        self.type = type
+        self.return_type = return_type
+        self.iter_name = iter_name
+        self.c_name = c_name
+
+    def __str__(self):
+        if self.is_fixed:
+            return self.list(self.iter_fixed())
+        elif self.is_variable:
+            return self.list(self.iter_variable())
+        elif self.is_string:
+            return self.string()
+        else:
+            return ""
+
+
+    def iter_fixed(self):
+        return \
+"""\
 xpp::generic::fixed_size::iterator<
                                    %s,
                                    %s_reply_t,
