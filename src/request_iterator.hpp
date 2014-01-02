@@ -12,7 +12,8 @@ namespace generic {
 
 namespace variable_size {
 
-template<typename Type,
+template<typename Data,
+         typename DataReturn,
          typename Reply,
          typename Iterator,
          void (*Next)(Iterator *),
@@ -32,9 +33,9 @@ class iterator {
       return ! (*this == other);
     }
 
-    const Type & operator*(void)
+    const DataReturn & operator*(void)
     {
-      return *m_iterator.data;
+      return *(static_cast<DataReturn *>(m_iterator.data));
     }
 
     // prefix
@@ -57,8 +58,8 @@ class iterator {
     iterator & operator--(void)
     {
       if (m_lengths.empty()) {
-        Type * data = m_iterator.data;
-        Type * prev = data - m_lengths.top();
+        Data * data = m_iterator.data;
+        Data * prev = data - m_lengths.top();
         m_lengths.pop();
 
         m_iterator.index = (char *)m_iterator.data - (char *)prev;
@@ -105,6 +106,7 @@ class iterator {
 
 template<typename Reply, xcb_str_iterator_t (*GetIterator)(const Reply *)>
 class iterator<xcb_str_t,
+               xcb_str_t,
                Reply,
                xcb_str_iterator_t,
                &xcb_str_next,
@@ -217,6 +219,7 @@ class iterator<xcb_str_t,
 namespace fixed_size {
 
 template<typename Data,
+         typename DataReturn,
          typename Reply,
          Data * (*Accessor)(const Reply *),
          int (*Length)(const Reply *)>
@@ -234,9 +237,9 @@ public:
     return ! (*this == other);
   }
 
-  const Data & operator*(void)
+  const DataReturn & operator*(void)
   {
-    return Accessor(m_reply.get())[m_index];
+    return static_cast<DataReturn *>(Accessor(m_reply.get()))[m_index];
   }
 
   // prefix
