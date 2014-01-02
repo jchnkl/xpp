@@ -124,8 +124,6 @@ class CppRequest(object):
 
     def make_proto(self):
         return "class " + self.name + ";"
-        # self.parameter_list.make_wrapped()
-        # return self.void_request() if self.is_void else self.reply_request()
 
     def make_class(self):
         self.parameter_list.make_wrapped()
