@@ -1,4 +1,5 @@
 # TODO: object types (windows, pixmaps)
+#       connection class for all calls not in object
 #       valueparams
 
 import sys # sys.stderr.write
