@@ -193,8 +193,8 @@ class CppRequest(object):
         return self.void_request() if self.is_void else self.reply_request()
 
     def make_object_class_proto(self, class_name):
-        return_type = self.template(indent="  ") \
-                + "  void" if self.is_void else "  request::" + self.name
+        return_type = self.template(indent="  ") + "    " \
+                + ("void" if self.is_void else "request::" + self.name)
         return \
 """\
 %s %s(%s);
