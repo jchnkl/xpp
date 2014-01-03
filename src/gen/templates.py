@@ -206,13 +206,8 @@ class CppRequest(object):
         return_type = self.template(indent="") \
                 + "void" if self.is_void else "request::" + self.name
 
-        for parameter in parameter_list.parameter:
-            parameter.with_default = False
-        wrapped_protos = self.wrapped_protos()
-
-        for parameter in parameter_list.parameter:
-            parameter.with_default = True
-        wrapped_calls = self.comma() + self.wrapped_calls()
+        wrapped_protos = self.wrapped_protos(True, False)
+        wrapped_calls = self.comma() + self.wrapped_calls(False)
 
         return \
 """\
@@ -222,13 +217,13 @@ class CppRequest(object):
   %s%s(*m_c, m_%s%s);
 }
 """ % (return_type,
-       class_name, self.name, wrapped_protos,
+       class_name, self.name.replace("_" + class_name, ""), wrapped_protos,
        "" if self.is_void else "return ",
            "request::" + self.name + ("()" if self.is_void else ""),
            class_name, wrapped_calls)
 
     def add(self, param):
-        self.parameter_list.parameter.append(param)
+        self.parameter_list.add(param)
 
     def comma(self):
         return self.parameter_list.comma()
@@ -237,11 +232,11 @@ class CppRequest(object):
         ns = "" if self.c_namespace == "" else self.c_namespace + "_"
         return "xcb_" + ns + self.name
 
-    def calls(self):
-        return self.parameter_list.calls()
+    def calls(self, sort):
+        return self.parameter_list.calls(sort)
 
-    def protos(self):
-        return self.parameter_list.protos()
+    def protos(self, sort, defaults):
+        return self.parameter_list.protos(sort, defaults)
 
     def template(self, indent="    "):
         return indent + "template<typename " \
@@ -250,11 +245,11 @@ class CppRequest(object):
                 if len(self.parameter_list.templates) > 0 \
                 else ""
 
-    def wrapped_calls(self):
-        return self.parameter_list.wrapped_calls()
+    def wrapped_calls(self, sort):
+        return self.parameter_list.wrapped_calls(sort)
 
-    def wrapped_protos(self):
-        return self.parameter_list.wrapped_protos()
+    def wrapped_protos(self, sort, defaults):
+        return self.parameter_list.wrapped_protos(sort, defaults)
 
     def make_accessors(self):
         return "\n".join(map(lambda a: "\n%s\n" % a, self.accessors))
@@ -300,13 +295,21 @@ class %s {
 """ % (self.name)
 
 
-        wrapped = "\n" \
-                + methods(self.wrapped_protos(), self.wrapped_calls(), self.template()) \
-                if self.parameter_list.want_wrap \
-                else ""
+
+        wrapped = ""
+        if self.parameter_list.want_wrap:
+            wrapped = "\n" + \
+                methods(self.wrapped_protos(True, True),
+                        self.wrapped_calls(False), self.template())
+
+        defaults = ""
+        if self.parameter_list.has_defaults and self.parameter_list.is_reordered:
+            defaults = "\n" + \
+                methods(self.protos(True, True), self.calls(False))
 
         return head \
-             + methods(self.protos(), self.calls()) \
+             + methods(self.protos(False, False), self.calls(False)) \
+             + defaults \
              + wrapped \
              + self.make_accessors() \
              + tail
@@ -347,13 +350,20 @@ class %s
 """ % (self.name)
 
 
-        wrapped = "\n" \
-                + methods(self.wrapped_protos(), self.wrapped_calls(), self.template()) \
-                if self.parameter_list.want_wrap \
-                else ""
+        wrapped = ""
+        if self.parameter_list.want_wrap:
+            wrapped = "\n" + \
+                methods(self.wrapped_protos(True, True),
+                        self.wrapped_calls(False), self.template())
+
+        defaults = ""
+        if self.parameter_list.has_defaults and self.parameter_list.is_reordered:
+            defaults = "\n" + \
+                methods(self.protos(True, True), self.calls(False))
 
         return head \
-             + methods(self.protos(), self.calls()) \
+             + methods(self.protos(False, False), self.calls(False)) \
+             + defaults \
              + wrapped \
              + self.make_accessors() \
              + tail
@@ -369,23 +379,38 @@ class %s
 class ParameterList(object):
     def __init__(self):
         self.want_wrap = False
+        self.has_defaults = False
+        self.is_reordered = False
         self.parameter = []
         self.wrap_calls = []
         self.wrap_protos = []
         self.templates = []
 
+    def add(self, param):
+        if param.default != None:
+            self.has_defaults = True
+        self.parameter.append(param)
+
     def comma(self):
         return "" if len(self.parameter) == 0 else ", "
 
-    def calls(self, params=None):
-        params = self.parameter if params == None else params
-        calls = map(lambda p: p.call(), params)
+    def calls(self, sort, params=None):
+        ps = self.parameter if params == None else params
+        if sort:
+            tmp = sorted(ps, cmp=lambda p1, p2: cmp(p1.default, p2.default))
+            is_reordered = tmp == ps
+            ps = tmp
+        calls = map(lambda p: p.call(), ps)
         return "" if len(calls) == 0 else ", ".join(calls)
 
-    def protos(self, params=None):
-        params = self.parameter if params == None else params
-        ps = sorted(params, cmp=lambda p1, p2: cmp(p1.default, p2.default))
-        protos = map(lambda p: p.proto(), ps)
+    def protos(self, sort, defaults, params=None):
+        if defaults: sort = True
+        ps = self.parameter if params == None else params
+        if sort:
+            tmp = sorted(ps, cmp=lambda p1, p2: cmp(p1.default, p2.default))
+            is_reordered = tmp == ps
+            ps = tmp
+        protos = map(lambda p: p.proto(defaults), ps)
         return "" if len(protos) == 0 else ", ".join(protos)
 
     def make_wrapped(self):
@@ -431,11 +456,11 @@ class ParameterList(object):
                 self.wrap_calls.append(param)
                 self.wrap_protos.append(param)
 
-    def wrapped_calls(self):
-        return self.calls(self.wrap_calls)
+    def wrapped_calls(self, sort):
+        return self.calls(sort, params=self.wrap_calls)
 
-    def wrapped_protos(self):
-        return self.protos(self.wrap_protos)
+    def wrapped_protos(self, sort, defaults):
+        return self.protos(sort, defaults, params=self.wrap_protos)
 
 
 
@@ -454,11 +479,11 @@ class Parameter(object):
     def call(self):
         return self.name
 
-    def proto(self):
+    def proto(self, with_default):
         type = ("const " if self.is_const else "") \
              + self.type \
              + (" *" if self.is_pointer else "")
-        param = " = " + self.default if self.with_default and self.default != None else ""
+        param = " = " + self.default if with_default and self.default != None else ""
         return type + " " + self.name + param
 
 ########## PARAMETER ##########
