@@ -135,20 +135,33 @@ class ObjectClass(object):
         name = self.name.lower()
         methods = ""
         for request in self.requests:
-            methods += request.make_object_class_proto()
+            methods += request.make_object_class_proto(self.name.lower())
 
         return \
 """\
 class %s {
-  %s(connection & c)
-    : m_c(c)
-  {}
+  public:
+    %s(connection & c, const %s & %s)
+      : m_c(c), m_%s(%s)
+    {}
+
+    %s(const %s & other)
+      : m_c(other.m_c), m_%s(other.m_%s)
+    {}
+
 %s
-  private:
+  protected:
     connection & m_c;
     %s m_%s;
 }; // class %s
-""" % (name, name, methods, self.c_name, name, name)
+""" % (name, # class
+       name, self.c_name, name, # ctor
+       name, name, # ctor
+       name, name, # copy ctor
+       name, name, # copy ctor
+       methods,
+       self.c_name, name,
+       name)
 
     def make_methods(self):
         methods = ""
@@ -179,13 +192,15 @@ class CppRequest(object):
     def make_class(self):
         return self.void_request() if self.is_void else self.reply_request()
 
-    def make_object_class_proto(self):
+    def make_object_class_proto(self, class_name):
         return_type = self.template(indent="  ") \
                 + "  void" if self.is_void else "  request::" + self.name
         return \
 """\
 %s %s(%s);
-""" % (return_type, self.name, self.wrapped_protos())
+""" % (return_type,
+       self.name.replace("_" + class_name, ""),
+       self.wrapped_protos(True, True))
 
     def make_object_class_call(self, class_name):
         return_type = self.template(indent="") \
