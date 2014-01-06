@@ -121,6 +121,84 @@ xpp::generic::string<
 
 
 
+########## CONNECTIONCLASS ##########
+
+class ConnectionClass(object):
+    def __init__(self, name="connection", c_name="xcb_connection_t"):
+        self.name = name
+        self.c_name = c_name
+        self.requests = []
+
+    def add(self, request):
+        self.requests.append(request)
+
+    def make_proto(self):
+        name = self.name
+        c_name = self.c_name
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_proto("")
+
+        return \
+"""\
+class %s
+  // : virtual public xpp::generic::connection<xcb_connection_t>
+  : virtual public xpp::generic::connection
+{
+  public:
+    // using xpp::generic::connection::connection;
+
+    %s(void)
+    {}
+
+    %s(%s * c)
+      : xpp::generic::connection::connection(c)
+    {}
+
+    /*
+    %s * operator*(void)
+    {
+      return m_c;
+    }
+
+    %s & set(%s * c)
+    {
+      m_c = c;
+      return *this;
+    }
+
+    const %s * operator*(void) const
+    {
+      return m_c;
+    }
+    */
+
+%s
+  protected:
+  /*
+    xcb_connection_t * m_c = NULL;
+    xcb_connection_t * & m_c = xpp::generic::connection::m_c;
+  */
+}; // class %s
+""" % (name, # class
+       name, # ctor 1
+       name, c_name, # ctor 2
+       c_name, # operator*
+       name, c_name,
+       c_name, # operator* const
+       methods,
+       name)
+
+    def make_methods(self):
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_call(True, self.name.lower(), "connection") + "\n"
+        return methods
+
+########## CONNECTIONCLASS ##########
+
+
+
 ########## OBJECTCLASS ##########
 
 class ObjectClass(object):
