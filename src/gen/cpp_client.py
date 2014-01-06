@@ -1815,11 +1815,6 @@ def _cpp_request_helper(self, name, is_void):
             request_name, is_void,
             c_namespace="" if _ns.header == "xproto" else _ns.header)
 
-    is_obj_func = False
-    if (len(param_fields) > 0 and len(param_fields[0].field_type) > 1):
-        # e.g.: DRAWABLE in { "DRAWABLE" : [], .. }
-        obj_name = param_fields[0].field_type[-1]
-        is_obj_func = obj_name in _type_objects[_ns.header]
 
     for field in param_fields:
         c_field_const_type = field.c_field_const_type
@@ -1840,10 +1835,9 @@ def _cpp_request_helper(self, name, is_void):
 
     _cpp_request_objects[request_name].make_wrapped()
 
-    try:
-        for key in _object_classes[_ns.header]:
-            _object_classes[_ns.header][key].add(_cpp_request_objects[request_name])
-    except: pass
+    _connection_class.add(_cpp_request_objects[request_name])
+    for key in _object_classes[_ns.header]:
+        _object_classes[_ns.header][key].add(_cpp_request_objects[request_name])
 
 def _c_reply(self, name):
     '''
