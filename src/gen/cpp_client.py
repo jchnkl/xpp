@@ -8,6 +8,7 @@ import sys
 import errno
 import time
 import re
+import collections
 
 from templates import CppRequest, \
                       Parameter, \
@@ -17,25 +18,25 @@ from templates import CppRequest, \
 _cpp_request_names = []
 _cpp_request_objects = {}
 
-_object_classes =\
-        { "xproto" :
-                { "DRAWABLE": ObjectClass("", "DRAWABLE")
-                , "WINDOW": ObjectClass("", "WINDOW")
-                , "PIXMAP": ObjectClass("", "PIXMAP")
-                , "ATOM": ObjectClass("", "ATOM")
-                , "CURSOR": ObjectClass("", "CURSOR")
-                , "FONT": ObjectClass("", "FONT")
-                , "GCONTEXT": ObjectClass("", "GCONTEXT")
-                , "FONTABLE": ObjectClass("", "FONTABLE")
-                # , "KEYCODE" : []
-                }
 
-        , "randr" :
-                { "MODE" : ObjectClass("randr", "MODE")
-                , "CRTC" : ObjectClass("randr", "CRTC")
-                , "OUTPUT" : ObjectClass("randr", "OUTPUT")
-                , "PROVIDER" : ObjectClass("randr", "PROVIDER")
-                }
+_object_classes = \
+        { "xproto" : collections.OrderedDict( \
+                { "10" : ObjectClass("", "DRAWABLE")
+                , "30" : ObjectClass("", "WINDOW")
+                , "40" : ObjectClass("", "PIXMAP")
+                , "50" : ObjectClass("", "ATOM")
+                , "60" : ObjectClass("", "CURSOR")
+                , "70" : ObjectClass("", "FONT")
+                , "80" : ObjectClass("", "GCONTEXT")
+                , "90" : ObjectClass("", "FONTABLE")
+                # , "KEYCODE" : []
+                } )
+        , "randr" : collections.OrderedDict( \
+                { "10" : ObjectClass("randr", "MODE")
+                , "20" : ObjectClass("randr", "CRTC")
+                , "30" : ObjectClass("randr", "OUTPUT")
+                , "40" : ObjectClass("randr", "PROVIDER")
+                } )
         }
 
 # Jump to the bottom of this file for the main routine
@@ -53,25 +54,6 @@ _xcb_includes =\
     , "randr" : "randr.h"
     }
 
-_type_objects =\
-        { "xproto" :
-                { "DRAWABLE": []
-                , "WINDOW": []
-                , "PIXMAP": []
-                , "ATOM": []
-                , "CURSOR": []
-                , "FONT": []
-                , "GCONTEXT": []
-                , "FONTABLE": []
-                # , "KEYCODE" : []
-                }
-        , "randr" :
-                { "MODE" : []
-                , "CRTC" : []
-                , "OUTPUT" : []
-                , "PROVIDER" : []
-                }
-        }
 
 _cplusplus_annoyances = {'class' : '_class',
                          'new'   : '_new',
@@ -245,12 +227,31 @@ def c_close(self):
         _h('%s', _cpp_request_objects[name].make_proto())
     _h('}; // namespace request')
 
-    try:
-        _h('')
-        for key in _object_classes[_ns.header]:
-            _h(_object_classes[_ns.header][key].make_proto())
-        _h('')
-    except: pass
+    _h('')
+    _h(_connection_class.make_proto())
+    _h('')
+
+    printed_classes = set()
+    _h('')
+    for id in _object_classes[_ns.header]:
+        if id in printed_classes:
+            continue
+        else:
+            printed_classes.add(id)
+
+        o = _object_classes[_ns.header][id]
+        base = o.get_base_class()
+        if base != None and not id in printed_classes:
+            for id, oc in _object_classes[_ns.header].iteritems():
+                if oc.name == base:
+                    printed_classes.add(id)
+                    # _h(_object_classes[_ns.header][base].make_proto())
+                    _h(oc.make_proto())
+                    break
+
+        _h(o.make_proto())
+
+    _h('')
 
     _h('namespace request {')
     for name in _cpp_request_names:
