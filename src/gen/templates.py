@@ -395,25 +395,31 @@ class CppRequest(object):
         return_type = self.template(indent="") \
                 + "void" if self.is_void else "request::" + self.name
 
-        wrapped_protos = self.wrapped_protos(True, False)
-        wrapped_calls = self.comma() + self.wrapped_calls(False)
+        scoped_class = class_name + "::" if len(class_name) > 0 else class_name
+
+        name = self.name.replace("_" + class_name, "")
+
+        return_kw = "" if self.is_void else "return "
+
+        method_call = "request::" + self.name + ("()" if self.is_void else "")
 
         call_head = "xpp::generic::connection::get()"
         if not is_conn:
             call_head += ", " + base_class_name + "::get()"
 
+        wrapped_protos = self.wrapped_protos(True, False)
+        wrapped_calls = self.comma() + self.wrapped_calls(False)
+
         return \
 """\
 %s
-%s::%s(%s)
+%s%s(%s)
 {
   %s%s(%s%s);
 }
 """ % (return_type,
-       class_name, self.name.replace("_" + class_name, ""), wrapped_protos,
-       "" if self.is_void else "return ",
-           "request::" + self.name + ("()" if self.is_void else ""),
-           call_head, wrapped_calls)
+       scoped_class, name, wrapped_protos,
+       return_kw, method_call, call_head, wrapped_calls)
 
     def add(self, param):
         self.parameter_list.add(param)
