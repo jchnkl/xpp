@@ -37,6 +37,9 @@ _object_classes = \
                 , "30" : ObjectClass("randr", "OUTPUT")
                 , "40" : ObjectClass("randr", "PROVIDER")
                 } )
+        , "render" : collections.OrderedDict( \
+                {
+                } )
         }
 
 # Jump to the bottom of this file for the main routine
@@ -49,9 +52,10 @@ _extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
 
 _namespace = { "xproto" : "core" }
 
-_xcb_includes =\
+_xcb_includes = \
     { "xproto" : "xcb.h"
     , "randr" : "randr.h"
+    , "render" : "render.h"
     }
 
 
