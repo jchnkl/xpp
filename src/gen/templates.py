@@ -201,12 +201,20 @@ class %s
 
 ########## OBJECTCLASS ##########
 
+_base_classes = \
+    { "WINDOW" : "DRAWABLE"
+    , "PIXMAP" : "DRAWABLE"
+    }
+
 class ObjectClass(object):
     def __init__(self, namespace, name):
         self.name = name
         # self.namespace = namespace
         self.c_name = 'xcb_' + ("" if namespace == "" else namespace + "_") + name.lower() + '_t'
         self.requests = []
+
+    def get_base_class(self):
+        return _base_classes.get(self.name)
 
     def add(self, request):
         if (len(request.parameter_list.parameter) > 0
