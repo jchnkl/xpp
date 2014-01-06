@@ -610,13 +610,16 @@ class ParameterList(object):
         self.wrap_calls = []
         self.wrap_protos = []
 
+        # if a parameter is removed, take reduced parameter size into account
+        adjust = 0
         for index, param in enumerate(self.parameter):
-            prev = index - 1
+            prev = index - adjust - 1
 
             if (param.is_const and param.is_pointer
                     and prev >= 0
                     and self.parameter[prev].name == param.name + "_len"):
 
+                adjust = adjust + 1
                 self.want_wrap = True
                 self.wrap_calls.pop(prev)
                 self.wrap_protos.pop(prev)
