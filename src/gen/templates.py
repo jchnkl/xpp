@@ -230,37 +230,131 @@ class ObjectClass(object):
         for request in self.requests:
             methods += request.make_object_class_proto(self.name.lower())
 
+        if _base_classes.has_key(self.name):
+            return self.ctors_with_inheritance(methods)
+        else:
+            return self.ctors_without_inheritance(methods)
+
+    def make_methods(self):
+        base = _base_classes.get(self.name, self.name)
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_call(False, self.name.lower(), base.lower()) + "\n"
+        return methods
+
+    def ctors_without_inheritance(self, methods):
+        name = self.name.lower()
+        c_name = self.c_name
         return \
 """\
-class %s {
+class %s
+  : virtual public xpp::generic::connection
+{
   public:
-    %s(connection & c, const %s & %s)
-      : m_c(c), m_%s(%s)
+    // using xpp::generic::connection::connection;
+    // using xpp::generic::connection<xcb_connection_t>::connection;
+
+    %s(void)
     {}
 
+    %s(xcb_connection_t * c)
+      // : m_c(c)
+      // : xpp::generic::connection<xcb_connection_t>::connection(c)
+      : xpp::generic::connection(c)
+    {
+      connection::set(c);
+    }
+
+    %s(xcb_connection_t * c, const %s & %s)
+      : xpp::generic::connection(c), m_%s(%s)
+      // : m_c(c)
+    {}
+
+    /*
     %s(const %s & other)
       : m_c(other.m_c), m_%s(other.m_%s)
     {}
+    */
+
+    const %s & get(void)
+    {
+      return m_%s;
+    }
+
+    %s & set(const %s & %s)
+    {
+      m_%s = %s;
+      return *this;
+    }
+
+    const %s & operator*(void) const
+    {
+      return m_%s;
+    }
 
 %s
-  protected:
-    connection & m_c;
+  private:
+    /*
+    xcb_connection_t * m_c;
+    xcb_connection_t * & m_c = xpp::generic::connection::m_c;
+    */
     %s m_%s;
 }; // class %s
 """ % (name, # class
-       name, self.c_name, name, # ctor
-       name, name, # ctor
+       name, # ctor 0
+       name, # ctor 1
+       name, c_name, name, # ctor 2
+       name, name, # ctor 2
        name, name, # copy ctor
        name, name, # copy ctor
+       c_name, name, # get()
+       name, c_name, name, # set()
+       name, name, # set()
+       c_name, name, # const & operator*
        methods,
-       self.c_name, name,
+       c_name, name,
        name)
 
-    def make_methods(self):
-        methods = ""
-        for request in self.requests:
-            methods += request.make_object_class_call(self.name.lower()) + "\n"
-        return methods
+    def ctors_with_inheritance(self, methods):
+        name = self.name.lower()
+        base = _base_classes[self.name].lower()
+        return \
+"""\
+class %s : virtual public %s {
+  public:
+    // using %s::%s;
+    %s(void) {}
+
+    %s(xcb_connection_t * c) : connection(c), %s(c)
+    {
+      // connection::set(c);
+    }
+
+    %s(xcb_connection_t * c, const %s & %s)
+      : connection(c)
+      , %s(c, %s)
+    {
+      // %s::set(%s);
+      // connection::set(c);
+    }
+
+%s
+  protected:
+    /*
+    xcb_connection_t * & m_c = xpp::generic::connection::m_c;
+    %s & m_%s = %s::m_%s;
+    */
+}; // class %s
+""" % (name, base, # class %s : public %s
+       base, base, # using %s::%s
+       name, # %s(void) {}
+       name, base, # %s(xcb_connection_t * c) : %s( ..
+       name, self.c_name, name, # %s(xcb_connection_t * c, const %s & %s) ..
+       base, name, # %s::set(%s)
+       base, name, # : %s(c, %s)
+       methods,
+       self.c_name, name, base, base,
+       name)
 
 ########## OBJECTCLASS ##########
 
@@ -286,34 +380,40 @@ class CppRequest(object):
         return self.void_request() if self.is_void else self.reply_request()
 
     def make_object_class_proto(self, class_name):
-        return_type = self.template(indent="  ") + "    " \
+        return_type = self.template(indent="    ") + "    " \
                 + ("void" if self.is_void else "request::" + self.name)
+        name = self.name if class_name == "" \
+                else self.name.replace("_" + class_name, "")
         return \
 """\
 %s %s(%s);
 """ % (return_type,
-       self.name.replace("_" + class_name, ""),
+       name, # self.name.replace("_" + class_name, ""),
        self.wrapped_protos(True, True))
 
-    def make_object_class_call(self, class_name):
+    def make_object_class_call(self, is_conn, class_name, base_class_name):
         return_type = self.template(indent="") \
                 + "void" if self.is_void else "request::" + self.name
 
         wrapped_protos = self.wrapped_protos(True, False)
         wrapped_calls = self.comma() + self.wrapped_calls(False)
 
+        call_head = "xpp::generic::connection::get()"
+        if not is_conn:
+            call_head += ", " + base_class_name + "::get()"
+
         return \
 """\
 %s
 %s::%s(%s)
 {
-  %s%s(*m_c, m_%s%s);
+  %s%s(%s%s);
 }
 """ % (return_type,
        class_name, self.name.replace("_" + class_name, ""), wrapped_protos,
        "" if self.is_void else "return ",
            "request::" + self.name + ("()" if self.is_void else ""),
-           class_name, wrapped_calls)
+           call_head, wrapped_calls)
 
     def add(self, param):
         self.parameter_list.add(param)
