@@ -50,7 +50,7 @@ _cname_special_cases = {'DECnet':'decnet'}
 
 _extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
 
-_namespace = { "xproto" : "core" }
+_namespace = {}
 
 _xcb_includes = \
     { "xproto" : "xcb.h"
