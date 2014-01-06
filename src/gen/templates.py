@@ -1,6 +1,13 @@
-# TODO: object types (windows, pixmaps)
-#       connection class for all calls not in object
-#       valueparams
+# TODO:
+"""
+* object types (windows, pixmaps)
+* connection class for all calls not in object
+* Iterator begin, Iterator end instead of std::vector<Type>
+* object iterators: e.g. query_tree.children():
+* xpp::window & instead of xcb_window_t
+* valueparams
+* event objects
+"""
 
 import sys # sys.stderr.write
 import copy # deepcopy
