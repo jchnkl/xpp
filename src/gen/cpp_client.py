@@ -208,8 +208,7 @@ def c_open(self):
     _h('#include <vector>')
     _h('')
 
-    try: _h('#include <xcb/' + _xcb_includes[_ns.header] + '>')
-    except: pass
+    _h('#include <xcb/' + _xcb_includes[_ns.header] + '>')
 
     _h('')
     _h('#include "../connection.hpp"')
@@ -262,12 +261,10 @@ def c_close(self):
         _h("%s\n", _cpp_request_objects[name].make_class())
     _h('}; // namespace request')
 
-    try:
-        _h('')
-        for key in _object_classes[_ns.header]:
-            _h(_object_classes[_ns.header][key].make_methods())
-        _h('')
-    except: pass
+    _h('')
+    for key in _object_classes[_ns.header]:
+        _h(_object_classes[_ns.header][key].make_methods())
+    _h('')
 
     _h('')
     _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
