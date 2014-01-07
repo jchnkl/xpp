@@ -218,7 +218,8 @@ class iterator<xcb_str_t,
 
 namespace fixed_size {
 
-template<typename Data,
+template<typename IteratorType,
+         typename Data,
          typename Return,
          typename Reply,
          Data * (*Accessor)(const Reply *),
@@ -238,14 +239,11 @@ public:
   }
 
   virtual
-  const Return & operator*(void)
-  {
-    return static_cast<Return *>(Accessor(m_reply.get()))[m_index];
-  }
+  const Return & operator*(void) = 0;
 
   // prefix
   virtual
-  iterator_base & operator++(void)
+  IteratorType & operator++(void)
   {
     ++m_index;
     return *this;
@@ -253,7 +251,7 @@ public:
 
   // postfix
   virtual
-  iterator_base operator++(int)
+  IteratorType operator++(int)
   {
     auto copy = *this;
     ++(*this);
@@ -262,7 +260,7 @@ public:
 
   // prefix
   virtual
-  iterator_base & operator--(void)
+  IteratorType & operator--(void)
   {
     --m_index;
     return *this;
@@ -270,7 +268,7 @@ public:
 
   // postfix
   virtual
-  iterator_base operator--(int)
+  IteratorType operator--(int)
   {
     auto copy = *this;
     --(*this);
@@ -278,11 +276,11 @@ public:
   }
 
   static
-  iterator_base
+  IteratorType
   begin(const std::shared_ptr<Reply> & reply);
 
   static
-  iterator_base
+  IteratorType
   end(const std::shared_ptr<Reply> & reply);
 
 protected:
@@ -302,35 +300,53 @@ template<typename Data,
          Data * (*Accessor)(const Reply *),
          int (*Length)(const Reply *)>
 class iterator
-  : public iterator_base<Data, Return, Reply, Accessor, Length>
+  : public iterator_base<iterator<Data, Return, Reply, Accessor, Length>,
+                         Data, Return, Reply, Accessor, Length>
 {
 public:
-  using iterator_base<Data, Return, Reply, Accessor, Length>::iterator_base;
+    using iterator_base<iterator<Data, Return, Reply, Accessor, Length>,
+                        Data, Return, Reply, Accessor, Length>::iterator_base;
 
-  static
-  iterator
-  begin(const std::shared_ptr<Reply> & reply)
-  {
-    return iterator(reply, 0);
-  }
+    virtual
+    const Return & operator*(void)
+    {
+      return static_cast<Return *>(
+          Accessor(this->m_reply.get()))[this->m_index];
+    }
 
-  static
-  iterator
-  end(const std::shared_ptr<Reply> & reply)
-  {
-    return iterator(reply, Length(reply.get()));
-  }
-}; // class iterator
+    static
+    iterator
+    begin(const std::shared_ptr<Reply> & reply)
+    {
+      return iterator(reply, 0);
+    }
+
+    static
+    iterator
+    end(const std::shared_ptr<Reply> & reply)
+    {
+      return iterator(reply, Length(reply.get()));
+    }
+  }; // class iterator
 
 template<typename Return,
          typename Reply,
          void * (*Accessor)(const Reply *),
          int (*Length)(const Reply *)>
 class iterator<void, Return, Reply, Accessor, Length>
-  : public iterator_base<void, Return, Reply, Accessor, Length>
+  : public iterator_base<iterator<void, Return, Reply, Accessor, Length>,
+                         void, Return, Reply, Accessor, Length>
 {
 public:
-    using iterator_base<void, Return, Reply, Accessor, Length>::iterator_base;
+    using iterator_base<iterator<void, Return, Reply, Accessor, Length>,
+                        void, Return, Reply, Accessor, Length>::iterator_base;
+
+    virtual
+    const Return & operator*(void)
+    {
+      return static_cast<Return *>(
+          Accessor(this->m_reply.get()))[this->m_index];
+    }
 
     static
     iterator
