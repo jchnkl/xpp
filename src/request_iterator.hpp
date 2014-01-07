@@ -13,7 +13,7 @@ namespace generic {
 namespace variable_size {
 
 template<typename Data,
-         typename DataReturn,
+         typename Return,
          typename Reply,
          typename Iterator,
          void (*Next)(Iterator *),
@@ -33,9 +33,9 @@ class iterator {
       return ! (*this == other);
     }
 
-    const DataReturn & operator*(void)
+    const Return & operator*(void)
     {
-      return *(static_cast<DataReturn *>(m_iterator.data));
+      return *(static_cast<Return *>(m_iterator.data));
     }
 
     // prefix
@@ -219,38 +219,41 @@ class iterator<xcb_str_t,
 namespace fixed_size {
 
 template<typename Data,
-         typename DataReturn,
+         typename Return,
          typename Reply,
          Data * (*Accessor)(const Reply *),
          int (*Length)(const Reply *)>
-class iterator {
+class iterator_base {
 public:
-  iterator(void) {}
-
-  bool operator==(const iterator & other)
+  virtual
+  bool operator==(const iterator_base & other)
   {
     return m_index == other.m_index;
   }
 
-  bool operator!=(const iterator & other)
+  virtual
+  bool operator!=(const iterator_base & other)
   {
     return ! (*this == other);
   }
 
-  const DataReturn & operator*(void)
+  virtual
+  const Return & operator*(void)
   {
-    return static_cast<DataReturn *>(Accessor(m_reply.get()))[m_index];
+    return static_cast<Return *>(Accessor(m_reply.get()))[m_index];
   }
 
   // prefix
-  iterator & operator++(void)
+  virtual
+  iterator_base & operator++(void)
   {
     ++m_index;
     return *this;
   }
 
   // postfix
-  iterator operator++(int)
+  virtual
+  iterator_base operator++(int)
   {
     auto copy = *this;
     ++(*this);
@@ -258,19 +261,51 @@ public:
   }
 
   // prefix
-  iterator & operator--(void)
+  virtual
+  iterator_base & operator--(void)
   {
     --m_index;
     return *this;
   }
 
   // postfix
-  iterator operator--(int)
+  virtual
+  iterator_base operator--(int)
   {
     auto copy = *this;
     --(*this);
     return copy;
   }
+
+  static
+  iterator_base
+  begin(const std::shared_ptr<Reply> & reply);
+
+  static
+  iterator_base
+  end(const std::shared_ptr<Reply> & reply);
+
+protected:
+  std::size_t m_index = 0;
+  std::shared_ptr<Reply> m_reply;
+
+  iterator_base(void) {}
+
+  iterator_base(const std::shared_ptr<Reply> & reply, std::size_t index)
+    : m_index(index), m_reply(reply)
+  {}
+}; // class iterator
+
+template<typename Data,
+         typename Return,
+         typename Reply,
+         Data * (*Accessor)(const Reply *),
+         int (*Length)(const Reply *)>
+class iterator
+  : public iterator_base<Data, Return, Reply, Accessor, Length>
+{
+public:
+  using iterator_base<Data, Return, Reply, Accessor, Length>::iterator_base;
 
   static
   iterator
@@ -285,14 +320,31 @@ public:
   {
     return iterator(reply, Length(reply.get()));
   }
+}; // class iterator
 
-private:
-  std::size_t m_index = 0;
-  std::shared_ptr<Reply> m_reply;
+template<typename Return,
+         typename Reply,
+         void * (*Accessor)(const Reply *),
+         int (*Length)(const Reply *)>
+class iterator<void, Return, Reply, Accessor, Length>
+  : public iterator_base<void, Return, Reply, Accessor, Length>
+{
+public:
+    using iterator_base<void, Return, Reply, Accessor, Length>::iterator_base;
 
-  iterator(const std::shared_ptr<Reply> & reply, std::size_t index)
-    : m_index(index), m_reply(reply)
-  {}
+    static
+    iterator
+    begin(const std::shared_ptr<Reply> & reply)
+    {
+      return iterator(reply, 0);
+    }
+
+    static
+    iterator
+    end(const std::shared_ptr<Reply> & reply)
+    {
+      return iterator(reply, Length(reply.get()) / sizeof(Return));
+    }
 }; // class iterator
 
 }; // namespace fixed_size
