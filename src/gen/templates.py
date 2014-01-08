@@ -17,14 +17,14 @@ import copy # deepcopy
 
 class Accessor(object):
     def __init__(self, is_fixed=False, is_string=False, is_variable=False, \
-                 member="", type="", return_type="", iter_name="", c_name=""):
+                 member="", c_type="", return_type="", iter_name="", c_name=""):
 
         self.is_fixed = is_fixed
         self.is_string = is_string
         self.is_variable = is_variable
 
         self.member = member
-        self.type = type
+        self.c_type = c_type
         self.return_type = return_type
         self.iter_name = iter_name
         self.c_name = c_name
@@ -49,7 +49,7 @@ xpp::generic::fixed_size::iterator<
                                    %s_reply_t,
                                    %s_%s,
                                    %s_%s_length>\
-""" % (self.type, \
+""" % (self.c_type, \
        self.return_type, \
        self.c_name, \
        self.c_name, self.member, \
@@ -67,7 +67,7 @@ xpp::generic::variable_size::iterator<
                                       &%s_next,
                                       &%s_sizeof,
                                       &%s_%s_iterator>\
-""" % (self.type, \
+""" % (self.c_type, \
        self.return_type, \
        self.c_name, \
        self.iter_name, \
