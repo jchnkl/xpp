@@ -1,5 +1,5 @@
-#ifndef CONNECTION_HPP
-#define CONNECTION_HPP
+#ifndef XPP_CONNECTION_HPP
+#define XPP_CONNECTION_HPP
 
 #include "core.hpp"
 
@@ -20,4 +20,4 @@ class connection
 
 }; // namespace xpp
 
-#endif // CONNECTION_HPP
+#endif // XPP_CONNECTION_HPP

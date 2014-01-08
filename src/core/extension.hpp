@@ -1,5 +1,5 @@
-#ifndef EXTENSION_HPP
-#define EXTENSION_HPP
+#ifndef XPP_EXTENSION_HPP
+#define XPP_EXTENSION_HPP
 
 #include "core.hpp"
 
@@ -43,4 +43,4 @@ class extension {
 
 }; // namespace xpp
 
-#endif // EXTENSION_HPP
+#endif // XPP_EXTENSION_HPP
