@@ -194,6 +194,13 @@ class ConnectionClass(object):
     def add(self, request):
         self.requests.append(request)
 
+    def set_ns(self, namespace):
+        self.namespace = namespace
+
+    def make_mixins(self):
+        return make_mixin_macro( \
+                self.name.upper(), self.namespace, self.name, self.requests)
+
     def make_proto(self):
         name = self.name
         c_name = self.c_name
@@ -281,6 +288,13 @@ class ObjectClass(object):
             request_copy.parameter_list.parameter.pop(0)
             request_copy.make_wrapped()
             self.requests.append(request_copy)
+
+    def set_ns(self, namespace):
+        self.namespace = namespace
+
+    def make_mixins(self):
+        return make_mixin_macro("CONNECTION, " + self.name.upper(), \
+                self.namespace, self.name, self.requests)
 
     def make_proto(self):
         name = self.name.lower()
