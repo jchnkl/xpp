@@ -167,6 +167,19 @@ class core {
     // reference counting for xcb_connection_t
     std::shared_ptr<xcb_connection_t> m_c;
 
+}; // class core
+
+template<typename ... Protocols>
+class connection
+  : virtual public core
+  , virtual public Protocols ...
+{
+  public:
+    template<typename ... Parameters>
+    connection(Parameters ... parameters)
+      : core::core(parameters ...)
+      , Protocols(static_cast<const core &>(*this)) ...
+    {}
 }; // class connection
 
 }; // namespace xpp
