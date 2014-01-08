@@ -525,10 +525,10 @@ class CppRequest(object):
     def protos(self, sort, defaults):
         return self.parameter_list.protos(sort, defaults)
 
-    def template(self, indent="    "):
+    def template(self, indent="    ", tail="\n"):
         return indent + "template<typename " \
                 + ", typename ".join(self.parameter_list.templates) \
-                + ">\n" \
+                + ">" + tail \
                 if len(self.parameter_list.templates) > 0 \
                 else ""
 
