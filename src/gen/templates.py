@@ -12,6 +12,11 @@
 import sys # sys.stderr.write
 import copy # deepcopy
 
+_base_classes = \
+    { "WINDOW" : "DRAWABLE"
+    , "PIXMAP" : "DRAWABLE"
+    }
+
 
 ########## ACCESSORS ##########
 
@@ -41,6 +46,12 @@ class Accessor(object):
 
 
     def iter_fixed(self):
+        object_type = self.c_type.replace("xcb_", "").replace("_t", "").upper()
+        if _base_classes.has_key(object_type):
+            return_type = "xpp::" + object_type.lower()
+        else:
+            return_type = self.return_type
+
         return \
 """\
 xpp::generic::fixed_size::iterator<
@@ -50,7 +61,7 @@ xpp::generic::fixed_size::iterator<
                                    %s_%s,
                                    %s_%s_length>\
 """ % (self.c_type, \
-       self.return_type, \
+       return_type, \
        self.c_name, \
        self.c_name, self.member, \
        self.c_name, self.member)
@@ -77,8 +88,13 @@ xpp::generic::variable_size::iterator<
 
 
     def list(self, iterator):
-        self.return_type = "Type" if self.type == "void" else self.type
-        template = "    template<typename Type>\n" if self.type == "void" else ""
+        self.return_type = "Type" if self.c_type == "void" else self.c_type
+        template = "    template<typename Type>\n" if self.c_type == "void" else ""
+
+        object_type = self.c_type.replace("xcb_", "").replace("_t", "").upper()
+
+        c_tor_params = "m_c, " if _base_classes.has_key(object_type) else ""
+        c_tor_params += "this->get()"
 
         return template + \
 """\
@@ -89,11 +105,12 @@ xpp::generic::variable_size::iterator<
     {
       return xpp::generic::list<%s_reply_t,
                                 %s
-                               >(this->get());
+                               >(%s);
     }\
 """ % (self.c_name, iterator, \
        self.member, \
-       self.c_name, iterator)
+       self.c_name, iterator,
+       c_tor_params)
 
 
     def string(self):
@@ -201,10 +218,6 @@ class %s
 
 ########## OBJECTCLASS ##########
 
-_base_classes = \
-    { "WINDOW" : "DRAWABLE"
-    , "PIXMAP" : "DRAWABLE"
-    }
 
 class ObjectClass(object):
     def __init__(self, namespace, name):
