@@ -465,35 +465,49 @@ class CppRequest(object):
        name, # self.name.replace("_" + class_name, ""),
        self.wrapped_protos(True, True))
 
-    def make_object_class_call(self, is_conn, class_name, base_class_name):
+    def make_object_class_call(self, is_conn, indent, class_name,
+            base_class_name, namespace=""):
+
+        if namespace == "":
+            scoped_request = "request"
+        else:
+            scoped_request = namespace + "::request"
+
         return_type = self.template(indent="") \
-                + "void" if self.is_void else "request::" + self.name
+                + "void" if self.is_void else scoped_request + "::" + self.name
 
         scoped_class = class_name + "::" if len(class_name) > 0 else class_name
 
-        name = self.name.replace("_" + class_name, "")
+        if class_name == "":
+            name = self.name
+        else:
+            name = self.name.replace("_" + class_name, "")
 
         return_kw = "" if self.is_void else "return "
 
-        method_call = "request::" + self.name + ("()" if self.is_void else "")
+        method_call = scoped_request + "::" \
+                + self.name + ("()" if self.is_void else "")
 
-        call_head = "xpp::generic::connection::get()"
+        call_head = "m_c"
         if not is_conn:
-            call_head += ", " + base_class_name + "::get()"
+            call_head += ", " + "m_" + class_name
+            # call_head += ", " + base_class_name + "::get()"
 
         wrapped_protos = self.wrapped_protos(True, False)
         wrapped_calls = self.comma() + self.wrapped_calls(False)
 
         return \
 """\
-%s
-%s%s(%s)
-{
-  %s%s(%s%s);
-}
-""" % (return_type,
-       scoped_class, name, wrapped_protos,
-       return_kw, method_call, call_head, wrapped_calls)
+%s%s
+%s%s%s(%s)
+%s{
+%s  %s%s(%s%s);
+%s}
+""" % (indent, return_type,
+       indent, scoped_class, name, wrapped_protos,
+       indent,
+       indent, return_kw, method_call, call_head, wrapped_calls,
+       indent)
 
     def add(self, param):
         self.parameter_list.add(param)
