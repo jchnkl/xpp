@@ -261,7 +261,8 @@ class %s
     def make_methods(self):
         methods = ""
         for request in self.requests:
-            methods += request.make_object_class_call(True, self.name.lower(), "connection") + "\n"
+            methods += request.make_object_class_call( \
+                    True, "", self.name.lower(), "connection") + "\n"
         return methods
 
 ########## CONNECTIONCLASS ##########
@@ -311,7 +312,8 @@ class ObjectClass(object):
         base = _base_classes.get(self.name, self.name)
         methods = ""
         for request in self.requests:
-            methods += request.make_object_class_call(False, self.name.lower(), base.lower()) + "\n"
+            methods += request.make_object_class_call( \
+                    False, "", self.name.lower(), base.lower()) + "\n"
         return methods
 
     def ctors_without_inheritance(self, methods):
