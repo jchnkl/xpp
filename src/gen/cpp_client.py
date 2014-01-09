@@ -213,7 +213,7 @@ def c_open(self):
     _h('')
     _h('#include "../connection.hpp"')
     _h('#include "../request.hpp"')
-    _h('#include "../request_iterator.hpp"')
+    _h('#include "../iterator.hpp"')
     _h('')
     _h('namespace xpp {')
     _h('namespace %s {', _namespace.get(_ns.header, _ns.header))
