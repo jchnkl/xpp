@@ -606,7 +606,7 @@ class ParameterList(object):
                     self.wrap_calls.append(Parameter(None, \
                         c_name=param.c_name + '.c_str()'))
 
-                    self.wrap_calls.append(Parameter(None, \
+                    self.wrap_protos.append(Parameter(None, \
                         c_type='const std::string &',
                         c_name=param.c_name))
 
@@ -625,7 +625,7 @@ class ParameterList(object):
                     self.wrap_calls.append(Parameter(None, \
                         c_name=param.c_name + '.data()'))
 
-                    self.wrap_calls.append(Parameter(None, \
+                    self.wrap_protos.append(Parameter(None, \
                         c_type='const std::vector<' + param_type + '> &',
                         c_name=param.c_name))
 
