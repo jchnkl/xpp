@@ -183,52 +183,6 @@ xpp::generic::string<
 
 
 
-########## TEXTUAL_MIXIN ##########
-
-def make_mixin_macro(macro_args, namespace, class_name, requests):
-    methods = "#define %s_%s_METHODS(%s) \\\n" \
-            % (namespace.upper(), class_name.upper(), macro_args)
-
-    for request in requests:
-        wrapped_protos = request.wrapped_protos(True, False)
-        wrapped_calls = request.comma() + request.wrapped_calls(False)
-
-        scoped_request = "request"
-        if len(namespace) > 0:
-            scoped_request = namespace + "::" + scoped_request
-
-        return_type = request.template(indent="", tail=' \\\n')
-        if request.is_void:
-            return_type += "void"
-        else:
-            return_type += scoped_request + "::" + request.name
-
-        method_call = scoped_request + "::" + request.name
-        if request.is_void:
-            method_call += "()"
-
-        return_kw = "" if request.is_void else "return "
-
-        request_name = request.name.replace("_" + class_name.lower(), "")
-
-        methods += \
-'''\\
-%s \\
-%s(%s) \\
-{ \\
-%s%s(%s%s); \\
-} \\
-''' % (return_type,
-   request_name, wrapped_protos,
-   return_kw, method_call, macro_args, wrapped_calls)
-
-    return methods
-
-########## TEXTUAL_MIXIN ##########
-
-
-_no_extension = {'xproto'}
-
 ########## PROTOCOLCLASS ##########
 
 class ProtocolClass(object):
