@@ -1914,10 +1914,7 @@ def _cpp_request_helper(self, name, is_void):
             c_field_const_type = "const void"
             c_pointer = ' *'
 
-        param = Parameter(type=field.c_field_type,
-                          name=field.c_field_name,
-                          is_const=field.c_field_const_type == "const " + field.c_field_type,
-                          is_pointer=c_pointer != "")
+        param = Parameter(field)
 
         _cpp_request_objects[request_name].add(param)
 

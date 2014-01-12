@@ -255,7 +255,7 @@ class ObjectClass(object):
 
     def add(self, request):
         if (len(request.parameter_list.parameter) > 0
-                and request.parameter_list.parameter[0].type == self.c_name):
+                and request.parameter_list.parameter[0].c_type == self.c_name):
             request_copy = copy.deepcopy(request)
             request_copy.parameter_list.parameter.pop(0)
             request_copy.make_wrapped()
@@ -589,43 +589,52 @@ class ParameterList(object):
 
             if (param.is_const and param.is_pointer
                     and prev >= 0
-                    and self.parameter[prev].name == param.name + "_len"):
+                    and self.parameter[prev].c_name == param.c_name + "_len"):
 
                 adjust = adjust + 1
                 self.want_wrap = True
                 self.wrap_calls.pop(prev)
                 self.wrap_protos.pop(prev)
 
-                prev_type = self.parameter[prev].type
-                if param.type == 'char':
-                    self.wrap_calls.append(Parameter(
-                        name="static_cast<" + prev_type + ">(" + param.name + '.length())'))
-                    self.wrap_calls.append(
-                            Parameter(name=param.name + '.c_str()'))
-                    self.wrap_protos.append(
-                            Parameter(type='const std::string &', name=param.name))
+                prev_type = self.parameter[prev].c_type
+                if param.c_type == 'char':
+
+                    self.wrap_calls.append(Parameter(None, \
+                        c_name="static_cast<" + prev_type + ">(" \
+                        + param.c_name + '.length())'))
+
+                    self.wrap_calls.append(Parameter(None, \
+                        c_name=param.c_name + '.c_str()'))
+
+                    self.wrap_calls.append(Parameter(None, \
+                        c_type='const std::string &',
+                        c_name=param.c_name))
 
                 else:
-                    param_type = param.type
+                    param_type = param.c_type
                     if param_type == "void":
                         param_type = "Type_" + str(index)
                         self.templates.append(param_type)
 
-                    prev_type = self.parameter[prev].type
-                    self.wrap_calls.append(Parameter(
-                        name="static_cast<" + prev_type + ">(" + param.name + '.size())'))
-                    self.wrap_calls.append(
-                            Parameter(name=param.name + '.data()'))
-                    self.wrap_protos.append(
-                            Parameter(type='const std::vector<' + param_type + '> &',
-                                      name=param.name))
+                    prev_type = self.parameter[prev].c_type
+
+                    self.wrap_calls.append(Parameter(None, \
+                      c_name="static_cast<" + prev_type + ">(" \
+                      + param.c_name + '.size())'))
+
+                    self.wrap_calls.append(Parameter(None, \
+                        c_name=param.c_name + '.data()'))
+
+                    self.wrap_calls.append(Parameter(None, \
+                        c_type='const std::vector<' + param_type + '> &',
+                        c_name=param.c_name))
 
                     # param_type = "Iterator_" + str(index)
                     # self.templates.append(param_type)
 
-                    # prev_type = self.parameter[prev].type
-                    # self.wrap_protos.append(Parameter(name=param_type + " begin")
-                    # self.wrap_protos.append(Parameter(name=param_type + " end")
+                    # prev_type = self.parameter[prev].c_type
+                    # self.wrap_protos.append(Parameter(c_name=param_type + " begin")
+                    # self.wrap_protos.append(Parameter(c_name=param_type + " end")
 
             else:
                 self.wrap_calls.append(param)
@@ -643,22 +652,33 @@ _default_parameter_values =\
     { "xcb_timestamp_t" : "XCB_TIME_CURRENT_TIME" }
 
 class Parameter(object):
-    def __init__(self, type="", name="", is_const=False, is_pointer=False):
-        self.type = type
-        self.name = name
-        self.is_const = is_const
-        self.is_pointer = is_pointer
-        self.default = _default_parameter_values.get(self.type)
-        self.with_default = True
+    def __init__(self, field, c_type="", c_name=""):
+        self.field = field
+        if field != None:
+          self.c_type = field.c_field_type
+          self.c_name = field.c_field_name
+          self.is_const = field.c_field_const_type == "const " + field.c_field_type
+          self.is_pointer = field.c_pointer != " "
+          # self.serialize = field.type.need_serialize
+          self.default = _default_parameter_values.get(self.c_type)
+          self.with_default = True
+        else:
+          self.c_type = c_type
+          self.c_name = c_name
+          self.is_const = False
+          self.is_pointer = False
+          # self.serialize = field.type.need_serialize
+          self.default = _default_parameter_values.get(self.c_type)
+          self.with_default = True
 
     def call(self):
-        return self.name
+        return self.c_name
 
     def proto(self, with_default):
-        type = ("const " if self.is_const else "") \
-             + self.type \
+        c_type = ("const " if self.is_const else "") \
+             + self.c_type \
              + (" *" if self.is_pointer else "")
         param = " = " + self.default if with_default and self.default != None else ""
-        return type + " " + self.name + param
+        return c_type + " " + self.c_name + param
 
 ########## PARAMETER ##########
