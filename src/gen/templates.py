@@ -277,65 +277,6 @@ namespace protocol {
 
 
 
-########## CONNECTIONCLASS ##########
-
-class ConnectionClass(object):
-    def __init__(self, name="connection", c_name="xcb_connection_t"):
-        self.name = name
-        self.c_name = c_name
-        self.requests = []
-
-    def add(self, request):
-        self.requests.append(request)
-
-    def set_ns(self, namespace):
-        self.namespace = namespace
-
-    def make_mixins(self):
-        return make_mixin_macro( \
-                self.name.upper(), self.namespace, self.name, self.requests)
-
-    def make_proto(self):
-        name = self.name
-        c_name = self.c_name
-        methods = ""
-        for request in self.requests:
-            methods += request.make_object_class_proto("")
-
-        return \
-"""\
-class %s
-{
-  public:
-
-    %s(void)
-    {}
-
-    %s(xcb_connection_t * c)
-      : m_c(c)
-    {}
-
-%s
-  protected:
-    xcb_connection_t * m_c = NULL;
-}; // class %s
-""" % (name, # class
-       name, # ctor 1
-       name, # ctor 2
-       methods,
-       name)
-
-    def make_methods(self):
-        methods = ""
-        for request in self.requests:
-            methods += request.make_object_class_call( \
-                    True, "", self.name.lower(), "connection") + "\n"
-        return methods
-
-########## CONNECTIONCLASS ##########
-
-
-
 ########## OBJECTCLASS ##########
 
 # _ignored = set(
