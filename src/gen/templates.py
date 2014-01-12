@@ -520,6 +520,7 @@ class %s {
 ########## REPLY_REQUEST ##########
 
     def reply_request(self):
+        ############ def methods(...) ############
         def methods(protos, calls, template=""):
             return template + \
 """\
@@ -529,6 +530,8 @@ class %s {
 """ % (self.name, \
        self.comma() + protos, \
        self.c_name(), self.comma() + calls)
+
+        ############ def methods(...) ############
 
         namespace = get_namespace(self.namespace)
 
