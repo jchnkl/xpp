@@ -416,62 +416,6 @@ class CppRequest(object):
        method, proto_params,
        call)
 
-    def make_object_class_proto(self, class_name):
-        return_type = self.template(indent="    ") + "    " \
-                + ("void" if self.is_void else "request::" + self.name)
-        name = self.name if class_name == "" \
-                else self.name.replace("_" + class_name, "")
-        return \
-"""\
-%s %s(%s) const;
-""" % (return_type,
-       name, # self.name.replace("_" + class_name, ""),
-       self.wrapped_protos(True, True))
-
-    def make_object_class_call(self, is_conn, indent, class_name,
-            base_class_name, namespace="", connection="m_c"):
-
-        if namespace == "":
-            scoped_request = "request"
-        else:
-            scoped_request = namespace + "::request"
-
-        return_type = self.template(indent="") \
-                + "void" if self.is_void else scoped_request + "::" + self.name
-
-        scoped_class = class_name + "::" if len(class_name) > 0 else class_name
-
-        if class_name == "":
-            name = self.name
-        else:
-            name = self.name.replace("_" + class_name, "")
-
-        return_kw = "" if self.is_void else "return "
-
-        method_call = scoped_request + "::" \
-                + self.name + ("()" if self.is_void else "")
-
-        call_head = connection
-        if not is_conn:
-            call_head += ", " + "m_" + class_name
-            # call_head += ", " + base_class_name + "::get()"
-
-        wrapped_protos = self.wrapped_protos(True, False)
-        wrapped_calls = self.comma() + self.wrapped_calls(False)
-
-        return \
-"""\
-%s%s
-%s%s%s(%s) const
-%s{
-%s  %s%s(%s%s);
-%s}
-""" % (indent, return_type,
-       indent, scoped_class, name, wrapped_protos,
-       indent,
-       indent, return_kw, method_call, call_head, wrapped_calls,
-       indent)
-
     def add(self, param):
         self.parameter_list.add(param)
 
