@@ -13,33 +13,67 @@ import collections
 from templates import CppRequest, \
                       Parameter, \
                       Accessor, \
-                      ObjectClass
+                      ObjectClass, \
+                      ProtocolClass, \
+                      get_ext_name, \
+                      get_namespace
 
 _cpp_request_names = []
 _cpp_request_objects = {}
 
+# see c_open()
+_protocol_class = ProtocolClass()
+
+# _object_classes = \
+#         { "x" : collections.OrderedDict( \
+#                 { "10" : ObjectClass("", "DRAWABLE")
+#                 , "30" : ObjectClass("", "WINDOW")
+#                 , "40" : ObjectClass("", "PIXMAP")
+#                 , "50" : ObjectClass("", "ATOM")
+#                 , "60" : ObjectClass("", "CURSOR")
+#                 , "70" : ObjectClass("", "FONT")
+#                 , "80" : ObjectClass("", "GCONTEXT")
+#                 , "90" : ObjectClass("", "FONTABLE")
+#                 # , "KEYCODE" : []
+#                 } )
+#         , "randr" : collections.OrderedDict( \
+#                 { "10" : ObjectClass("randr", "MODE")
+#                 , "20" : ObjectClass("randr", "CRTC")
+#                 , "30" : ObjectClass("randr", "OUTPUT")
+#                 , "40" : ObjectClass("randr", "PROVIDER")
+#                 } )
+#         # , "render" : collections.OrderedDict( \
+#         #         {
+#         #         } )
+#         # , "xinerama" : collections.OrderedDict( \
+#         #         {
+#         #         } )
+#         }
 
 _object_classes = \
-        { "xproto" : collections.OrderedDict( \
-                { "10" : ObjectClass("", "DRAWABLE")
-                , "30" : ObjectClass("", "WINDOW")
-                , "40" : ObjectClass("", "PIXMAP")
-                , "50" : ObjectClass("", "ATOM")
-                , "60" : ObjectClass("", "CURSOR")
-                , "70" : ObjectClass("", "FONT")
-                , "80" : ObjectClass("", "GCONTEXT")
-                , "90" : ObjectClass("", "FONTABLE")
+        { "x" : collections.OrderedDict( \
+                { "10" : ObjectClass("DRAWABLE")
+                , "30" : ObjectClass("WINDOW")
+                , "40" : ObjectClass("PIXMAP")
+                , "50" : ObjectClass("ATOM")
+                , "60" : ObjectClass("CURSOR")
+                , "70" : ObjectClass("FONT")
+                , "80" : ObjectClass("GCONTEXT")
+                , "90" : ObjectClass("FONTABLE")
                 # , "KEYCODE" : []
                 } )
         , "randr" : collections.OrderedDict( \
-                { "10" : ObjectClass("randr", "MODE")
-                , "20" : ObjectClass("randr", "CRTC")
-                , "30" : ObjectClass("randr", "OUTPUT")
-                , "40" : ObjectClass("randr", "PROVIDER")
+                { "10" : ObjectClass("MODE")
+                , "20" : ObjectClass("CRTC")
+                , "30" : ObjectClass("OUTPUT")
+                , "40" : ObjectClass("PROVIDER")
                 } )
-        , "render" : collections.OrderedDict( \
-                {
-                } )
+        # , "render" : collections.OrderedDict( \
+        #         {
+        #         } )
+        # , "xinerama" : collections.OrderedDict( \
+        #         {
+        #         } )
         }
 
 # Jump to the bottom of this file for the main routine
@@ -50,12 +84,8 @@ _cname_special_cases = {'DECnet':'decnet'}
 
 _extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
 
-_namespace = {}
-
 _xcb_includes = \
     { "xproto" : "xcb.h"
-    , "randr" : "randr.h"
-    , "render" : "render.h"
     }
 
 
@@ -80,6 +110,16 @@ finished_switch = []
 enums = {}
 
 manpaths = False
+
+def _get_xcb_include(ns):
+    # return _xcb_includes.get(ns, _ns.ext_name.lower()) + ".h"
+    return _xcb_includes.get(ns, _ns.file.replace(".xml", ".h"))
+
+# def get_namespace(_ns):
+#     if _ns.is_ext:
+#         return get_ext_name(_ns.ext_name)
+#     else:
+#         return "x"
 
 def _h(fmt, *args):
     '''
@@ -189,11 +229,16 @@ def _t(list):
 def c_open(self):
     '''
     Exported function that handles module open.
-    Opens the files and writes out the auto-generated comment, header file includes, etc.
+    Opens the files and writes out the auto-generated comment,
+    header file includes, etc.
     '''
     global _ns
     _ns = self.namespace
+    sys.stderr.write("%s\n" % self.namespace)
+    # _ns.header = "test"
     _ns.c_ext_global_name = _n(_ns.prefix + ('id',))
+
+    _protocol_class.set_namespace(_ns)
 
     # Build the type-name collision avoidance table used by c_enum
     build_collision_table()
@@ -201,22 +246,27 @@ def c_open(self):
     _h_setlevel(0)
     _c_setlevel(0)
 
-    _h('#ifndef XPP_%s_HPP', _namespace.get(_ns.header, _ns.header).upper())
-    _h('#define XPP_%s_HPP', _namespace.get(_ns.header, _ns.header).upper())
+    # _h('#ifndef EXPORT_%s_MIXINS', get_namespace(_ns).upper())
+    _h('#ifndef XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
+    _h('#define XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
     _h('')
     _h('#include <string>')
     _h('#include <vector>')
     _h('')
 
-    _h('#include <xcb/' + _xcb_includes[_ns.header] + '>')
+    _h('#include <xcb/' + _get_xcb_include(_ns.header.lower()) + '>')
 
     _h('')
-    _h('#include "../connection.hpp"')
+    # _h('#include "../core/core.hpp"')
     _h('#include "../request.hpp"')
     _h('#include "../iterator.hpp"')
+    _h('#include "../core/extension.hpp"')
+    _h('#include "../core/generic/resource.hpp"')
+    _h('#include "../core/generic/connection.hpp"')
     _h('')
     _h('namespace xpp {')
-    _h('namespace %s {', _namespace.get(_ns.header, _ns.header))
+    # _h('class window;')
+    # _h('namespace %s {', get_namespace(_ns))
     _h('')
 
 def c_close(self):
@@ -225,52 +275,71 @@ def c_close(self):
     Writes out all the stored content lines, then closes the files.
     '''
 
+    '''
     _h('namespace request {')
     for name in _cpp_request_names:
         _h('%s', _cpp_request_objects[name].make_proto())
     _h('}; // namespace request')
 
     _h('')
-    _h(_connection_class.make_proto())
     _h('')
 
     printed_classes = set()
+    if _object_classes.has_key(get_namespace(_ns)):
+        for id in _object_classes[get_namespace(_ns)]:
+            if id in printed_classes:
+                continue
+            else:
+                printed_classes.add(id)
+
+            o = _object_classes[get_namespace(_ns)][id]
+            base = o.get_base_class()
+            if base != None and not id in printed_classes:
+                for id, oc in _object_classes[get_namespace(_ns)].iteritems():
+                    if oc.name == base:
+                        printed_classes.add(id)
+                        # _h(oc.make_proto())
+                        break
+
+            _h(o.make_proto())
+
     _h('')
-    for id in _object_classes[_ns.header]:
-        if id in printed_classes:
-            continue
-        else:
-            printed_classes.add(id)
-
-        o = _object_classes[_ns.header][id]
-        base = o.get_base_class()
-        if base != None and not id in printed_classes:
-            for id, oc in _object_classes[_ns.header].iteritems():
-                if oc.name == base:
-                    printed_classes.add(id)
-                    # _h(_object_classes[_ns.header][base].make_proto())
-                    _h(oc.make_proto())
-                    break
-
-        _h(o.make_proto())
-
     _h('')
+    '''
 
-    _h('namespace request {')
+    # _h('namespace request {')
     for name in _cpp_request_names:
         _h("%s\n", _cpp_request_objects[name].make_class())
-    _h('}; // namespace request')
+    # _h('}; // namespace request')
 
     _h('')
-    for key in _object_classes[_ns.header]:
-        _h(_object_classes[_ns.header][key].make_methods())
-    _h('')
+    # _h('')
+
+    if _object_classes.has_key(get_namespace(_ns)):
+        for key in _object_classes[get_namespace(_ns)]:
+            _h(_object_classes[get_namespace(_ns)][key].make_inline())
+
+    # for key in _object_classes[get_namespace(_ns)]:
+    #     _h(_object_classes[get_namespace(_ns)][key].make_methods())
+
+    # _h('}; // namespace %s', get_namespace(_ns))
 
     _h('')
-    _h('}; // namespace %s', _namespace.get(_ns.header, _ns.header))
+    # _h('')
+
+    _h(_protocol_class.make_proto())
+
+    _h('')
     _h('}; // namespace xpp')
+    # _h('')
+
+    # _h(_protocol_class.make_methods())
+
+    # _h('')
+    # _h('')
+
     _h('')
-    _h('#endif // XPP_%s_HPP', _namespace.get(_ns.header, _ns.header).upper())
+    _h('#endif // XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
 
     # Write header file
     hfile = sys.stdout
@@ -1121,9 +1190,11 @@ def _c_serialize(context, self):
     _h_setlevel(1)
     _c_setlevel(1)
 
-    _hc('')
-    # _serialize() returns the buffer size
-    _hc('int')
+    # _hc('')
+    # # _serialize() returns the buffer size
+    # _hc('int')
+    sys.stderr.write('int')
+
 
     if self.is_switch and 'unserialize' == context:
         context = 'unpack'
@@ -1159,8 +1230,10 @@ def _c_serialize(context, self):
     param_str[0] = "%s (%s" % (func_name, param_str[0].strip())
     param_str = list(map(lambda x: "%s," % x, param_str))
     for s in param_str[:-1]:
-        _hc(s)
-    _h("%s);" % param_str[-1].rstrip(','))
+        sys.stderr.write(s)
+    #     _hc(s)
+    # _h("%s);" % param_str[-1].rstrip(','))
+    sys.stderr.write("%s);" % param_str[-1].rstrip(','))
     _c("%s)" % param_str[-1].rstrip(','))
     _c('{')
 
@@ -1655,21 +1728,30 @@ def _c_accessors_list(self, field):
             _cpp_request_objects[request_name].accessors.append( \
             Accessor(is_fixed=True,
                      member=_ext(_n_item(field.field_name)),
-                     type=field.c_field_type,
+                     c_type=field.c_field_type,
                      return_type='Type' if field.c_field_type == 'void' else field.c_field_type,
                      iter_name="",
                      c_name=_n(self.name))
             )
 
     else:
-        _cpp_request_objects[request_name].accessors.append( \
-        Accessor(is_variable=True,
-                 member=_ext(_n_item(field.field_name)),
-                 type=field.c_field_type,
-                 return_type='Type' if field.c_field_type == 'void' else field.c_field_type,
-                 iter_name=_n(field.type.name),
-                 c_name=_n(self.name))
-        )
+
+        # sys.stderr.write('request_name: %s\n' % request_name)
+        # sys.stderr.write('c_iterator_name:\n%s;\nc_end_name:\n%s\n' \
+        #         % (field.c_iterator_name, field.c_end_name))
+        # sys.stderr.write('field: %s\n' % (field))
+        # sys.stderr.write('\n\n')
+
+        if request_name != 'bitcase_1':
+
+            _cpp_request_objects[request_name].accessors.append( \
+            Accessor(is_variable=True,
+                     member=_ext(_n_item(field.field_name)),
+                     c_type=field.c_field_type,
+                     return_type='Type' if field.c_field_type == 'void' else field.c_field_type,
+                     iter_name=_n(field.type.name),
+                     c_name=_n(self.name))
+            )
 
     # sys.stderr.write('c_iterator_name:\n%s;\nc_end_name:\n%s\n' % (field.c_iterator_name,
     #     field.c_end_name))
@@ -1687,7 +1769,8 @@ def _c_accessors(self, name, base):
         if field.type.is_list and not field.type.fixed_size():
             _c_accessors_list(self, field)
         elif field.prev_varsized_field is not None or not field.type.fixed_size():
-            _c_accessors_field(self, field)
+            # _c_accessors_field(self, field)
+            sys.stderr.write("c_accessors_field(%s, %s)\n" % (self, field))
 
 def c_simple(self, name):
     '''
@@ -1753,7 +1836,8 @@ def _c_complex(self):
             (self.is_switch and field.type.is_switch)):
             spacing = ' ' * (maxtypelen - len(field.c_field_type))
             # _h('%s    %s%s %s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
-            _h("%s %s" % (field.field_type, field.field_name))
+            # _h("%s %s" % (field.field_type, field.field_name))
+            sys.stderr.write("serialize: %s, %s\n" % (field.field_type, field.field_name))
         else:
             spacing = ' ' * (maxtypelen - (len(field.c_field_type) + 1))
             # _h('%s    %s%s *%s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
@@ -1811,10 +1895,14 @@ def _cpp_request_helper(self, name, is_void):
             c_field_const_type = "const void"
 
     _cpp_request_names.append(request_name)
-    _cpp_request_objects[request_name] = CppRequest(
-            request_name, is_void,
-            c_namespace="" if _ns.header == "xproto" else _ns.header)
+    _cpp_request_objects[request_name] = CppRequest(request_name, is_void, _ns)
+            # c_namespace="" if _ns.header.lower() == "xproto" else get_namespace(_ns))
 
+    # is_obj_func = False
+    # if (len(param_fields) > 0 and len(param_fields[0].field_type) > 1):
+    #     # e.g.: DRAWABLE in { "DRAWABLE" : [], .. }
+    #     obj_name = param_fields[0].field_type[-1]
+    #     is_obj_func = obj_name in _type_objects[get_namespace(_ns)]
 
     for field in param_fields:
         c_field_const_type = field.c_field_const_type
@@ -1835,9 +1923,15 @@ def _cpp_request_helper(self, name, is_void):
 
     _cpp_request_objects[request_name].make_wrapped()
 
-    _connection_class.add(_cpp_request_objects[request_name])
-    for key in _object_classes[_ns.header]:
-        _object_classes[_ns.header][key].add(_cpp_request_objects[request_name])
+    _protocol_class.add(_cpp_request_objects[request_name])
+    # try:
+
+    if _object_classes.has_key(get_namespace(_ns)):
+        for key in _object_classes[get_namespace(_ns)]:
+            _object_classes[get_namespace(_ns)][key].set_namespace(_ns)
+            _object_classes[get_namespace(_ns)][key].add(_cpp_request_objects[request_name])
+
+    # except: pass
 
 def _c_reply(self, name):
     '''
@@ -2579,15 +2673,18 @@ def c_event(self, name):
     _c_type_setup(self, name, ('event',))
 
     # Opcode define
-    _c_opcode(name, self.opcodes[name])
+    # _c_opcode(name, self.opcodes[name])
 
+    _h('typedef %s %s;', _t(self.name + ('event',)), _t(name + ('event',)))
     if self.name == name:
+        pass
         # Structure definition
-        _c_complex(self)
+        # _c_complex(self)
     else:
+        pass
         # Typedef
-        _h('')
-        _h('typedef %s %s;', _t(self.name + ('event',)), _t(name + ('event',)))
+        # _h('')
+        # _h('typedef %s %s;', _t(self.name + ('event',)), _t(name + ('event',)))
 
     # _man_event(self, name)
 
@@ -2622,11 +2719,11 @@ def cpp_prototypes():
     {}\
 """ % (name, type, name, name, name)
 
-    for key in _type_objects[_ns.header].keys():
+    for key in _type_objects[get_namespace(_ns)].keys():
         name = _ext(_n_item(key))
-        type = ("" if _ns.header == "xproto" else _ns.header + "_") + name
+        type = ("" if get_namespace(_ns) == "xproto" else get_namespace(_ns) + "_") + name
 
-        if len(_type_objects[_ns.header][key]) > 0:
+        if len(_type_objects[get_namespace(_ns)][key]) > 0:
             _h("class %s {", name)
             _h("  public:")
             _h(ctor(name, type))
@@ -2637,7 +2734,7 @@ def cpp_prototypes():
             _h("    }")
             _h("")
 
-            for (proto, body) in _type_objects[_ns.header][key]:
+            for (proto, body) in _type_objects[get_namespace(_ns)][key]:
                 _h("%s", proto)
                 _h("")
 
@@ -2648,9 +2745,9 @@ def cpp_prototypes():
             _h("")
 
 def cpp_type_classes():
-    for key in _type_objects[_ns.header].keys():
+    for key in _type_objects[get_namespace(_ns)].keys():
         type = _ext(_n_item(key))
-        if len(_type_objects[_ns.header][key]) > 0:
+        if len(_type_objects[get_namespace(_ns)][key]) > 0:
             # _h("")
             # _h("class %s {", type)
             # _h("  public:")
@@ -2660,7 +2757,7 @@ def cpp_type_classes():
             # _h("    }")
             # _h("")
 
-            for (proto, body) in _type_objects[_ns.header][key]:
+            for (proto, body) in _type_objects[get_namespace(_ns)][key]:
                 # _h("%s", proto)
                 _h("%s", body)
                 _h("")
@@ -2694,6 +2791,7 @@ output = {'open'    : c_open,
           'union'   : lambda x, y: None,
           'request' : c_request,
           'event'   : lambda x, y: None,
+          # 'event'   : c_event,
           'error'   : lambda x, y: None,
           }
 

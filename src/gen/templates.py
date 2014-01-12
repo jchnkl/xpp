@@ -7,15 +7,60 @@
 * xpp::window & instead of xcb_window_t
 * valueparams
 * event objects
+* serialized fields (e.g. xcb_sync_create_alarm_value_list_serialize)
 """
 
+import re # compile
 import sys # sys.stderr.write
 import copy # deepcopy
+
+# _namespace = \
+#     { "xproto" : "x"
+#     }
+
+# def get_namespace(ns):
+#     return _namespace.get(ns, ns)
 
 _base_classes = \
     { "WINDOW" : "DRAWABLE"
     , "PIXMAP" : "DRAWABLE"
     }
+
+def get_namespace(namespace):
+    if namespace.is_ext:
+        return get_ext_name(namespace.ext_name)
+    else:
+        return "x"
+
+def get_ext_name(str):
+    return _ext(str)
+
+_cname_re = re.compile('([A-Z0-9][a-z]+|[A-Z0-9]+(?![a-z])|[a-z]+)')
+_cname_special_cases = {'DECnet':'decnet'}
+
+def _n_item(str):
+    '''
+    Does C-name conversion on a single string fragment.
+    Uses a regexp with some hard-coded special cases.
+    '''
+    if str in _cname_special_cases:
+        return _cname_special_cases[str]
+    else:
+        split = _cname_re.finditer(str)
+        name_parts = [match.group(0) for match in split]
+        return '_'.join(name_parts)
+
+_extension_special_cases = ['XPrint', 'XCMisc', 'BigRequests']
+
+def _ext(str):
+    '''
+    Does C-name conversion on an extension name.
+    Has some additional special cases on top of _n_item.
+    '''
+    if str in _extension_special_cases:
+        return _n_item(str).lower()
+    else:
+        return str.lower()
 
 
 ########## ACCESSORS ##########
@@ -182,6 +227,55 @@ def make_mixin_macro(macro_args, namespace, class_name, requests):
 ########## TEXTUAL_MIXIN ##########
 
 
+_no_extension = {'xproto'}
+
+########## PROTOCOLCLASS ##########
+
+class ProtocolClass(object):
+    def __init__(self):
+        self.requests = []
+
+    def add(self, request):
+        self.requests.append(request)
+
+    def set_namespace(self, namespace):
+        self.namespace = namespace
+
+    def make_proto(self):
+        ns = get_namespace(self.namespace)
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_inline(True) + "\n\n"
+
+        head  = ["class %s" % ns]
+        head += ["  : virtual public xpp::xcb::connection"]
+        if self.namespace.is_ext:
+            head += ["  , virtual public extension<&xcb_%s_id>" % ns]
+        head += ["{"]
+
+        return \
+"""\
+namespace protocol {
+
+%s
+  public:
+    virtual ~%s(void) {}
+
+%s
+  private:
+
+}; // class %s
+
+}; // namespace protocol
+""" % ("\n".join(head),
+       # "\n".join(body),
+       ns,
+       methods,
+       ns)
+
+########## PROTOCOLCLASS ##########
+
+
 
 ########## CONNECTIONCLASS ##########
 
@@ -211,50 +305,23 @@ class ConnectionClass(object):
         return \
 """\
 class %s
-  // : virtual public xpp::generic::connection<xcb_connection_t>
-  : virtual public xpp::generic::connection
 {
   public:
-    // using xpp::generic::connection::connection;
 
     %s(void)
     {}
 
-    %s(%s * c)
-      : xpp::generic::connection::connection(c)
+    %s(xcb_connection_t * c)
+      : m_c(c)
     {}
-
-    /*
-    %s * operator*(void)
-    {
-      return m_c;
-    }
-
-    %s & set(%s * c)
-    {
-      m_c = c;
-      return *this;
-    }
-
-    const %s * operator*(void) const
-    {
-      return m_c;
-    }
-    */
 
 %s
   protected:
-  /*
     xcb_connection_t * m_c = NULL;
-    xcb_connection_t * & m_c = xpp::generic::connection::m_c;
-  */
 }; // class %s
 """ % (name, # class
        name, # ctor 1
-       name, c_name, # ctor 2
-       c_name, # operator*
-       name, c_name,
-       c_name, # operator* const
+       name, # ctor 2
        methods,
        name)
 
@@ -271,13 +338,22 @@ class %s
 
 ########## OBJECTCLASS ##########
 
+# _ignored = set(
+#     'create_window'
+#     )
 
 class ObjectClass(object):
-    def __init__(self, namespace, name):
+    def __init__(self, name): # namespace, name):
         self.name = name
-        # self.namespace = namespace
-        self.c_name = 'xcb_' + ("" if namespace == "" else namespace + "_") + name.lower() + '_t'
+        # self.c_name = \
+        #     'xcb_' + ("" if namespace == "" else namespace + "_") + name.lower() + '_t'
         self.requests = []
+        # self.namespace = namespace
+
+        # try:
+        #     base_class = _base_classes[self.name].lower()
+        #     member = ""
+        # except: pass
 
     def get_base_class(self):
         return _base_classes.get(self.name)
@@ -290,8 +366,14 @@ class ObjectClass(object):
             request_copy.make_wrapped()
             self.requests.append(request_copy)
 
-    def set_ns(self, namespace):
+    def set_namespace(self, namespace):
         self.namespace = namespace
+        self.c_name = "xcb_%s_t"
+        name = get_namespace(namespace) + "_" if namespace.is_ext else ""
+
+        self.c_name = self.c_name % (name + self.name.lower())
+        # self.c_name = \
+        #     'xcb_' + ("_" if namespace.is_ext else namespace + "_") + name.lower() + '_t'
 
     def make_mixins(self):
         return make_mixin_macro("CONNECTION, " + self.name.upper(), \
@@ -316,13 +398,44 @@ class ObjectClass(object):
                     False, "", self.name.lower(), base.lower()) + "\n"
         return methods
 
+    def make_inline(self):
+        ns = get_namespace(self.namespace)
+        name = self.name.lower()
+        c_name = self.c_name
+        methods = ""
+        for request in self.requests:
+            methods += request.make_object_class_inline(False, self.name.lower()) + "\n\n"
+
+        return \
+"""\
+namespace %s {
+
+class %s
+  : public xpp::xcb::connection
+  , public xpp::xcb::resource<%s>
+{
+  public:
+    virtual ~%s(void) {}
+
+%s
+}; // class %s
+
+}; // namespace %s
+""" % (ns, # namespace %s {
+       name,   # class %s
+       c_name, # public resource<%s>
+       name, # virtual ~%s(void)
+       methods,
+       name, # }; // class %s
+       ns) # }; // namespace %s
+
     def ctors_without_inheritance(self, methods):
         name = self.name.lower()
         c_name = self.c_name
         return \
 """\
 class %s
-  : virtual public xpp::generic::connection
+  // : virtual public xpp::generic::connection
 {
   public:
     // using xpp::generic::connection::connection;
@@ -332,16 +445,16 @@ class %s
     {}
 
     %s(xcb_connection_t * c)
-      // : m_c(c)
+      : m_c(c)
       // : xpp::generic::connection<xcb_connection_t>::connection(c)
-      : xpp::generic::connection(c)
+      // : xpp::generic::connection(c)
     {
-      connection::set(c);
+      // connection::set(c);
     }
 
     %s(xcb_connection_t * c, const %s & %s)
-      : xpp::generic::connection(c), m_%s(%s)
-      // : m_c(c)
+      // : xpp::generic::connection(c)
+      : m_c(c), m_%s(%s)
     {}
 
     /*
@@ -368,8 +481,8 @@ class %s
 
 %s
   private:
-    /*
     xcb_connection_t * m_c;
+    /*
     xcb_connection_t * & m_c = xpp::generic::connection::m_c;
     */
     %s m_%s;
@@ -394,11 +507,12 @@ class %s
         base = _base_classes[self.name].lower()
         return \
 """\
-class %s : virtual public %s {
+class %s { // : virtual public %s {
   public:
     // using %s::%s;
     %s(void) {}
 
+    /*
     %s(xcb_connection_t * c) : connection(c), %s(c)
     {
       // connection::set(c);
@@ -411,13 +525,24 @@ class %s : virtual public %s {
       // %s::set(%s);
       // connection::set(c);
     }
+    */
+
+    %s(xcb_connection_t * c)
+      : m_c(c)
+    {}
+
+    %s(xcb_connection_t * c, const %s & %s)
+      : m_c(c), m_%s(%s)
+    {}
 
 %s
   protected:
+    xcb_connection_t * m_c;
     /*
     xcb_connection_t * & m_c = xpp::generic::connection::m_c;
     %s & m_%s = %s::m_%s;
     */
+    %s m_%s;
 }; // class %s
 """ % (name, base, # class %s : public %s
        base, base, # using %s::%s
@@ -426,21 +551,34 @@ class %s : virtual public %s {
        name, self.c_name, name, # %s(xcb_connection_t * c, const %s & %s) ..
        base, name, # %s::set(%s)
        base, name, # : %s(c, %s)
+       name,
+       name, self.c_name, name,
+       name, name,
        methods,
        self.c_name, name, base, base,
+       self.c_name, name,
        name)
 
 ########## OBJECTCLASS ##########
 
 
+_replace_special_classes = \
+        { "gcontext" : "gc" }
+
+def replace_class(method, class_name):
+    cn = _replace_special_classes.get(class_name, class_name)
+    return method.replace("_" + cn, "")
 
 ########## REQUESTS  ##########
 
 class CppRequest(object):
-    def __init__(self, name, is_void, c_namespace=""):
+    def __init__(self, name, is_void, namespace):
         self.name = name
         self.is_void = is_void
-        self.c_namespace = c_namespace
+        self.namespace = namespace
+        self.c_namespace = \
+            "" if namespace.header.lower() == "xproto" \
+            else get_namespace(namespace)
         self.accessors = []
         self.parameter_list = ParameterList()
 
@@ -453,6 +591,43 @@ class CppRequest(object):
     def make_class(self):
         return self.void_request() if self.is_void else self.reply_request()
 
+    def make_object_class_inline(self, is_connection, class_name=""):
+        request_name = "xpp::request::" + get_namespace(self.namespace) + "::"
+        return_type = self.template(indent="")
+        return_type += "virtual\n" if return_type == "" else ""
+        return_type += "    "
+        if self.is_void:
+            return_type += "void"
+        else:
+            return_type += request_name + self.name
+
+        method = self.name
+        if not is_connection:
+            method = replace_class(method, class_name)
+
+        proto_params = self.wrapped_protos(True, True)
+
+        call_params = ["xcb_connection()"]
+        if not is_connection: call_params += ["xcb_resource()"]
+        calls = self.wrapped_calls(False)
+        if len(calls) > 0: call_params += [calls]
+
+        call = ("" if self.is_void else "return ") \
+             + request_name + self.name \
+             + ("()" if self.is_void else "") \
+             + "(" + ", ".join(call_params) + ");"
+
+        return \
+"""\
+    %s
+    %s(%s) const
+    {
+      %s
+    }\
+""" % (return_type,
+       method, proto_params,
+       call)
+
     def make_object_class_proto(self, class_name):
         return_type = self.template(indent="    ") + "    " \
                 + ("void" if self.is_void else "request::" + self.name)
@@ -460,13 +635,13 @@ class CppRequest(object):
                 else self.name.replace("_" + class_name, "")
         return \
 """\
-%s %s(%s);
+%s %s(%s) const;
 """ % (return_type,
        name, # self.name.replace("_" + class_name, ""),
        self.wrapped_protos(True, True))
 
     def make_object_class_call(self, is_conn, indent, class_name,
-            base_class_name, namespace=""):
+            base_class_name, namespace="", connection="m_c"):
 
         if namespace == "":
             scoped_request = "request"
@@ -488,7 +663,7 @@ class CppRequest(object):
         method_call = scoped_request + "::" \
                 + self.name + ("()" if self.is_void else "")
 
-        call_head = "m_c"
+        call_head = connection
         if not is_conn:
             call_head += ", " + "m_" + class_name
             # call_head += ", " + base_class_name + "::get()"
@@ -499,7 +674,7 @@ class CppRequest(object):
         return \
 """\
 %s%s
-%s%s%s(%s)
+%s%s%s(%s) const
 %s{
 %s  %s%s(%s%s);
 %s}
@@ -545,6 +720,7 @@ class CppRequest(object):
 ########## VOID REQUEST  ##########
 
     def void_request(self):
+        ############ def methods(...) ############
         def methods(protos, calls, template=""):
             ctor = \
 """\
@@ -566,22 +742,26 @@ class CppRequest(object):
        self.c_name(), self.comma() + calls)
 
             return template + ctor + "\n" + template + operator
+        ############ def methods(...) ############
 
+        namespace = get_namespace(self.namespace)
 
         head = \
 """\
+namespace request { namespace %s {
+
 class %s {
   public:
     %s(void) {}
 
-""" % (self.name, self.name)
+""" % (namespace, self.name, self.name)
 
         tail = \
 """\
 }; // class %s
-""" % (self.name)
 
-
+}; }; // request::%s
+""" % (self.name, namespace)
 
         wrapped = ""
         if self.parameter_list.want_wrap:
@@ -612,29 +792,38 @@ class %s {
             return template + \
 """\
     %s(xcb_connection_t * c%s)
-      : request(c, &%s%s)
+      : request(c, &%s%s), m_c(c)
     {}
 """ % (self.name, \
        self.comma() + protos, \
        self.c_name(), self.comma() + calls)
 
+        namespace = get_namespace(self.namespace)
+
         head = \
 """\
+namespace request { namespace %s {
+
 class %s
   : public generic::request<%s_cookie_t,
                             %s_reply_t,
                             &%s_reply>
 {
   public:
-""" % (self.name, \
+""" % (namespace,
+       self.name, \
        self.c_name(), \
        self.c_name(), \
        self.c_name())
 
         tail = \
 """\
-}; // class %s\
-""" % (self.name)
+  private:
+    xcb_connection_t * m_c;
+}; // class %s
+
+}; }; // request::%s
+""" % (self.name, namespace)
 
 
         wrapped = ""
@@ -741,6 +930,13 @@ class ParameterList(object):
                     self.wrap_protos.append(
                             Parameter(type='const std::vector<' + param_type + '> &',
                                       name=param.name))
+
+                    # param_type = "Iterator_" + str(index)
+                    # self.templates.append(param_type)
+
+                    # prev_type = self.parameter[prev].type
+                    # self.wrap_protos.append(Parameter(name=param_type + " begin")
+                    # self.wrap_protos.append(Parameter(name=param_type + " end")
 
             else:
                 self.wrap_calls.append(param)
