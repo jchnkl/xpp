@@ -8,6 +8,8 @@
 
 namespace xpp {
 
+class window;
+
 namespace generic {
 
 namespace variable_size {
@@ -385,6 +387,41 @@ class list {
     }
 
   private:
+    std::shared_ptr<Reply> m_reply;
+}; // class list
+
+template<typename Reply,
+         xcb_window_t * (*Accessor)(const Reply *),
+         int (*Length)(const Reply *)>
+class list<Reply,
+           fixed_size::iterator<
+            xcb_window_t, xpp::window, Reply, Accessor, Length>
+          >
+{
+  public:
+    typedef fixed_size::iterator<xcb_window_t,
+                                 xpp::window,
+                                 Reply,
+                                 Accessor,
+                                 Length>
+                                   window_iterator;
+
+    list(xcb_connection_t * c, const std::shared_ptr<Reply> & reply)
+      : m_c(c), m_reply(reply)
+    {}
+
+    window_iterator begin(void)
+    {
+      return window_iterator::begin(m_c, m_reply);
+    }
+
+    window_iterator end(void)
+    {
+      return window_iterator::end(m_c, m_reply);
+    }
+
+  private:
+    xcb_connection_t * m_c;
     std::shared_ptr<Reply> m_reply;
 }; // class list
 
