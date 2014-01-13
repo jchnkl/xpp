@@ -246,14 +246,14 @@ public:
   IteratorType & operator++(void)
   {
     ++m_index;
-    return *this;
+    return static_cast<IteratorType &>(*this);
   }
 
   // postfix
   virtual
   IteratorType operator++(int)
   {
-    auto copy = *this;
+    auto copy = static_cast<IteratorType &>(*this);
     ++(*this);
     return copy;
   }
@@ -263,14 +263,14 @@ public:
   IteratorType & operator--(void)
   {
     --m_index;
-    return *this;
+    return static_cast<IteratorType &>(*this);
   }
 
   // postfix
   virtual
   IteratorType operator--(int)
   {
-    auto copy = *this;
+    auto copy = static_cast<IteratorType &>(*this);
     --(*this);
     return copy;
   }
