@@ -303,7 +303,7 @@ class iterator
   : public iterator_base<iterator<Data, Return, Reply, Accessor, Length>,
                          Data, Return, Reply, Accessor, Length>
 {
-public:
+  public:
     using iterator_base<iterator<Data, Return, Reply, Accessor, Length>,
                         Data, Return, Reply, Accessor, Length>::iterator_base;
 
@@ -327,7 +327,8 @@ public:
     {
       return iterator(reply, Length(reply.get()));
     }
-  }; // class iterator
+
+}; // class iterator
 
 template<typename Return,
          typename Reply,
@@ -337,7 +338,7 @@ class iterator<void, Return, Reply, Accessor, Length>
   : public iterator_base<iterator<void, Return, Reply, Accessor, Length>,
                          void, Return, Reply, Accessor, Length>
 {
-public:
+  public:
     using iterator_base<iterator<void, Return, Reply, Accessor, Length>,
                         void, Return, Reply, Accessor, Length>::iterator_base;
 
@@ -361,6 +362,7 @@ public:
     {
       return iterator(reply, Length(reply.get()) / sizeof(Return));
     }
+
 }; // class iterator
 
 }; // namespace fixed_size
