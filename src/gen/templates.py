@@ -250,23 +250,10 @@ namespace protocol {
 
 ########## OBJECTCLASS ##########
 
-# _ignored = set(
-#     'create_window'
-#     )
-
 class ObjectClass(object):
     def __init__(self, name): # namespace, name):
         self.name = name
-        # self.c_name = \
-        #     'xcb_' + ("" if namespace == "" else namespace + "_") + name.lower() + '_t'
         self.requests = []
-        # self.namespace = namespace
-
-        # try:
-        #     base_class = _base_classes[self.name].lower()
-        #     member = ""
-        # except: pass
-
 
     def add(self, request):
         if (len(request.parameter_list.parameter) > 0
@@ -280,10 +267,7 @@ class ObjectClass(object):
         self.namespace = namespace
         self.c_name = "xcb_%s_t"
         name = get_namespace(namespace) + "_" if namespace.is_ext else ""
-
         self.c_name = self.c_name % (name + self.name.lower())
-        # self.c_name = \
-        #     'xcb_' + ("_" if namespace.is_ext else namespace + "_") + name.lower() + '_t'
 
     def make_inline(self):
         ns = get_namespace(self.namespace)
