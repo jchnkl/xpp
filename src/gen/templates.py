@@ -409,11 +409,31 @@ class CppRequest(object):
                 if len(self.parameter_list.templates) > 0 \
                 else ""
 
+    def iterator_template(self, indent="    ", tail="\n"):
+        return indent + "template<typename " \
+                + ", typename ".join(self.parameter_list.templates \
+                                   + self.parameter_list.iterator_templates) \
+                + ">" + tail \
+                if len(self.parameter_list.iterator_templates) > 0 \
+                else ""
+
     def wrapped_calls(self, sort):
         return self.parameter_list.wrapped_calls(sort)
 
     def wrapped_protos(self, sort, defaults):
         return self.parameter_list.wrapped_protos(sort, defaults)
+
+    def iterator_calls(self, sort):
+        return self.parameter_list.iterator_calls(sort)
+
+    def iterator_2nd_lvl_calls(self, sort):
+        return self.parameter_list.iterator_2nd_lvl_calls(sort)
+
+    def iterator_protos(self, sort, defaults):
+        return self.parameter_list.iterator_protos(sort, defaults)
+
+    def iterator_initializers(self):
+        return self.parameter_list.iterator_initializers()
 
     def make_accessors(self):
         return "\n".join(map(lambda a: "\n%s\n" % a, self.accessors))
@@ -423,24 +443,28 @@ class CppRequest(object):
 
     def void_request(self):
         ############ def methods(...) ############
-        def methods(protos, calls, template=""):
+        def methods(protos, calls, template="", initializer=[]):
+            initializer = "\n      ".join([""] + initializer)
+
             ctor = \
 """\
     %s(xcb_connection_t * c%s)
-    {
+    {%s
       %s(c%s);
     }
-""" % (self.name, self.comma() + protos, \
+""" % (self.name, self.comma() + protos,
+       initializer,
        self.c_name(), self.comma() + calls)
 
             operator = \
 """\
     void
     operator()(xcb_connection_t * c%s)
-    {
+    {%s
       %s(c%s);
     }
-""" % (self.comma() + protos, \
+""" % (self.comma() + protos,
+       initializer,
        self.c_name(), self.comma() + calls)
 
             return template + ctor + "\n" + template + operator
@@ -465,20 +489,27 @@ class %s {
 }; }; // request::%s
 """ % (self.name, namespace)
 
+        default = methods(self.protos(False, False), self.calls(False))
+
+        if (self.parameter_list.has_defaults):
+            default = methods(self.protos(True, True), self.calls(False))
+
         wrapped = ""
         if self.parameter_list.want_wrap:
             wrapped = "\n" + \
-                methods(self.wrapped_protos(True, True),
-                        self.wrapped_calls(False), self.template())
+                methods(self.iterator_protos(True, True),
+                        self.iterator_calls(False), self.iterator_template(),
+                        self.iterator_initializers())
 
-        defaults = ""
-        if self.parameter_list.has_defaults and self.parameter_list.is_reordered:
-            defaults = "\n" + \
+        default_args = ""
+        if self.parameter_list.is_reordered():
+            default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
+            sys.stderr.write("void %s default_args: %s\n" % (self.name, default_args))
 
         return head \
-             + methods(self.protos(False, False), self.calls(False)) \
-             + defaults \
+             + default \
+             + default_args \
              + wrapped \
              + self.make_accessors() \
              + tail
@@ -491,14 +522,19 @@ class %s {
 
     def reply_request(self):
         ############ def methods(...) ############
-        def methods(protos, calls, template=""):
+        def methods(protos, calls, template="", initializer=[]):
+            initializer = "\n      ".join([""] + initializer)
+
             return template + \
 """\
     %s(xcb_connection_t * c%s)
-      : request(c, &%s%s), m_c(c)
-    {}
-""" % (self.name, \
-       self.comma() + protos, \
+      : request(c), m_c(c)
+    {%s
+      request::prepare(&%s%s);
+    }
+""" % (self.name,
+       self.comma() + protos,
+       initializer,
        self.c_name(), self.comma() + calls)
 
         ############ def methods(...) ############
@@ -516,9 +552,9 @@ class %s
 {
   public:
 """ % (namespace,
-       self.name, \
-       self.c_name(), \
-       self.c_name(), \
+       self.name,
+       self.c_name(),
+       self.c_name(),
        self.c_name())
 
         tail = \
@@ -530,21 +566,27 @@ class %s
 }; }; // request::%s
 """ % (self.name, namespace)
 
+        default = methods(self.protos(False, False), self.calls(False))
+
+        if self.parameter_list.has_defaults:
+            default = methods(self.protos(True, True), self.calls(False))
 
         wrapped = ""
         if self.parameter_list.want_wrap:
             wrapped = "\n" + \
-                methods(self.wrapped_protos(True, True),
-                        self.wrapped_calls(False), self.template())
+                methods(self.iterator_protos(True, True),
+                        self.iterator_calls(False), self.iterator_template(),
+                        self.iterator_initializers())
 
-        defaults = ""
-        if self.parameter_list.has_defaults and self.parameter_list.is_reordered:
-            defaults = "\n" + \
+        default_args = ""
+        if self.parameter_list.is_reordered():
+            default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
+            sys.stderr.write("reply %s default_args: %s\n" % (self.name, default_args))
 
         return head \
-             + methods(self.protos(False, False), self.calls(False)) \
-             + defaults \
+             + default \
+             + default_args \
              + wrapped \
              + self.make_accessors() \
              + tail
@@ -561,25 +603,31 @@ class ParameterList(object):
     def __init__(self):
         self.want_wrap = False
         self.has_defaults = False
-        self.is_reordered = False
         self.parameter = []
         self.wrap_calls = []
         self.wrap_protos = []
+        self.iter_calls = []
+        self.iter_2nd_lvl_calls = []
+        self.iter_protos = []
         self.templates = []
+        self.iterator_templates = []
+        self.initializer = []
 
     def add(self, param):
-        if param.default != None:
-            self.has_defaults = True
+        self.has_defaults = param.default != None
         self.parameter.append(param)
 
     def comma(self):
         return "" if len(self.parameter) == 0 else ", "
 
+    def is_reordered(self):
+        tmp = sorted(self.parameter, cmp=lambda p1, p2: cmp(p1.default, p2.default))
+        return tmp != self.parameter
+
     def calls(self, sort, params=None):
         ps = self.parameter if params == None else params
         if sort:
             tmp = sorted(ps, cmp=lambda p1, p2: cmp(p1.default, p2.default))
-            is_reordered = tmp == ps
             ps = tmp
         calls = map(lambda p: p.call(), ps)
         return "" if len(calls) == 0 else ", ".join(calls)
@@ -589,14 +637,22 @@ class ParameterList(object):
         ps = self.parameter if params == None else params
         if sort:
             tmp = sorted(ps, cmp=lambda p1, p2: cmp(p1.default, p2.default))
-            is_reordered = tmp == ps
             ps = tmp
         protos = map(lambda p: p.proto(defaults), ps)
         return "" if len(protos) == 0 else ", ".join(protos)
 
+    def iterator_initializers(self):
+        return self.initializer
+
     def make_wrapped(self):
         self.wrap_calls = []
         self.wrap_protos = []
+        self.iter_calls = []
+        self.iter_2nd_lvl_calls = []
+        self.iter_protos = []
+        self.initializer = []
+        self.templates = []
+        self.iterator_templates = []
 
         # if a parameter is removed, take reduced parameter size into account
         adjust = 0
@@ -611,20 +667,31 @@ class ParameterList(object):
                 self.want_wrap = True
                 self.wrap_calls.pop(prev)
                 self.wrap_protos.pop(prev)
+                self.iter_calls.pop(prev)
+                self.iter_2nd_lvl_calls.pop(prev)
+                self.iter_protos.pop(prev)
 
                 prev_type = self.parameter[prev].c_type
                 if param.c_type == 'char':
 
-                    self.wrap_calls.append(Parameter(None, \
-                        c_name="static_cast<" + prev_type + ">(" \
-                        + param.c_name + '.length())'))
+                    def append_proto_string(list):
+                        list.append(Parameter(None, \
+                            c_type='const std::string &',
+                            c_name=param.c_name))
 
-                    self.wrap_calls.append(Parameter(None, \
-                        c_name=param.c_name + '.c_str()'))
+                    def append_call_string(list):
+                        list.append(Parameter(None, \
+                            c_name="static_cast<" + prev_type + ">(" \
+                            + param.c_name + '.length())'))
 
-                    self.wrap_protos.append(Parameter(None, \
-                        c_type='const std::string &',
-                        c_name=param.c_name))
+                        list.append(Parameter(None, \
+                            c_name=param.c_name + '.c_str()'))
+
+                    append_proto_string(self.wrap_protos)
+                    append_proto_string(self.iter_protos)
+                    append_call_string(self.wrap_calls)
+                    append_call_string(self.iter_calls)
+                    append_call_string(self.iter_2nd_lvl_calls)
 
                 else:
                     param_type = param.c_type
@@ -634,6 +701,11 @@ class ParameterList(object):
 
                     prev_type = self.parameter[prev].c_type
 
+                    ### std::vector
+                    self.wrap_protos.append(Parameter(None, \
+                        c_type='const std::vector<' + param_type + '> &',
+                        c_name=param.c_name))
+
                     self.wrap_calls.append(Parameter(None, \
                       c_name="static_cast<" + prev_type + ">(" \
                       + param.c_name + '.size())'))
@@ -641,20 +713,45 @@ class ParameterList(object):
                     self.wrap_calls.append(Parameter(None, \
                         c_name=param.c_name + '.data()'))
 
-                    self.wrap_protos.append(Parameter(None, \
-                        c_type='const std::vector<' + param_type + '> &',
-                        c_name=param.c_name))
+                    ### Iterator
+                    iter_type = param.c_name.capitalize() + "_Iterator"
+                    iter_begin = param.c_name + "_begin"
+                    iter_end = param.c_name + "_end"
 
-                    # param_type = "Iterator_" + str(index)
-                    # self.templates.append(param_type)
+                    self.iterator_templates.append(iter_type)
 
-                    # prev_type = self.parameter[prev].c_type
-                    # self.wrap_protos.append(Parameter(c_name=param_type + " begin")
-                    # self.wrap_protos.append(Parameter(c_name=param_type + " end")
+                    self.iter_protos.append(Parameter(None, \
+                            c_type=iter_type,
+                            c_name=iter_begin))
+
+                    self.iter_protos.append(Parameter(None, \
+                            c_type=iter_type,
+                            c_name=iter_end))
+
+                    self.iter_calls.append(Parameter(None, \
+                            c_name="static_cast<" + prev_type + ">(" \
+                            + param.c_name + '.size())'))
+
+                    self.iter_calls.append(Parameter(None, \
+                            c_name='const_cast<const ' + param_type + ' *>(' \
+                            + param.c_name + '.data())'))
+
+                    self.iter_2nd_lvl_calls.append(Parameter(None, \
+                            c_name=iter_begin))
+
+                    self.iter_2nd_lvl_calls.append(Parameter(None, \
+                            c_name=iter_end))
+
+                    self.initializer.append( \
+                            "std::vector<%s> %s = { %s, %s };" \
+                            % (param_type, param.c_name, iter_begin, iter_end))
 
             else:
                 self.wrap_calls.append(param)
                 self.wrap_protos.append(param)
+                self.iter_calls.append(param)
+                self.iter_2nd_lvl_calls.append(param)
+                self.iter_protos.append(param)
 
     def wrapped_calls(self, sort):
         return self.calls(sort, params=self.wrap_calls)
@@ -662,13 +759,22 @@ class ParameterList(object):
     def wrapped_protos(self, sort, defaults):
         return self.protos(sort, defaults, params=self.wrap_protos)
 
+    def iterator_calls(self, sort):
+        return self.calls(sort, params=self.iter_calls)
+
+    def iterator_2nd_lvl_calls(self, sort):
+        return self.calls(sort, params=self.iter_2nd_lvl_calls)
+
+    def iterator_protos(self, sort, defaults):
+        return self.protos(sort, defaults, params=self.iter_protos)
 
 
-_default_parameter_values =\
+
+_default_parameter_values = \
     { "xcb_timestamp_t" : "XCB_TIME_CURRENT_TIME" }
 
 class Parameter(object):
-    def __init__(self, field, c_type="", c_name=""):
+    def __init__(self, field, c_type="", c_name="", verbose=False):
         self.field = field
         if field != None:
           self.c_type = field.c_field_type
@@ -678,6 +784,10 @@ class Parameter(object):
           # self.serialize = field.type.need_serialize
           self.default = _default_parameter_values.get(self.c_type)
           self.with_default = True
+          if verbose:
+              sys.stderr.write("c_type: %s; c_name: %s; default: %s\n" \
+                      % (self.c_type, self.c_name, self.default))
+
         else:
           self.c_type = c_type
           self.c_name = c_name
