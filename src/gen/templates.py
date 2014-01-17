@@ -14,16 +14,24 @@ import re # compile
 import sys # sys.stderr.write
 import copy # deepcopy
 
-# _namespace = \
-#     { "xproto" : "x"
-#     }
+_resource_classes = \
+    { "DRAWABLE"
+    , "WINDOW"
+    , "PIXMAP"
+    , "ATOM"
+    , "CURSOR"
+    , "FONT"
+    , "GCONTEXT"
+    , "FONTABLE"
+### XPROTO ###
 
-# def get_namespace(ns):
-#     return _namespace.get(ns, ns)
+### RANDR ###
+    , "MODE"
+    , "CRTC"
+    , "OUTPUT"
+    , "PROVIDER"
+### RANDR ###
 
-_base_classes = \
-    { "WINDOW" : "DRAWABLE"
-    , "PIXMAP" : "DRAWABLE"
     }
 
 def get_namespace(namespace):
