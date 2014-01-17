@@ -24,32 +24,6 @@ _cpp_request_objects = {}
 # see c_open()
 _protocol_class = ProtocolClass()
 
-# _object_classes = \
-#         { "x" : collections.OrderedDict( \
-#                 { "10" : ObjectClass("", "DRAWABLE")
-#                 , "30" : ObjectClass("", "WINDOW")
-#                 , "40" : ObjectClass("", "PIXMAP")
-#                 , "50" : ObjectClass("", "ATOM")
-#                 , "60" : ObjectClass("", "CURSOR")
-#                 , "70" : ObjectClass("", "FONT")
-#                 , "80" : ObjectClass("", "GCONTEXT")
-#                 , "90" : ObjectClass("", "FONTABLE")
-#                 # , "KEYCODE" : []
-#                 } )
-#         , "randr" : collections.OrderedDict( \
-#                 { "10" : ObjectClass("randr", "MODE")
-#                 , "20" : ObjectClass("randr", "CRTC")
-#                 , "30" : ObjectClass("randr", "OUTPUT")
-#                 , "40" : ObjectClass("randr", "PROVIDER")
-#                 } )
-#         # , "render" : collections.OrderedDict( \
-#         #         {
-#         #         } )
-#         # , "xinerama" : collections.OrderedDict( \
-#         #         {
-#         #         } )
-#         }
-
 _object_classes = \
         { "x" : collections.OrderedDict( \
                 { "10" : ObjectClass("DRAWABLE")
@@ -234,7 +208,6 @@ def c_open(self):
     '''
     global _ns
     _ns = self.namespace
-    sys.stderr.write("%s\n" % self.namespace)
     # _ns.header = "test"
     _ns.c_ext_global_name = _n(_ns.prefix + ('id',))
 
@@ -1729,7 +1702,7 @@ def _c_accessors_list(self, field):
             Accessor(is_fixed=True,
                      member=_ext(_n_item(field.field_name)),
                      c_type=field.c_field_type,
-                     return_type='Type' if field.c_field_type == 'void' else field.c_field_type,
+                     return_type="", # 'Type' if field.c_field_type == 'void' else field.c_field_type,
                      iter_name="",
                      c_name=_n(self.name))
             )
@@ -1914,7 +1887,7 @@ def _cpp_request_helper(self, name, is_void):
             c_field_const_type = "const void"
             c_pointer = ' *'
 
-        param = Parameter(field)
+        param = Parameter(field) # , verbose=request_name=="set_screen_config")
 
         _cpp_request_objects[request_name].add(param)
 
