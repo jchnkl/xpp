@@ -79,6 +79,15 @@ class Accessor(object):
         self.iter_name = iter_name
         self.c_name = c_name
 
+        self.object_type = self.c_type.replace("xcb_", "").replace("_t", "").upper()
+
+        if self.c_type == "void":
+          self.return_type = "Type"
+        elif self.object_type in _resource_classes:
+          self.return_type = self.member.capitalize()
+        else:
+          self.return_type = self.c_type
+
     def __str__(self):
         if self.is_fixed:
             return self.list(self.iter_fixed())
@@ -91,20 +100,15 @@ class Accessor(object):
 
 
     def iter_fixed(self):
-        object_type = self.c_type.replace("xcb_", "").replace("_t", "").upper()
-        if _base_classes.has_key(object_type):
-            return_type = "xpp::" + object_type.lower()
-        else:
-            return_type = self.return_type
+        return_type = self.return_type
 
         return \
 """\
-xpp::generic::fixed_size::iterator<
-                                   %s,
+                     xpp::iterator<%s,
                                    %s,
                                    %s_reply_t,
-                                   %s_%s,
-                                   %s_%s_length>\
+                                   CALLABLE(%s_%s),
+                                   CALLABLE(%s_%s_length)>\
 """ % (self.c_type, \
        return_type, \
        self.c_name, \
@@ -115,14 +119,13 @@ xpp::generic::fixed_size::iterator<
     def iter_variable(self):
         return \
 """\
-xpp::generic::variable_size::iterator<
-                                      %s,
+                        xpp::iterator<%s,
                                       %s,
                                       %s_reply_t,
                                       %s_iterator_t,
-                                      &%s_next,
-                                      &%s_sizeof,
-                                      &%s_%s_iterator>\
+                                      CALLABLE(%s_next),
+                                      CALLABLE(%s_sizeof),
+                                      CALLABLE(%s_%s_iterator)>\
 """ % (self.c_type, \
        self.return_type, \
        self.c_name, \
@@ -133,13 +136,17 @@ xpp::generic::variable_size::iterator<
 
 
     def list(self, iterator):
-        self.return_type = "Type" if self.c_type == "void" else self.c_type
-        template = "    template<typename Type>\n" if self.c_type == "void" else ""
 
-        object_type = self.c_type.replace("xcb_", "").replace("_t", "").upper()
+        template = "    template<typename Type" if self.c_type == "void" else ""
 
-        c_tor_params = "m_c, " if _base_classes.has_key(object_type) else ""
-        c_tor_params += "this->get()"
+        # template<typename Children = xcb_window_t>
+        if self.object_type in _resource_classes:
+          template += ", " if template != "" else "    template<typename "
+          template += self.member.capitalize() + " = " + self.c_type
+
+        template += ">\n" if template != "" else ""
+
+        c_tor_params = "m_c, this->get()"
 
         return template + \
 """\
@@ -152,9 +159,11 @@ xpp::generic::variable_size::iterator<
                                 %s
                                >(%s);
     }\
-""" % (self.c_name, iterator, \
-       self.member, \
-       self.c_name, iterator,
+""" % (self.c_name,
+       iterator,
+       self.member,
+       self.c_name,
+       iterator,
        c_tor_params)
 
 
@@ -202,7 +211,7 @@ class ProtocolClass(object):
             methods += request.make_object_class_inline(True) + "\n\n"
 
         head  = ["class %s" % ns]
-        head += ["  : virtual public xpp::xcb::connection"]
+        head += ["  : virtual public xpp::xcb::type<xcb_connection_t * const>"]
         if self.namespace.is_ext:
             head += ["  , virtual public extension<&xcb_%s_id>" % ns]
         head += ["{"]
@@ -250,8 +259,6 @@ class ObjectClass(object):
         #     member = ""
         # except: pass
 
-    def get_base_class(self):
-        return _base_classes.get(self.name)
 
     def add(self, request):
         if (len(request.parameter_list.parameter) > 0
@@ -283,8 +290,8 @@ class ObjectClass(object):
 namespace %s {
 
 class %s
-  : public xpp::xcb::connection
-  , public xpp::xcb::resource<%s>
+  : public xpp::xcb::type<xcb_connection_t * const>
+  , public xpp::xcb::type<const %s &>
 {
   public:
     virtual ~%s(void) {}
@@ -335,7 +342,7 @@ class CppRequest(object):
 
     def make_object_class_inline(self, is_connection, class_name=""):
         request_name = "xpp::request::" + get_namespace(self.namespace) + "::"
-        return_type = self.template(indent="")
+        return_type = self.iterator_template(indent="")
         return_type += "virtual\n" if return_type == "" else ""
         return_type += "    "
         if self.is_void:
@@ -347,11 +354,12 @@ class CppRequest(object):
         if not is_connection:
             method = replace_class(method, class_name)
 
-        proto_params = self.wrapped_protos(True, True)
+        calls = self.iterator_2nd_lvl_calls(False)
+        proto_params = self.iterator_protos(True, True)
 
-        call_params = ["xcb_connection()"]
-        if not is_connection: call_params += ["xcb_resource()"]
-        calls = self.wrapped_calls(False)
+        call_params = ["*this"]
+        if not is_connection: call_params += ["*this"]
+
         if len(calls) > 0: call_params += [calls]
 
         call = ("" if self.is_void else "return ") \
