@@ -15,6 +15,7 @@ from templates import CppRequest, \
                       Accessor, \
                       ObjectClass, \
                       ProtocolClass, \
+                      ExtensionClass, \
                       get_ext_name, \
                       get_namespace, \
                       _n_item, \
@@ -238,6 +239,7 @@ def c_close(self):
 
     _h('')
     _h('')
+    _h(ExtensionClass(_ns).make_class())
 
     printed_classes = set()
     if _object_classes.has_key(get_namespace(_ns)):
