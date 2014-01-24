@@ -41,6 +41,11 @@ class request {
       return m_reply;
     }
 
+    void reset(void)
+    {
+      m_reply.reset();
+    }
+
   protected:
     xcb_connection_t * m_c;
     COOKIE m_cookie;
