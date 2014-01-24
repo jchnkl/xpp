@@ -6,25 +6,6 @@
 
 namespace xpp {
 
-/*
-namespace xcb {
-
-class handler {
-  public:
-    template<typename Event> void handle(const Event &);
-}; // class handler
-
-class dispatcher {
-  public:
-    template<typename Handler>
-    static
-    bool
-    dispatch_with(const handler &, xcb_generic_event_t * event);
-}; // class dispatcher
-
-}; // namespace xcb
-*/
-
 namespace event {
 
 template<int OpCode, typename Event>
