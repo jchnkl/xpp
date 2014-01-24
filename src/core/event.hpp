@@ -16,8 +16,7 @@ class generic {
     {}
 
     generic(xcb_generic_event_t * event)
-      // : m_event(static_cast<Event *>(event))
-      : m_event((Event *)(event))
+      : m_event(reinterpret_cast<Event *>(event))
     {}
 
     virtual
