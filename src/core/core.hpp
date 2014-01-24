@@ -42,6 +42,10 @@ class core
     {}
 
     virtual
+    ~core(void)
+    {}
+
+    virtual
     xcb_connection_t * const
     operator*(void) const
     {
