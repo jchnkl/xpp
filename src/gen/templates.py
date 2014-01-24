@@ -740,7 +740,6 @@ class %s {
         if self.parameter_list.is_reordered():
             default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
-            sys.stderr.write("void %s default_args: %s\n" % (self.name, default_args))
 
         return head \
              + default \
@@ -817,7 +816,6 @@ class %s
         if self.parameter_list.is_reordered():
             default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
-            sys.stderr.write("reply %s default_args: %s\n" % (self.name, default_args))
 
         return head \
              + default \
