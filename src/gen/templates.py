@@ -245,6 +245,109 @@ class %s%s{
 
 
 
+########## EVENT ##########
+
+class CppEvent(object):
+    def __init__(self, opcode, c_name, namespace, name, fields):
+        self.opcode = opcode
+        self.c_name = c_name
+        self.namespace = namespace
+        self.fields = fields
+
+        self.names = map(str.lower, _n_item(name[-1], True))
+        self.name = self.names[-1]
+
+        self.nssopen = ""
+        self.nssclose = ""
+        self.scope = []
+        for name in self.names[0:-1]:
+            self.nssopen += " namespace %s {" % name
+            self.nssclose += " };"
+            self.scope.append(name)
+
+    def scoped_name(self):
+        ns = get_namespace(self.namespace)
+        scope = ("::" + "::".join(self.scope)) if len(self.scope) > 0 else ""
+        return "xpp::event::" + ns + scope + "::" + self.name
+
+    def make_class(self):
+        for field in self.fields:
+            if field.field_type[-1] in _resource_classes:
+                sys.stderr.write("field: %s\n" % field)
+
+        ns = get_namespace(self.namespace)
+
+        typedef = []
+        opcode_accessor = \
+            [ "static uint8_t opcode(void)"
+            , "{"
+            , "  return %s;" % self.opcode
+            , "}"
+            ]
+
+        if self.namespace.is_ext:
+            typedef = [ "typedef xpp::extension::%s extension;" % ns ]
+            opcode_accessor += \
+                [ ""
+                , "static uint8_t opcode(uint8_t first_event)"
+                , "{"
+                , "  return first_event + opcode();"
+                , "}"
+                , ""
+                , "static uint8_t opcode(const xpp::extension::%s & extension)" % ns
+                , "{"
+                , "  return opcode(extension->first_event);"
+                , "}"
+                ]
+
+        else:
+            typedef = [ "typedef void extension;" ]
+
+        if len(opcode_accessor) > 0:
+            opcode_accessor = "\n".join(map(lambda s: "      " + s, opcode_accessor)) + "\n"
+        else:
+            opcode_accessor = ""
+
+        if len(typedef) > 0:
+            typedef = "\n".join(map(lambda s: "      " + s, typedef)) + "\n\n"
+        else:
+            typedef = ""
+
+        return \
+'''
+namespace event { namespace %s {%s
+  class %s
+    : public xpp::event::generic<%s,
+                                 %s>
+  {
+    public:
+%s\
+      using xpp::event::generic<%s, %s>::generic;
+
+      virtual ~%s(void) {}
+
+%s\
+  };
+}; };%s // xpp::event%s
+''' % (ns, self.nssopen, # namespace event { namespace %s {%s
+       self.name, # class %s
+       self.opcode, # : public xpp::generic::event<%s,
+       self.c_name, # %s>
+       typedef,
+       self.opcode, self.c_name, # using xpp::event::generic<%s, %s>::generic;
+       self.name, # virtual ~%s(void) {}
+       opcode_accessor,
+       self.nssclose, # }; };%s
+       ("::" + "::".join(self.scope)) if len(self.scope) > 0 else "")
+
+
+########## EVENT ##########
+
+
+
+_ignore_events = \
+        { "XCB_PRESENT_GENERIC" }
+
 ########## PROTOCOLCLASS ##########
 
 class ProtocolClass(object):

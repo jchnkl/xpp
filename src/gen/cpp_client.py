@@ -11,6 +11,7 @@ import re
 import collections
 
 from templates import CppRequest, \
+                      CppEvent, \
                       Parameter, \
                       Accessor, \
                       ObjectClass, \
@@ -26,6 +27,8 @@ _cpp_request_objects = {}
 
 # see c_open()
 _protocol_class = ProtocolClass()
+
+_cpp_events = []
 
 _object_classes = \
         { "x" : collections.OrderedDict( \
@@ -216,6 +219,7 @@ def c_open(self):
     # _h('#include "../core/core.hpp"')
     _h('#include "../request.hpp"')
     _h('#include "../iterator.hpp"')
+    _h('#include "../core/event.hpp"')
     _h('#include "../core/extension.hpp"')
     _h('#include "../core/generic/resource.hpp"')
     _h('#include "../core/generic/connection.hpp"')
@@ -259,6 +263,8 @@ def c_close(self):
                         break
 
             _h(o.make_proto())
+    for cpp_event in _cpp_events:
+        _h(cpp_event.make_class())
 
     _h('')
     _h('')
@@ -2642,6 +2648,19 @@ def c_event(self, name):
 
     # _man_event(self, name)
 
+def cpp_event(self, name):
+    '''
+    Exported function that handles event declarations.
+    '''
+
+    _c_type_setup(self, name, ('event',))
+
+    opcode = _n(name).upper()
+    c_name = _t(self.name + ('event',))
+
+    cpp_event = CppEvent(opcode, c_name, _ns, name, self.fields)
+    _cpp_events.append(cpp_event)
+
 def c_error(self, name):
     '''
     Exported function that handles error declarations.
@@ -2744,8 +2763,7 @@ output = {'open'    : c_open,
           'struct'  : lambda x, y: None,
           'union'   : lambda x, y: None,
           'request' : c_request,
-          'event'   : lambda x, y: None,
-          # 'event'   : c_event,
+          'event'   : cpp_event,
           'error'   : lambda x, y: None,
           }
 
