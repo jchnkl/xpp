@@ -12,11 +12,13 @@ class core
   : public xpp::xcb::type<xcb_connection_t * const>
 {
   public:
+    explicit
     core(xcb_connection_t * c)
       : m_c(std::shared_ptr<xcb_connection_t>(c, [](...) {}))
     {}
 
     template<typename ... ConnectionParameter>
+    explicit
     core(xcb_connection_t * (*Connect)(ConnectionParameter ...),
                ConnectionParameter ... connection_parameter)
       : m_c(std::shared_ptr<xcb_connection_t>(
@@ -25,17 +27,20 @@ class core
     {}
 
     // xcb_connect (const char *displayname, int *screenp)
+    explicit
     core(const std::string & displayname)
       : core(xcb_connect, displayname.c_str(), &m_screen)
     {}
 
     // xcb_connect_to_fd (int fd, xcb_auth_info_t *auth_info)
+    explicit
     core(int fd, xcb_auth_info_t * auth_info)
       : core(xcb_connect_to_fd, fd, auth_info)
     {}
 
     // xcb_connect_to_display_with_auth_info (
     //     const char *display, xcb_auth_info_t *auth, int *screen)
+    explicit
     core(const std::string & display, xcb_auth_info_t * auth)
       : core(xcb_connect_to_display_with_auth_info,
                    display.c_str(), auth, &m_screen)
