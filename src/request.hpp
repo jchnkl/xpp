@@ -19,7 +19,7 @@ class request {
             COOKIE_ARGS ... cookie_args)
       : m_c(c)
     {
-      m_cookie = cookie_fun(c, cookie_args ...);
+      prepare(cookie_fun, cookie_args ...);
     }
 
     const REPLY * const operator*(void)
@@ -45,6 +45,24 @@ class request {
     xcb_connection_t * m_c;
     COOKIE m_cookie;
     std::shared_ptr<REPLY> m_reply;
+
+    request(xcb_connection_t * const c)
+      : m_c(c)
+    {}
+
+    template<typename ... COOKIE_ARGS>
+    void
+    prepare(COOKIE (*cookie_fun)(xcb_connection_t *, COOKIE_ARGS ...),
+            COOKIE_ARGS ... cookie_args)
+    {
+      m_cookie = cookie_fun(m_c, cookie_args ...);
+    }
+
+    xcb_connection_t * const
+    connection(void)
+    {
+      return m_c;
+    }
 };
 
 }; // namespace generic
