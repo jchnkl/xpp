@@ -235,48 +235,19 @@ def c_close(self):
     Writes out all the stored content lines, then closes the files.
     '''
 
-    '''
-    _h('namespace request {')
-    for name in _cpp_request_names:
-        _h('%s', _cpp_request_objects[name].make_proto())
-    _h('}; // namespace request')
-
-    _h('')
     _h('')
     _h(ExtensionClass(_ns).make_class())
 
-    printed_classes = set()
-    if _object_classes.has_key(get_namespace(_ns)):
-        for id in _object_classes[get_namespace(_ns)]:
-            if id in printed_classes:
-                continue
-            else:
-                printed_classes.add(id)
 
-            o = _object_classes[get_namespace(_ns)][id]
-            base = o.get_base_class()
-            if base != None and not id in printed_classes:
-                for id, oc in _object_classes[get_namespace(_ns)].iteritems():
-                    if oc.name == base:
-                        printed_classes.add(id)
-                        # _h(oc.make_proto())
-                        break
-
-            _h(o.make_proto())
     for cpp_event in _cpp_events:
         _h(cpp_event.make_class())
 
     _h('')
-    _h('')
-    '''
 
-    # _h('namespace request {')
     for name in _cpp_request_names:
         _h("%s\n", _cpp_request_objects[name].make_class())
-    # _h('}; // namespace request')
 
     _h('')
-    # _h('')
 
     if _object_classes.has_key(get_namespace(_ns)):
         for key in _object_classes[get_namespace(_ns)]:
@@ -294,12 +265,6 @@ def c_close(self):
 
     _h('')
     _h('}; // namespace xpp')
-    # _h('')
-
-    # _h(_protocol_class.make_methods())
-
-    # _h('')
-    # _h('')
 
     _h('')
     _h('#endif // XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
@@ -2660,6 +2625,7 @@ def cpp_event(self, name):
 
     cpp_event = CppEvent(opcode, c_name, _ns, name, self.fields)
     _cpp_events.append(cpp_event)
+    _protocol_class.add_event(cpp_event)
 
 def c_error(self, name):
     '''
