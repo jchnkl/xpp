@@ -1,45 +1,61 @@
 #ifndef XPP_EXTENSION_HPP
 #define XPP_EXTENSION_HPP
 
-#include "core.hpp"
+#include <iostream>
+#include <xcb/xcb.h>
+#include "type.hpp"
 
 namespace xpp {
 
+namespace extension {
+
 template<xcb_extension_t * ID>
-class extension {
+class generic
+  : virtual public xpp::xcb::type<xcb_connection_t * const>
+{
   public:
-    extension(const core & core)
-      : m_core(core)
+    virtual ~generic(void)
+    {}
+
+    virtual
+    const xcb_query_extension_reply_t &
+    operator*(void) const
     {
-      m_core.prefetch_extension_data(ID);
+      return *m_extension;
     }
 
-    void get(void)
+    virtual
+    const xcb_query_extension_reply_t * const
+    operator->(void) const
     {
-      m_extension = m_core.get_extension_data(ID);
+      return m_extension;
     }
 
-    uint8_t major_opcode(void)
+    virtual
+    operator const xcb_query_extension_reply_t * const(void) const
     {
-      return m_extension->major_opcode;
+      return m_extension;
     }
 
-    uint8_t first_event(void)
+    virtual
+    void get_data(void)
     {
-      return m_extension->first_event;
+      m_extension = xcb_get_extension_data(*this, ID);
     }
 
-    uint8_t first_error(void)
+    virtual
+    void prefetch_data(void)
     {
-      return m_extension->first_error;
+      xcb_prefetch_extension_data(*this, ID);
     }
 
   private:
-    const core & m_core;
     // The result must not be freed.
     // This storage is managed by the cache itself.
-    const xcb_query_extension_reply_t * m_extension;
-}; // class extension
+    const xcb_query_extension_reply_t * m_extension = NULL;
+}; // class generic
+
+}; // namespace extension
 
 }; // namespace xpp
 
