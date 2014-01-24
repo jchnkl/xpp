@@ -16,7 +16,9 @@ from templates import CppRequest, \
                       ObjectClass, \
                       ProtocolClass, \
                       get_ext_name, \
-                      get_namespace
+                      get_namespace, \
+                      _n_item, \
+                      _ext
 
 _cpp_request_names = []
 _cpp_request_objects = {}
@@ -135,17 +137,6 @@ def _c_setlevel(idx):
         _clines.append([])
     _clevel = idx
 
-def _n_item(str):
-    '''
-    Does C-name conversion on a single string fragment.
-    Uses a regexp with some hard-coded special cases.
-    '''
-    if str in _cname_special_cases:
-        return _cname_special_cases[str]
-    else:
-        split = _cname_re.finditer(str)
-        name_parts = [match.group(0) for match in split]
-        return '_'.join(name_parts)
 
 def _cpp(str):
     '''
@@ -158,15 +149,6 @@ def _cpp(str):
     else:
         return str
 
-def _ext(str):
-    '''
-    Does C-name conversion on an extension name.
-    Has some additional special cases on top of _n_item.
-    '''
-    if str in _extension_special_cases:
-        return _n_item(str).lower()
-    else:
-        return str.lower()
 
 def _n(list):
     '''
