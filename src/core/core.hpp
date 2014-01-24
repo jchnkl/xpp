@@ -4,10 +4,13 @@
 #include <string>
 #include <memory>
 #include <xcb/xcb.h>
+#include "type.hpp"
 
 namespace xpp {
 
-class core {
+class core
+  : public xpp::xcb::type<xcb_connection_t * const>
+{
   public:
     core(xcb_connection_t * c)
       : m_c(std::shared_ptr<xcb_connection_t>(c, [](...) {}))
@@ -38,7 +41,15 @@ class core {
                    display.c_str(), auth, &m_screen)
     {}
 
-    xcb_connection_t * const operator*(void) const
+    virtual
+    xcb_connection_t * const
+    operator*(void) const
+    {
+      return m_c.get();
+    }
+
+    virtual
+    operator xcb_connection_t * const(void) const
     {
       return m_c.get();
     }
