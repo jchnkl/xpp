@@ -1,7 +1,6 @@
 #ifndef XPP_XCB_TYPE_HPP
 #define XPP_XCB_TYPE_HPP
 
-// #include <xcb/xcb.h>
 #include <cstddef> // size_t
 
 namespace xpp {
