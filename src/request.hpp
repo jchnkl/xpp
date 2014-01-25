@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <xcb/xcb.h>
+#include "core/type.hpp"
 
 namespace xpp {
 
@@ -11,7 +12,9 @@ namespace generic {
 template<typename COOKIE,
          typename REPLY,
          REPLY * (*REPLY_FUN)(xcb_connection_t *, COOKIE, xcb_generic_error_t **)>
-class request {
+class request
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+{
   public:
     template<typename ... COOKIE_ARGS>
     request(xcb_connection_t * const c,
@@ -20,6 +23,12 @@ class request {
       : m_c(c)
     {
       prepare(cookie_fun, cookie_args ...);
+    }
+
+    virtual
+    operator xcb_connection_t * const(void) const
+    {
+      return m_c;
     }
 
     const REPLY & operator*(void)
