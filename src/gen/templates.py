@@ -404,19 +404,28 @@ class %s
     def event_dispatcher_class(self):
         ns = get_namespace(self.namespace)
 
-        opcode = ""
         fst_param = ""
         snd_param = ""
         typedef = []
+
         ctors = []
-        members = ""
+        members = []
+
+        opcode_switch = "event->response_type & ~0x80"
+
+        # >>> if begin <<<
         if self.namespace.is_ext:
-            opcode = "(event->response_type & ~0x80) - first_event"
+            opcode_switch = "(event->response_type & ~0x80) - m_first_event"
             fst_param = ", m_first_event"
             snd_param = ", uint8_t first_event"
             typedef = [ "typedef xpp::extension::%s extension;\n" % ns ]
-            members = "\n  private:\n    const uint8_t m_first_event;"
-            ctors = \
+
+            members += \
+                [ "private:"
+                , "  const uint8_t m_first_event;"
+                ]
+
+            ctors += \
                 [ "%s(uint8_t first_event)" % ns
                 , "  : m_first_event(first_event)"
                 , "{}"
@@ -424,10 +433,9 @@ class %s
                 , "%s(const xpp::extension::%s & extension)" % (ns, ns)
                 , "  : %s(extension->first_event)" % ns
                 , "{}"
-                , ""
                 ]
-        else:
-            opcode = "event->response_type & ~0x80"
+
+        # >>> if end <<<
 
         if len(typedef) > 0:
             typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n"
@@ -439,6 +447,11 @@ class %s
         else:
             ctors = ""
 
+        if len(members) > 0:
+            members = "\n".join(map(lambda s: "  " + s, members)) + "\n"
+        else:
+            members = ""
+
         return \
 '''\
 namespace dispatcher {
@@ -449,17 +462,10 @@ class %s
   public:
 %s\
 %s\
+
     template<typename Handler>
     bool
     operator()(const Handler & handler, xcb_generic_event_t * const event) const
-    {
-      return dispatch(handler, event%s);
-    }
-
-    template<typename Handler>
-    static
-    bool
-    dispatch(const Handler & handler, xcb_generic_event_t * const event%s)
     {
       switch (%s) {
 %s
@@ -467,33 +473,29 @@ class %s
 
       return false;
     }
-%s
+%s\
 }; // class %s
 
 }; // namespace dispatcher
 ''' % (ns, # class %s {
        typedef,
        ctors,
-       fst_param,
-       snd_param, # dispatch_with(..., xpp::extension<&xcb_%s_id>
-       opcode, # switch(%s)
+       opcode_switch, # switch(%s)
        self.event_switch_cases("handler", "event"),
        members,
        ns) # }; // class %s
-
 
     def event_switch_cases(self, arg_handler, arg_event):
         cases = ""
         templ = [ ""
                 , "        case %s:"
-                , " std::cerr << \"dispatch %s\" << std::endl; "
-                , "          %s(" % arg_handler + "%s" + "(%s));" % arg_event
+                , "          %s(" % arg_handler + "%s" + "(*this, %s));" % arg_event
                 , "          return true;"
                 , ""
                 ]
 
         for e in self.events:
-            cases += "\n".join(templ) % (e.opcode, e.opcode, e.scoped_name()) #, e.c_name)
+            cases += "\n".join(templ) % (e.opcode, e.scoped_name())
 
         return cases
 
