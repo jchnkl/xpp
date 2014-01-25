@@ -587,7 +587,7 @@ class ObjectClass(object):
         else:
             return \
 """\
-namespace %s {
+namespace resource { namespace %s {
 
 class %s
   : virtual public xpp::xcb::type<const %s &>
@@ -599,14 +599,14 @@ class %s
 %s
 }; // class %s
 
-}; // namespace %s
-""" % (ns, # namespace %s {
-       name,   # class %s
+}; }; // namespace resource::%s
+""" % (name, # namespace %s {
+       ns,   # class %s
        c_name, # public resource<%s>
-       name, # virtual ~%s(void)
+       ns, # virtual ~%s(void)
        methods,
-       name, # }; // class %s
-       ns) # }; // namespace %s
+       ns, # }; // class %s
+       name) # }; // namespace %s
 
 ########## OBJECTCLASS ##########
 
