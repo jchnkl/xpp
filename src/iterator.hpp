@@ -16,6 +16,8 @@ namespace generic {
 template<typename Signature, Signature & S>
 struct callable;
 
+// http://bytes.com/topic/c/answers/692802-performance-static-member-function-versus-functor#post2754209
+// functors are faster than static methods
 template<typename Return,
          typename ... Args, Return (&Function)(Args ...)>
 struct callable<Return(Args ...), Function> {
