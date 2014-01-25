@@ -385,7 +385,7 @@ class ProtocolClass(object):
 namespace protocol {
 
 class %s
-  : public xpp::xcb::type<xcb_connection_t * const>
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
 %s\
@@ -443,7 +443,9 @@ class %s
 '''\
 namespace dispatcher {
 
-class %s {
+class %s
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+{
   public:
 %s\
 %s\
@@ -528,13 +530,16 @@ class ObjectClass(object):
         for request in self.requests:
             methods += request.make_object_class_inline(False, self.name.lower()) + "\n\n"
 
-        return \
+        if methods == "":
+            return ""
+        else:
+            return \
 """\
 namespace %s {
 
 class %s
-  : public xpp::xcb::type<xcb_connection_t * const>
-  , public xpp::xcb::type<const %s &>
+  : virtual public xpp::xcb::type<const %s &>
+  , virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
     virtual ~%s(void) {}
