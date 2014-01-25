@@ -22,14 +22,14 @@ class request {
       prepare(cookie_fun, cookie_args ...);
     }
 
-    const REPLY * const operator*(void)
+    const REPLY & operator*(void)
     {
-      return this->get().get();
+      return *this->get();
     }
 
     const REPLY * const operator->(void)
     {
-      return *(*this);
+      return this->get().get();
     }
 
     std::shared_ptr<REPLY>
