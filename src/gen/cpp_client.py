@@ -222,7 +222,6 @@ def c_open(self):
     _h('#include "../core/event.hpp"')
     _h('#include "../core/extension.hpp"')
     _h('#include "../core/generic/resource.hpp"')
-    _h('#include "../core/generic/connection.hpp"')
     _h('')
     _h('namespace xpp {')
     # _h('class window;')
