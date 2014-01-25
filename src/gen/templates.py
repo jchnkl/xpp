@@ -244,6 +244,27 @@ class %s%s{
 ########## EXTENSIONCLASS ##########
 
 
+_field_accessor_template = \
+'''\
+      template<typename %s = %s>
+      %s
+      %s(void) const
+      {
+        return %s(*this, %s);
+      }\
+'''
+
+_field_accessor_template_specialization = \
+'''\
+template<>
+%s
+%s::%s<%s>(void) const
+{
+  return %s;
+}\
+'''
+
+
 
 ########## EVENT ##########
 
@@ -271,9 +292,27 @@ class CppEvent(object):
         return "xpp::event::" + ns + scope + "::" + self.name
 
     def make_class(self):
+        member_accessors = []
+        member_accessors_special = []
         for field in self.fields:
             if field.field_type[-1] in _resource_classes:
-                sys.stderr.write("field: %s\n" % field)
+                template_name = field.field_name.capitalize()
+                c_name = "_".join(field.field_type).lower() + "_t"
+                method_name = field.field_name.lower()
+                member = "(*this)->" + field.field_name.lower()
+
+                member_accessors.append(_field_accessor_template % \
+                    ( template_name, c_name # template<typename %s = %s>
+                    , template_name # return type
+                    , method_name
+                    , template_name, member # return %s(m_c, %s);
+                    ))
+
+                member_accessors_special.append(_field_accessor_template_specialization % \
+                    ( c_name
+                    , self.name, method_name, c_name
+                    , member
+                    ))
 
         ns = get_namespace(self.namespace)
 
@@ -313,6 +352,13 @@ class CppEvent(object):
         else:
             typedef = ""
 
+        if len(member_accessors) > 0:
+            member_accessors = "\n" + "\n\n".join(member_accessors) + "\n\n"
+            member_accessors_special = "\n" + "\n\n".join(member_accessors_special) + "\n\n"
+        else:
+            member_accessors = ""
+            member_accessors_special = ""
+
         return \
 '''
 namespace event { namespace %s {%s
@@ -327,7 +373,9 @@ namespace event { namespace %s {%s
       virtual ~%s(void) {}
 
 %s\
+%s\
   };
+%s\
 }; };%s // xpp::event%s
 ''' % (ns, self.nssopen, # namespace event { namespace %s {%s
        self.name, # class %s
@@ -337,6 +385,8 @@ namespace event { namespace %s {%s
        self.opcode, self.c_name, # using xpp::event::generic<%s, %s>::generic;
        self.name, # virtual ~%s(void) {}
        opcode_accessor,
+       member_accessors,
+       member_accessors_special,
        self.nssclose, # }; };%s
        ("::" + "::".join(self.scope)) if len(self.scope) > 0 else "")
 
@@ -571,10 +621,11 @@ def replace_class(method, class_name):
 ########## REQUESTS  ##########
 
 class CppRequest(object):
-    def __init__(self, name, is_void, namespace):
+    def __init__(self, name, is_void, namespace, reply):
         self.name = name
         self.is_void = is_void
         self.namespace = namespace
+        self.reply = reply
         self.c_namespace = \
             "" if namespace.header.lower() == "xproto" \
             else get_namespace(namespace)
@@ -635,7 +686,7 @@ class CppRequest(object):
         return self.parameter_list.comma()
 
     def c_name(self):
-        ns = "" if self.c_namespace == "" else self.c_namespace + "_"
+        ns = "" if self.c_namespace == "" else (self.c_namespace + "_")
         return "xcb_" + ns + self.name
 
     def calls(self, sort):
@@ -780,6 +831,38 @@ class %s {
 
         ############ def methods(...) ############
 
+        member_accessors = []
+        member_accessors_special = []
+        for field in self.reply.fields:
+            if (field.field_type[-1] in _resource_classes
+                and not field.type.is_list
+                and not field.type.is_container):
+
+                template_name = field.field_name.capitalize()
+                c_name = "_".join(field.field_type).lower() + "_t"
+                method_name = field.field_name.lower()
+                member = "m_reply->" + field.field_name.lower()
+
+                member_accessors.append(_field_accessor_template % \
+                    ( template_name, c_name # template<typename %s = %s>
+                    , template_name # return type
+                    , method_name
+                    , template_name, member # return %s(m_c, %s);
+                    ))
+
+                member_accessors_special.append(_field_accessor_template_specialization % \
+                    ( c_name
+                    , self.name, method_name, c_name
+                    , member
+                    ))
+
+        if len(member_accessors) > 0:
+            member_accessors = "\n" + "\n\n".join(member_accessors) + "\n\n"
+            member_accessors_special = "\n" + "\n\n".join(member_accessors_special) + "\n\n"
+        else:
+            member_accessors = ""
+            member_accessors_special = ""
+
         namespace = get_namespace(self.namespace)
 
         head = \
@@ -800,12 +883,13 @@ class %s
 
         tail = \
 """\
+%s\
   private:
     xcb_connection_t * m_c;
 }; // class %s
-
+%s\
 }; }; // request::%s
-""" % (self.name, namespace)
+""" % (member_accessors, self.name, member_accessors_special, namespace)
 
         default = methods(self.protos(False, False), self.calls(False))
 
