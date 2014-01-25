@@ -30,31 +30,31 @@ _protocol_class = ProtocolClass()
 
 _cpp_events = []
 
+          # XPROTO
 _object_classes = \
-        { "x" : collections.OrderedDict( \
-                { "10" : ObjectClass("DRAWABLE")
-                , "30" : ObjectClass("WINDOW")
-                , "40" : ObjectClass("PIXMAP")
-                , "50" : ObjectClass("ATOM")
-                , "60" : ObjectClass("CURSOR")
-                , "70" : ObjectClass("FONT")
-                , "80" : ObjectClass("GCONTEXT")
-                , "90" : ObjectClass("FONTABLE")
-                # , "KEYCODE" : []
-                } )
-        , "randr" : collections.OrderedDict( \
-                { "10" : ObjectClass("MODE")
-                , "20" : ObjectClass("CRTC")
-                , "30" : ObjectClass("OUTPUT")
-                , "40" : ObjectClass("PROVIDER")
-                } )
+          { "10" : ObjectClass("DRAWABLE", False)
+          , "30" : ObjectClass("WINDOW", False)
+          , "40" : ObjectClass("PIXMAP", False)
+          , "50" : ObjectClass("ATOM", False)
+          , "60" : ObjectClass("CURSOR", False)
+          , "70" : ObjectClass("FONT", False)
+          , "80" : ObjectClass("GCONTEXT", False)
+          , "90" : ObjectClass("FONTABLE", False)
+          # , "KEYCODE" : []
+
+          # RANDR
+          , "100" : ObjectClass("MODE")
+          , "120" : ObjectClass("CRTC")
+          , "130" : ObjectClass("OUTPUT")
+          , "140" : ObjectClass("PROVIDER")
+          }
+
         # , "render" : collections.OrderedDict( \
         #         {
         #         } )
         # , "xinerama" : collections.OrderedDict( \
         #         {
         #         } )
-        }
 
 # Jump to the bottom of this file for the main routine
 
@@ -249,18 +249,12 @@ def c_close(self):
 
     _h('')
 
-    if _object_classes.has_key(get_namespace(_ns)):
-        for key in _object_classes[get_namespace(_ns)]:
-            _h(_object_classes[get_namespace(_ns)][key].make_inline())
+    for key in _object_classes:
+        _h(_object_classes[key].make_inline())
 
-    # for key in _object_classes[get_namespace(_ns)]:
-    #     _h(_object_classes[get_namespace(_ns)][key].make_methods())
 
-    # _h('}; // namespace %s', get_namespace(_ns))
 
     _h('')
-    # _h('')
-
     _h(_protocol_class.make_proto())
 
     _h('')
@@ -1850,10 +1844,9 @@ def _cpp_request_helper(self, name, is_void):
     _protocol_class.add(_cpp_request_objects[request_name])
     # try:
 
-    if _object_classes.has_key(get_namespace(_ns)):
-        for key in _object_classes[get_namespace(_ns)]:
-            _object_classes[get_namespace(_ns)][key].set_namespace(_ns)
-            _object_classes[get_namespace(_ns)][key].add(_cpp_request_objects[request_name])
+    for key in _object_classes:
+        _object_classes[key].set_namespace(_ns)
+        _object_classes[key].add(_cpp_request_objects[request_name])
 
     # except: pass
 
