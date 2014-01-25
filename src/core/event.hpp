@@ -11,12 +11,10 @@ namespace event {
 template<int OpCode, typename Event>
 class generic {
   public:
-    generic(Event * event)
-      : m_event(event)
-    {}
 
-    generic(xcb_generic_event_t * event)
-      : m_event(reinterpret_cast<Event *>(event))
+    generic(xcb_connection_t * const c, xcb_generic_event_t * event)
+      : m_c(c)
+      , m_event(reinterpret_cast<Event *>(event))
     {}
 
     virtual
@@ -45,6 +43,7 @@ class generic {
     static const int opcode = OpCode;
 
   protected:
+    xcb_connection_t * m_c;
     std::shared_ptr<Event> m_event;
 }; // class generic
 
