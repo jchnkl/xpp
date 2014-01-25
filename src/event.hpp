@@ -172,7 +172,7 @@ class registry
     {
       try {
         auto & prio_map = m_dispatchers.at(opcode);
-        auto & prio_sink_pair = prio_map.equal_range(p);
+        const auto & prio_sink_pair = prio_map.equal_range(p);
         for (auto it = prio_sink_pair.first; it != prio_sink_pair.second; ) {
           if (d == it->second) {
             prio_map.erase(it);
