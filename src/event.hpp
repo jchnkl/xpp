@@ -54,6 +54,7 @@ template<typename ... Extensions>
 class registry
   : virtual public xpp::dispatcher::x
   , virtual public Extensions::dispatcher ...
+  , virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
     typedef unsigned int priority;
@@ -63,6 +64,12 @@ class registry
       : Extensions::dispatcher(c) ...
       , m_c(c)
     {}
+
+    virtual
+    operator xcb_connection_t * const(void) const
+    {
+      return m_c;
+    }
 
     bool
     dispatch(xcb_generic_event_t * event) const
