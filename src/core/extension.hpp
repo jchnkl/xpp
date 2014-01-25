@@ -11,7 +11,7 @@ namespace extension {
 
 template<xcb_extension_t * ID>
 class generic
-  : virtual public xpp::xcb::type<xcb_connection_t * const>
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
     virtual ~generic(void)
