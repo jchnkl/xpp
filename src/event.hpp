@@ -93,7 +93,7 @@ class registry
     attach(priority p, sink<Event, Next, Rest ...> * s)
     {
       attach(p, s, opcode<Event>());
-      attach<Next, Rest ...>(p, (sink<Next, Rest ...> *)s);
+      attach<Next, Rest ...>(p, reinterpret_cast<sink<Next, Rest ...> *>(s));
     }
 
     template<typename Event, typename Next, typename ... Rest>
@@ -101,7 +101,7 @@ class registry
     detach(priority p, sink<Event, Next, Rest ...> * s)
     {
       detach(p, s, opcode<Event>());
-      detach<Next, Rest ...>(p, (sink<Next, Rest ...> *)s);
+      detach<Next, Rest ...>(p, reinterpret_cast<sink<Next, Rest ...> *>(s));
     }
 
   private:
