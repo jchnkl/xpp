@@ -298,10 +298,10 @@ class CppEvent(object):
         for field in self.fields:
             if field.field_type[-1] in _resource_classes:
                 template_name = field.field_name.capitalize()
-                c_name = "_".join(field.field_type).lower() + "_t"
+                c_name = field.c_field_type
                 method_name = field.field_name.lower()
                 if method_name == self.name: method_name += "_"
-                member = "(*this)->" + field.field_name.lower()
+                member = "(*this)->" + field.c_field_name
 
                 member_accessors.append(_field_accessor_template % \
                     ( template_name, c_name # template<typename %s = %s>
@@ -841,10 +841,10 @@ class %s {
                 and not field.type.is_container):
 
                 template_name = field.field_name.capitalize()
-                c_name = "_".join(field.field_type).lower() + "_t"
+                c_name = field.c_field_type
                 method_name = field.field_name.lower()
                 if method_name == self.name: method_name += "_"
-                member = "m_reply->" + field.field_name.lower()
+                member = "m_reply->" + field.c_field_name
 
                 member_accessors.append(_field_accessor_template % \
                     ( template_name, c_name # template<typename %s = %s>
