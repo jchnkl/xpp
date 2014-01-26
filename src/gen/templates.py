@@ -137,6 +137,12 @@ _resource_classes = \
     ### XV ###
     }
 
+_reserved_keywords = {'class' : '_class',
+                      'new'   : '_new',
+                      'delete': '_delete',
+                      'default' : '_default',
+                      'explicit': '_explicit'}
+
 def get_namespace(namespace):
     if namespace.is_ext:
         return get_ext_name(namespace.ext_name)
@@ -768,7 +774,10 @@ class CppRequest(object):
         return "  class " + self.name + ";"
 
     def make_class(self):
-        return self.void_request() if self.is_void else self.reply_request()
+        if self.is_void:
+            return self.void_request(True) + "\n\n" + self.void_request(False)
+        else:
+            return self.reply_request(True) + "\n\n" + self.reply_request(False)
 
     def make_object_class_inline(self, is_connection, class_name=""):
         request_name = "xpp::request::" + get_namespace(self.namespace) + "::"
@@ -814,9 +823,19 @@ class CppRequest(object):
     def comma(self):
         return self.parameter_list.comma()
 
-    def c_name(self):
+    def c_name(self, regular=True):
         ns = "" if self.c_namespace == "" else (self.c_namespace + "_")
-        return "xcb_" + ns + self.name
+        name = "xcb_" + ns + self.name
+
+        # checked = void and not regular
+        # unchecked = not void and not regular
+        if not regular:
+            if self.is_void:
+                return name + "_checked"
+            else:
+                return name + "_unchecked"
+        else:
+            return name
 
     def calls(self, sort):
         return self.parameter_list.calls(sort)
@@ -863,7 +882,7 @@ class CppRequest(object):
 
 ########## VOID REQUEST  ##########
 
-    def void_request(self):
+    def void_request(self, regular):
         ############ def methods(...) ############
         def methods(protos, calls, template="", initializer=[]):
             initializer = "\n      ".join([""] + initializer)
@@ -876,7 +895,7 @@ class CppRequest(object):
     }
 """ % (self.name, self.comma() + protos,
        initializer,
-       self.c_name(), self.comma() + calls)
+       self.c_name(regular), self.comma() + calls)
 
             operator = \
 """\
@@ -887,29 +906,37 @@ class CppRequest(object):
     }
 """ % (self.comma() + protos,
        initializer,
-       self.c_name(), self.comma() + calls)
+       self.c_name(regular), self.comma() + calls)
 
             return template + ctor + "\n" + template + operator
         ############ def methods(...) ############
 
         namespace = get_namespace(self.namespace)
+        # checked = void and not regular
+        checked_open = ""
+        checked_close = ""
+        checked_comment = ""
+        if not regular:
+            checked_open = " namespace checked {"
+            checked_close = " };"
+            checked_comment = "checked::"
 
         head = \
 """\
-namespace request { namespace %s {
+namespace request {%s namespace %s {
 
 class %s {
   public:
     %s(void) {}
 
-""" % (namespace, self.name, self.name)
+""" % (checked_open, namespace, self.name, self.name)
 
         tail = \
 """\
 }; // class %s
 
-}; }; // request::%s
-""" % (self.name, namespace)
+}; };%s // request::%s%s
+""" % (self.name, checked_close, checked_comment, namespace)
 
         default = methods(self.protos(False, False), self.calls(False))
 
@@ -941,7 +968,7 @@ class %s {
 
 ########## REPLY_REQUEST ##########
 
-    def reply_request(self):
+    def reply_request(self, regular):
         ############ def methods(...) ############
         def methods(protos, calls, template="", initializer=[]):
             initializer = "\n      ".join([""] + initializer)
@@ -956,7 +983,7 @@ class %s {
 """ % (self.name,
        self.comma() + protos,
        initializer,
-       self.c_name(), self.comma() + calls)
+       self.c_name(regular), self.comma() + calls)
 
         ############ def methods(...) ############
 
@@ -995,9 +1022,18 @@ class %s {
 
         namespace = get_namespace(self.namespace)
 
+        # unchecked = not void and not regular
+        unchecked_open = ""
+        unchecked_close = ""
+        unchecked_comment = ""
+        if not regular:
+            unchecked_open = " namespace unchecked {"
+            unchecked_close = " };"
+            unchecked_comment = "unchecked::"
+
         head = \
 """\
-namespace request { namespace %s {
+namespace request {%s namespace %s {
 
 class %s
   : public generic::request<%s_cookie_t,
@@ -1005,7 +1041,7 @@ class %s
                             &%s_reply>
 {
   public:
-""" % (namespace,
+""" % (unchecked_open, namespace,
        self.name,
        self.c_name(),
        self.c_name(),
@@ -1018,8 +1054,13 @@ class %s
     xcb_connection_t * m_c;
 }; // class %s
 %s\
-}; }; // request::%s
-""" % (member_accessors, self.name, member_accessors_special, namespace)
+}; };%s // request::%s%s
+""" % (member_accessors,
+       self.name,
+       member_accessors_special,
+       unchecked_close,
+       unchecked_comment,
+       namespace)
 
         default = methods(self.protos(False, False), self.calls(False))
 
