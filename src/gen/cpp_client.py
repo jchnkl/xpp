@@ -2613,7 +2613,7 @@ def cpp_event(self, name):
     opcode = _n(name).upper()
     c_name = _t(self.name + ('event',))
 
-    cpp_event = CppEvent(opcode, c_name, _ns, name, self.fields)
+    cpp_event = CppEvent(self.opcodes[name], opcode, c_name, _ns, name, self.fields)
     _cpp_events.append(cpp_event)
     _protocol_class.add_event(cpp_event)
 

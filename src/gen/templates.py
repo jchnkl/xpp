@@ -269,8 +269,9 @@ template<>
 ########## EVENT ##########
 
 class CppEvent(object):
-    def __init__(self, opcode, c_name, namespace, name, fields):
+    def __init__(self, opcode, opcode_name, c_name, namespace, name, fields):
         self.opcode = opcode
+        self.opcode_name = opcode_name
         self.c_name = c_name
         self.namespace = namespace
         self.fields = fields
@@ -286,6 +287,14 @@ class CppEvent(object):
             self.nssopen += " namespace %s {" % name
             self.nssclose += " };"
             self.scope.append(name)
+
+    def __cmp__(self, other):
+        if self.opcode == other.opcode:
+            return 0
+        elif self.opcode < other.opcode:
+            return -1
+        else:
+            return 1
 
     def scoped_name(self):
         ns = get_namespace(self.namespace)
@@ -322,7 +331,7 @@ class CppEvent(object):
         opcode_accessor = \
             [ "static uint8_t opcode(void)"
             , "{"
-            , "  return %s;" % self.opcode
+            , "  return %s;" % self.opcode_name
             , "}"
             ]
 
@@ -381,10 +390,10 @@ namespace event { namespace %s {%s
 }; };%s // xpp::event%s
 ''' % (ns, self.nssopen, # namespace event { namespace %s {%s
        self.name, # class %s
-       self.opcode, # : public xpp::generic::event<%s,
+       self.opcode_name, # : public xpp::generic::event<%s,
        self.c_name, # %s>
        typedef,
-       self.opcode, self.c_name, # using xpp::event::generic<%s, %s>::generic;
+       self.opcode_name, self.c_name, # using xpp::event::generic<%s, %s>::generic;
        self.name, # virtual ~%s(void) {}
        opcode_accessor,
        member_accessors,
@@ -411,7 +420,7 @@ class ProtocolClass(object):
         self.requests.append(request)
 
     def add_event(self, event):
-        if event.opcode not in _ignore_events:
+        if event.opcode_name not in _ignore_events:
             self.events.append(event)
 
     def set_namespace(self, namespace):
@@ -519,10 +528,7 @@ class %s
     bool
     operator()(const Handler & handler, xcb_generic_event_t * const event) const
     {
-      switch (%s) {
 %s
-      };
-
       return false;
     }
 %s\
@@ -532,22 +538,40 @@ class %s
 ''' % (ns, # class %s {
        typedef,
        ctors,
-       opcode_switch, # switch(%s)
-       self.event_switch_cases("handler", "event"),
+       self.event_switch_cases(opcode_switch, "handler", "event"),
        members,
        ns) # }; // class %s
 
-    def event_switch_cases(self, arg_handler, arg_event):
+    def event_switch_cases(self, arg_switch, arg_handler, arg_event):
         cases = ""
-        templ = [ ""
-                , "        case %s:"
+        templ = [ "        case %s:"
                 , "          %s(" % arg_handler + "%s" + "(*this, %s));" % arg_event
                 , "          return true;"
                 , ""
+                , ""
                 ]
 
+        distinct_events = [[]]
         for e in self.events:
-            cases += "\n".join(templ) % (e.opcode, e.scoped_name())
+            done = False
+            for l in distinct_events:
+                if e in l:
+                    continue
+                else:
+                    l.append(e)
+                    done = True
+                    break
+
+            if not done:
+                distinct_events.append([e])
+            else:
+                break
+
+        for l in distinct_events:
+            cases += "\n      switch (%s) {\n\n" % arg_switch
+            for e in l:
+                cases += "\n".join(templ) % (e.opcode, e.scoped_name())
+            cases += "      };\n"
 
         return cases
 
