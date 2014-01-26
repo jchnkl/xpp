@@ -282,6 +282,7 @@ class CppEvent(object):
         self.nssclose = ""
         self.scope = []
         for name in self.names[0:-1]:
+            if name in _reserved_keywords: name += "_"
             self.nssopen += " namespace %s {" % name
             self.nssclose += " };"
             self.scope.append(name)
