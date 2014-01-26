@@ -122,8 +122,6 @@ class window : virtual public xpp::resource::window::x
       return m_c;
     }
 
-    static std::size_t size(void) { return sizeof(xcb_window_t); }
-
     virtual
     window &
     x(unsigned int x)
