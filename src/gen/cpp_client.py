@@ -1637,7 +1637,7 @@ def _c_accessors_list(self, field):
 
     request_name = _ext(_n_item(self.name[-1]))
 
-    if list.member.fixed_size():
+    if list.member.fixed_size() and not self.is_bitcase:
         if field.c_field_type == "char":
             _cpp_request_objects[request_name].accessors.append( \
             Accessor(is_string=True,
@@ -1663,8 +1663,7 @@ def _c_accessors_list(self, field):
         # sys.stderr.write('field: %s\n' % (field))
         # sys.stderr.write('\n\n')
 
-        if request_name != 'bitcase_1':
-
+        if not self.is_bitcase:
             _cpp_request_objects[request_name].accessors.append( \
             Accessor(is_variable=True,
                      member=_ext(_n_item(field.field_name)),
