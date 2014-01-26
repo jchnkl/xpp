@@ -674,7 +674,7 @@ class %s
             if not done:
                 distinct_events.append([e])
             else:
-                break
+                continue
 
         for l in distinct_events:
             cases += "\n      switch (%s) {\n\n" % arg_switch
