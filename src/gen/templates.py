@@ -679,7 +679,7 @@ class %s
         for l in distinct_events:
             cases += "\n      switch (%s) {\n\n" % arg_switch
             for e in l:
-                cases += "\n".join(templ) % (e.opcode, e.scoped_name())
+                cases += "\n".join(templ) % (e.opcode_name, e.scoped_name())
             cases += "      };\n"
 
         return cases
