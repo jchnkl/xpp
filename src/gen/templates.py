@@ -780,10 +780,14 @@ class CppRequest(object):
             return self.reply_request(True) + "\n\n" + self.reply_request(False)
 
     def make_object_class_inline(self, is_connection, class_name=""):
-        request_name = "xpp::request::" + get_namespace(self.namespace) + "::"
+        appendix = ("checked" if self.is_void else "unchecked")
+
+        # "%s": ::{un,}checked
+        request_name = "xpp::request::" + "%s" + get_namespace(self.namespace) + "::"
         return_type = self.iterator_template(indent="")
         return_type += "virtual\n" if return_type == "" else ""
         return_type += "    "
+
         if self.is_void:
             return_type += "void"
         else:
@@ -806,16 +810,23 @@ class CppRequest(object):
              + ("()" if self.is_void else "") \
              + "(" + ", ".join(call_params) + ");"
 
-        return \
+        templ = \
 """\
     %s
     %s(%s) const
     {
       %s
     }\
-""" % (return_type,
-       method, proto_params,
-       call)
+"""
+
+        return \
+            (templ % (return_type if self.is_void else return_type % (appendix + "::"),
+                      method + "_" + appendix, proto_params,
+                      call % (appendix + "::"))) \
+            + "\n\n" + \
+            (templ % (return_type if self.is_void else return_type % "",
+                      method, proto_params,
+                      call % ""))
 
     def add(self, param):
         self.parameter_list.add(param)
