@@ -1114,7 +1114,8 @@ def _c_serialize(context, self):
     # _hc('')
     # # _serialize() returns the buffer size
     # _hc('int')
-    sys.stderr.write('int')
+
+    # sys.stderr.write('int')
 
 
     if self.is_switch and 'unserialize' == context:
@@ -1150,11 +1151,17 @@ def _c_serialize(context, self):
     # insert function name
     param_str[0] = "%s (%s" % (func_name, param_str[0].strip())
     param_str = list(map(lambda x: "%s," % x, param_str))
-    for s in param_str[:-1]:
-        sys.stderr.write(s)
+
+    # >>> THIS! <<< #
+    # for s in param_str[:-1]:
+    #     sys.stderr.write(s)
+
     #     _hc(s)
     # _h("%s);" % param_str[-1].rstrip(','))
-    sys.stderr.write("%s);" % param_str[-1].rstrip(','))
+
+    # >>> AND THAT! <<< #
+    # sys.stderr.write("%s);" % param_str[-1].rstrip(','))
+    # >>> AND THAT! <<< #
     _c("%s)" % param_str[-1].rstrip(','))
     _c('{')
 
@@ -1689,8 +1696,9 @@ def _c_accessors(self, name, base):
         if field.type.is_list and not field.type.fixed_size():
             _c_accessors_list(self, field)
         elif field.prev_varsized_field is not None or not field.type.fixed_size():
+            pass
             # _c_accessors_field(self, field)
-            sys.stderr.write("c_accessors_field(%s, %s)\n" % (self, field))
+            # sys.stderr.write("c_accessors_field(%s, %s)\n" % (self, field))
 
 def c_simple(self, name):
     '''
@@ -1749,6 +1757,7 @@ def _c_complex(self):
             length += 1
         maxtypelen = max(maxtypelen, length)
 
+    ### TODO: serialization(?)
     def _c_complex_field(self, field, space=''):
         if (field.type.fixed_size() or self.is_union or
             # in case of switch with switch children, don't make the field a pointer
@@ -1757,7 +1766,7 @@ def _c_complex(self):
             spacing = ' ' * (maxtypelen - len(field.c_field_type))
             # _h('%s    %s%s %s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
             # _h("%s %s" % (field.field_type, field.field_name))
-            sys.stderr.write("serialize: %s, %s\n" % (field.field_type, field.field_name))
+            # sys.stderr.write("serialize: %s, %s\n" % (field.field_type, field.field_name))
         else:
             spacing = ' ' * (maxtypelen - (len(field.c_field_type) + 1))
             # _h('%s    %s%s *%s%s; /**<  */', space, field.c_field_type, spacing, field.c_field_name, field.c_subscript)
