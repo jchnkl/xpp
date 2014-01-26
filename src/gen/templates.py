@@ -299,6 +299,7 @@ class CppEvent(object):
                 template_name = field.field_name.capitalize()
                 c_name = "_".join(field.field_type).lower() + "_t"
                 method_name = field.field_name.lower()
+                if method_name == self.name: method_name += "_"
                 member = "(*this)->" + field.field_name.lower()
 
                 member_accessors.append(_field_accessor_template % \
@@ -841,6 +842,7 @@ class %s {
                 template_name = field.field_name.capitalize()
                 c_name = "_".join(field.field_type).lower() + "_t"
                 method_name = field.field_name.lower()
+                if method_name == self.name: method_name += "_"
                 member = "m_reply->" + field.field_name.lower()
 
                 member_accessors.append(_field_accessor_template % \
