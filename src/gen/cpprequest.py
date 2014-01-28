@@ -55,6 +55,28 @@ _templates['reply_request'] = \
     }
 """
 
+_templates['reply_request_head'] = \
+"""\
+namespace request {%s namespace %s {
+
+class %s
+  : public generic::request<%s_cookie_t,
+                            %s_reply_t,
+                            &%s_reply>
+{
+  public:
+"""
+
+_templates['reply_request_tail'] = \
+"""\
+%s\
+  private:
+    xcb_connection_t * m_c;
+}; // class %s
+%s\
+}; };%s // request::%s%s
+"""
+
 _field_accessor_template = \
 '''\
       template<typename %s = %s>
@@ -335,36 +357,20 @@ class CppRequest(object):
             unchecked_close = " };"
             unchecked_comment = "unchecked::"
 
-        head = \
-"""\
-namespace request {%s namespace %s {
+        head = _templates['reply_request_head'] \
+                % (unchecked_open, namespace,
+                   self.name,
+                   self.c_name(),
+                   self.c_name(),
+                   self.c_name())
 
-class %s
-  : public generic::request<%s_cookie_t,
-                            %s_reply_t,
-                            &%s_reply>
-{
-  public:
-""" % (unchecked_open, namespace,
-       self.name,
-       self.c_name(),
-       self.c_name(),
-       self.c_name())
-
-        tail = \
-"""\
-%s\
-  private:
-    xcb_connection_t * m_c;
-}; // class %s
-%s\
-}; };%s // request::%s%s
-""" % (member_accessors,
-       self.name,
-       member_accessors_special,
-       unchecked_close,
-       unchecked_comment,
-       namespace)
+        tail = _templates['reply_request_tail'] \
+                % (member_accessors,
+                   self.name,
+                   member_accessors_special,
+                   unchecked_close,
+                   unchecked_comment,
+                   namespace)
 
         default = methods(self.protos(False, False), self.calls(False))
 
