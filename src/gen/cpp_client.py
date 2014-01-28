@@ -19,11 +19,11 @@ from utils import \
 from parameter import Parameter
 from cpprequest import CppRequest
 from objectclass import ObjectClass
+from protocolclass import ProtocolClass
 
 from templates import CppEvent, \
                       Parameter, \
                       Accessor, \
-                      ProtocolClass, \
                       ExtensionClass
 
 _cpp_request_names = []
