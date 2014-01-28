@@ -1,6 +1,51 @@
 from utils import *
 from resource_classes import _resource_classes
 
+_templates = {}
+
+_templates['inline_class'] = \
+"""\
+    %s
+    %s(%s) const
+    {
+      %s
+    }\
+"""
+
+_templates['void_constructor'] = \
+"""\
+    %s(xcb_connection_t * c%s)
+    {%s
+      %s(c%s);
+    }
+"""
+
+_templates['void_operator'] = \
+"""\
+    void
+    operator()(xcb_connection_t * c%s)
+    {%s
+      %s(c%s);
+    }
+"""
+
+_templates['void_request_head'] = \
+"""\
+namespace request {%s namespace %s {
+
+class %s {
+  public:
+    %s(void) {}
+
+"""
+
+_templates['void_request_tail'] = \
+"""\
+}; // class %s
+
+}; };%s // request::%s%s
+"""
+
 _field_accessor_template = \
 '''\
       template<typename %s = %s>
@@ -84,22 +129,13 @@ class CppRequest(object):
              + ("()" if self.is_void else "") \
              + "(" + ", ".join(call_params) + ");"
 
-        templ = \
-"""\
-    %s
-    %s(%s) const
-    {
-      %s
-    }\
-"""
-
         return \
-            (templ \
+            (_templates['inline_class'] \
                 % (return_type if self.is_void else return_type % (appendix + "::"),
                    method + "_" + appendix, proto_params,
                    call % (appendix + "::"))) \
             + "\n\n" + \
-            (templ \
+            (_templates['inline_class'] \
                 % (return_type if self.is_void else return_type % "",
                    method, proto_params,
                    call % ""))
@@ -174,26 +210,15 @@ class CppRequest(object):
         def methods(protos, calls, template="", initializer=[]):
             initializer = "\n      ".join([""] + initializer)
 
-            ctor = \
-"""\
-    %s(xcb_connection_t * c%s)
-    {%s
-      %s(c%s);
-    }
-""" % (self.name, self.comma() + protos,
-       initializer,
-       self.c_name(regular), self.comma() + calls)
+            ctor = _templates['void_constructor'] \
+                % (self.name, self.comma() + protos,
+                   initializer,
+                   self.c_name(regular), self.comma() + calls)
 
-            operator = \
-"""\
-    void
-    operator()(xcb_connection_t * c%s)
-    {%s
-      %s(c%s);
-    }
-""" % (self.comma() + protos,
-       initializer,
-       self.c_name(regular), self.comma() + calls)
+            operator = _templates['void_operator'] \
+                % (self.comma() + protos,
+                   initializer,
+                   self.c_name(regular), self.comma() + calls)
 
             return template + ctor + "\n" + template + operator
         ############ def methods(...) ############
@@ -208,22 +233,11 @@ class CppRequest(object):
             checked_close = " };"
             checked_comment = "checked::"
 
-        head = \
-"""\
-namespace request {%s namespace %s {
+        head = _templates['void_request_head'] \
+            % (checked_open, namespace, self.name, self.name)
 
-class %s {
-  public:
-    %s(void) {}
-
-""" % (checked_open, namespace, self.name, self.name)
-
-        tail = \
-"""\
-}; // class %s
-
-}; };%s // request::%s%s
-""" % (self.name, checked_close, checked_comment, namespace)
+        tail = _templates['void_request_tail'] \
+            % (self.name, checked_close, checked_comment, namespace)
 
         default = methods(self.protos(False, False), self.calls(False))
 
