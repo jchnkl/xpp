@@ -21,8 +21,9 @@ from parameter import Parameter
 from cpprequest import CppRequest
 from objectclass import ObjectClass
 from protocolclass import ProtocolClass
+from extensionclass import ExtensionClass
 
-from templates import Accessor, ExtensionClass
+from templates import Accessor
 
 _cpp_request_names = []
 _cpp_request_objects = {}
