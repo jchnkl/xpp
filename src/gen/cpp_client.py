@@ -18,11 +18,11 @@ from utils import \
 
 from parameter import Parameter
 from cpprequest import CppRequest
+from objectclass import ObjectClass
 
 from templates import CppEvent, \
                       Parameter, \
                       Accessor, \
-                      ObjectClass, \
                       ProtocolClass, \
                       ExtensionClass
 
