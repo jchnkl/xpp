@@ -2163,7 +2163,7 @@ def _cpp_request_helper(self, name, is_void):
             c_field_const_type = "const void"
 
     _cpp_request_names.append(request_name)
-    _cpp_request_objects[request_name] = CppRequest(request_name, is_void, _ns, self.reply)
+    _cpp_request_objects[request_name] = CppRequest(self, request_name, is_void, _ns, self.reply)
 
     # is_obj_func = False
     # if (len(param_fields) > 0 and len(param_fields[0].field_type) > 1):

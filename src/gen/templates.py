@@ -756,7 +756,8 @@ def replace_class(method, class_name):
 ########## REQUESTS  ##########
 
 class CppRequest(object):
-    def __init__(self, name, is_void, namespace, reply):
+    def __init__(self, request, name, is_void, namespace, reply):
+        self.request = request
         self.name = name
         self.is_void = is_void
         self.namespace = namespace
