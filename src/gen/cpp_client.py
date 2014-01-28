@@ -16,6 +16,7 @@ from utils import \
         _n_item, \
         _ext
 
+from parameter import Parameter
 from cpprequest import CppRequest
 
 from templates import CppEvent, \
