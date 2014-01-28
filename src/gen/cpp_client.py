@@ -270,6 +270,12 @@ def c_close(self):
             hfile.write('\n')
     # hfile.close()
 
+    cfile = sys.stderr
+    for list in _clines:
+        for line in list:
+            cfile.write(line)
+            cfile.write('\n')
+
 def build_collision_table():
     global namecount
     namecount = {}
@@ -1804,6 +1810,339 @@ def c_union(self, name):
     _c_complex(self)
     _c_iterator(self, name)
 
+def _c_request_helper(self, name, cookie_type, void, regular, aux=False, reply_fds=False):
+    '''
+    Declares a request function.
+    '''
+
+    # Four stunningly confusing possibilities here:
+    #
+    #   Void            Non-void
+    # ------------------------------
+    # "req"            "req"
+    # 0 flag           CHECKED flag   Normal Mode
+    # void_cookie      req_cookie
+    # ------------------------------
+    # "req_checked"    "req_unchecked"
+    # CHECKED flag     0 flag         Abnormal Mode
+    # void_cookie      req_cookie
+    # ------------------------------
+
+
+    # Whether we are _checked or _unchecked
+    checked = void and not regular
+    unchecked = not void and not regular
+
+    # What kind of cookie we return
+    func_cookie = 'xcb_void_cookie_t' if void else self.c_cookie_type
+
+    # What flag is passed to xcb_request
+    func_flags = '0' if (void and regular) or (not void and not regular) else 'XCB_REQUEST_CHECKED'
+
+    if reply_fds:
+        if func_flags == '0':
+            func_flags = 'XCB_REQUEST_REPLY_FDS'
+        else:
+            func_flags = func_flags + '|XCB_REQUEST_REPLY_FDS'
+
+    # Global extension id variable or NULL for xproto
+    func_ext_global = '&' + _ns.c_ext_global_name if _ns.is_ext else '0'
+
+    # What our function name is
+    func_name = self.c_request_name if not aux else self.c_aux_name
+    if checked:
+        func_name = self.c_checked_name if not aux else self.c_aux_checked_name
+    if unchecked:
+        func_name = self.c_unchecked_name if not aux else self.c_aux_unchecked_name
+
+    param_fields = []
+    wire_fields = []
+    maxtypelen = len('xcb_connection_t')
+    serial_fields = []
+    # special case: list with variable size elements
+    list_with_var_size_elems = False
+
+    for field in self.fields:
+        if field.visible:
+            # The field should appear as a call parameter
+            param_fields.append(field)
+        if field.wire and not field.auto:
+            # We need to set the field up in the structure
+            wire_fields.append(field)
+        if field.type.need_serialize or field.type.need_sizeof:
+            serial_fields.append(field)
+
+    for field in param_fields:
+        c_field_const_type = field.c_field_const_type
+        if field.type.need_serialize and not aux:
+            c_field_const_type = "const void"
+        if len(c_field_const_type) > maxtypelen:
+            maxtypelen = len(c_field_const_type)
+        if field.type.is_list and not field.type.member.fixed_size():
+            list_with_var_size_elems = True
+
+    _h_setlevel(1)
+    _c_setlevel(1)
+    # _h('')
+    # _h('/**')
+    # if hasattr(self, "doc") and self.doc:
+    #     if self.doc.brief:
+    #         _h(' * @brief ' + self.doc.brief)
+    #     else:
+    #         _h(' * No brief doc yet')
+
+    # _h(' *')
+    # _h(' * @param c The connection')
+    param_names = [f.c_field_name for f in param_fields]
+    if hasattr(self, "doc") and self.doc:
+        for field in param_fields:
+            # XXX: hard-coded until we fix xproto.xml
+            base_func_name = self.c_request_name if not aux else self.c_aux_name
+            if base_func_name == 'xcb_change_gc' and field.c_field_name == 'value_mask':
+                field.enum = 'GC'
+            elif base_func_name == 'xcb_change_window_attributes' and field.c_field_name == 'value_mask':
+                field.enum = 'CW'
+            elif base_func_name == 'xcb_create_window' and field.c_field_name == 'value_mask':
+                field.enum = 'CW'
+            if field.enum:
+                # XXX: why the 'xcb' prefix?
+                key = ('xcb', field.enum)
+
+                tname = _t(key)
+                if namecount[tname] > 1:
+                    tname = _t(key + ('enum',))
+                # _h(' * @param %s A bitmask of #%s values.' % (field.c_field_name, tname))
+
+            if self.doc and field.field_name in self.doc.fields:
+                desc = self.doc.fields[field.field_name]
+                for name in param_names:
+                    desc = desc.replace('`%s`' % name, '\\a %s' % (name))
+                desc = desc.split("\n")
+                desc = [line if line != '' else '\\n' for line in desc]
+                # _h(' * @param %s %s' % (field.c_field_name, "\n * ".join(desc)))
+            # If there is no documentation yet, we simply don't generate an
+            # @param tag. Doxygen will then warn about missing documentation.
+
+    # _h(' * @return A cookie')
+    # _h(' *')
+
+    # if hasattr(self, "doc") and self.doc:
+    #     if self.doc.description:
+    #         desc = self.doc.description
+    #         for name in param_names:
+    #             desc = desc.replace('`%s`' % name, '\\a %s' % (name))
+    #         desc = desc.split("\n")
+    #         _h(' * ' + "\n * ".join(desc))
+    #     else:
+    #         _h(' * No description yet')
+    # else:
+    #     _h(' * Delivers a request to the X server.')
+    # _h(' * ')
+    # if checked:
+    #     _h(' * This form can be used only if the request will not cause')
+    #     _h(' * a reply to be generated. Any returned error will be')
+    #     _h(' * saved for handling by xcb_request_check().')
+    # if unchecked:
+    #     _h(' * This form can be used only if the request will cause')
+    #     _h(' * a reply to be generated. Any returned error will be')
+    #     _h(' * placed in the event queue.')
+    # _h(' */')
+    # _c('')
+    # _hc('')
+    # _hc('/*****************************************************************************')
+    # _hc(' **')
+    # _hc(' ** %s %s', cookie_type, func_name)
+    # _hc(' ** ')
+
+    spacing = ' ' * (maxtypelen - len('xcb_connection_t'))
+    _c(' ** @param xcb_connection_t%s *c', spacing)
+
+    for field in param_fields:
+        c_field_const_type = field.c_field_const_type
+        if field.type.need_serialize and not aux:
+            c_field_const_type = "const void"
+        spacing = ' ' * (maxtypelen - len(c_field_const_type))
+        _c(' ** @param %s%s %s%s', c_field_const_type, spacing, field.c_pointer, field.c_field_name)
+
+    _c(' ** @returns %s', cookie_type)
+    _c(' **')
+    _c(' *****************************************************************************/')
+    _c(' ')
+    _c('%s', cookie_type)
+
+    spacing = ' ' * (maxtypelen - len('xcb_connection_t'))
+    comma = ',' if len(param_fields) else ');'
+    # _h('%s (xcb_connection_t%s *c  /**< */%s', func_name, spacing, comma)
+    comma = ',' if len(param_fields) else ')'
+    _c('%s (xcb_connection_t%s *c  /**< */%s', func_name, spacing, comma)
+
+    func_spacing = ' ' * (len(func_name) + 2)
+    count = len(param_fields)
+    for field in param_fields:
+        count = count - 1
+        c_field_const_type = field.c_field_const_type
+        c_pointer = field.c_pointer
+        if field.type.need_serialize and not aux:
+            c_field_const_type = "const void"
+            c_pointer = '*'
+        spacing = ' ' * (maxtypelen - len(c_field_const_type))
+        comma = ',' if count else ');'
+        # _h('%s%s%s %s%s  /**< */%s', func_spacing, c_field_const_type,
+        #    spacing, c_pointer, field.c_field_name, comma)
+        comma = ',' if count else ')'
+        _c('%s%s%s %s%s  /**< */%s', func_spacing, c_field_const_type,
+           spacing, c_pointer, field.c_field_name, comma)
+
+    count = 2
+    if not self.var_followed_by_fixed_fields:
+        for field in param_fields:
+            if not field.type.fixed_size():
+                count = count + 2
+                if field.type.need_serialize:
+                    # _serialize() keeps track of padding automatically
+                    count -= 1
+    dimension = count + 2
+
+    _c('{')
+    _c('    static const xcb_protocol_request_t xcb_req = {')
+    _c('        /* count */ %d,', count)
+    _c('        /* ext */ %s,', func_ext_global)
+    _c('        /* opcode */ %s,', self.c_request_name.upper())
+    _c('        /* isvoid */ %d', 1 if void else 0)
+    _c('    };')
+    _c('    ')
+
+    _c('    struct iovec xcb_parts[%d];', dimension)
+    _c('    %s xcb_ret;', func_cookie)
+    _c('    %s xcb_out;', self.c_type)
+    if self.var_followed_by_fixed_fields:
+        _c('    /* in the protocol description, variable size fields are followed by fixed size fields */')
+        _c('    void *xcb_aux = 0;')
+
+
+    for idx, f in enumerate(serial_fields):
+        if aux:
+            _c('    void *xcb_aux%d = 0;' % (idx))
+    if list_with_var_size_elems:
+        _c('    unsigned int i;')
+        _c('    unsigned int xcb_tmp_len;')
+        _c('    char *xcb_tmp;')
+    _c('    ')
+    # simple request call tracing
+#    _c('    printf("in function %s\\n");' % func_name)
+
+    # fixed size fields
+    for field in wire_fields:
+        if field.type.fixed_size():
+            if field.type.is_expr:
+                _c('    xcb_out.%s = %s;', field.c_field_name, _c_accessor_get_expr(field.type.expr, None))
+            elif field.type.is_pad:
+                if field.type.nmemb == 1:
+                    _c('    xcb_out.%s = 0;', field.c_field_name)
+                else:
+                    _c('    memset(xcb_out.%s, 0, %d);', field.c_field_name, field.type.nmemb)
+            else:
+                if field.type.nmemb == 1:
+                    _c('    xcb_out.%s = %s;', field.c_field_name, field.c_field_name)
+                else:
+                    _c('    memcpy(xcb_out.%s, %s, %d);', field.c_field_name, field.c_field_name, field.type.nmemb)
+
+    def get_serialize_args(type_obj, c_field_name, aux_var, context='serialize'):
+        serialize_args = get_serialize_params(context, type_obj,
+                                              c_field_name,
+                                              aux_var)[2]
+        return reduce(lambda x,y: "%s, %s" % (x,y), [a[2] for a in serialize_args])
+
+    # calls in order to free dyn. all. memory
+    free_calls = []
+
+    _c('    ')
+    if not self.var_followed_by_fixed_fields:
+        _c('    xcb_parts[2].iov_base = (char *) &xcb_out;')
+        _c('    xcb_parts[2].iov_len = sizeof(xcb_out);')
+        _c('    xcb_parts[3].iov_base = 0;')
+        _c('    xcb_parts[3].iov_len = -xcb_parts[2].iov_len & 3;')
+
+        count = 4
+
+        for field in param_fields:
+            if not field.type.fixed_size():
+                _c('    /* %s %s */', field.type.c_type, field.c_field_name)
+                # default: simple cast to char *
+                if not field.type.need_serialize and not field.type.need_sizeof:
+                    _c('    xcb_parts[%d].iov_base = (char *) %s;', count, field.c_field_name)
+                    if field.type.is_list:
+                        # _c("IS_LIST")
+                        if field.type.member.fixed_size():
+                            _c('    xcb_parts[%d].iov_len = %s * sizeof(%s);', count,
+                               _c_accessor_get_expr(field.type.expr, None),
+                               field.type.member.c_wiretype)
+                        else:
+                            list_length = _c_accessor_get_expr(field.type.expr, None)
+
+                            length = ''
+                            _c("    xcb_parts[%d].iov_len = 0;" % count)
+                            _c("    xcb_tmp = (char *)%s;", field.c_field_name)
+                            _c("    for(i=0; i<%s; i++) {" % list_length)
+                            _c("        xcb_tmp_len = %s(xcb_tmp);" %
+                                              (field.type.c_sizeof_name))
+                            _c("        xcb_parts[%d].iov_len += xcb_tmp_len;" % count)
+                            _c("        xcb_tmp += xcb_tmp_len;")
+                            _c("    }")
+                    else:
+                        # not supposed to happen
+                        raise Exception("unhandled variable size field %s" % field.c_field_name)
+                else:
+                    if not aux:
+                        _c('    xcb_parts[%d].iov_base = (char *) %s;', count, field.c_field_name)
+                    idx = serial_fields.index(field)
+                    aux_var = '&xcb_aux%d' % idx
+                    context = 'serialize' if aux else 'sizeof'
+                    _c('    xcb_parts[%d].iov_len = ', count)
+                    if aux:
+                        serialize_args = get_serialize_args(field.type, aux_var, field.c_field_name, context)
+                        _c('      %s (%s);', field.type.c_serialize_name, serialize_args)
+                        _c('    xcb_parts[%d].iov_base = xcb_aux%d;' % (count, idx))
+                        free_calls.append('    free(xcb_aux%d);' % idx)
+                    else:
+                        serialize_args = get_serialize_args(field.type, field.c_field_name, aux_var, context)
+                        func_name = field.type.c_sizeof_name
+                        _c('      %s (%s);', func_name, serialize_args)
+
+                count += 1
+                if not (field.type.need_serialize or field.type.need_sizeof):
+                    # the _serialize() function keeps track of padding automatically
+                    _c('    xcb_parts[%d].iov_base = 0;', count)
+                    _c('    xcb_parts[%d].iov_len = -xcb_parts[%d].iov_len & 3;', count, count-1)
+                    count += 1
+
+    # elif self.var_followed_by_fixed_fields:
+    else:
+        _c('    xcb_parts[2].iov_base = (char *) &xcb_out;')
+        # request header: opcodes + length
+        _c('    xcb_parts[2].iov_len = 2*sizeof(uint8_t) + sizeof(uint16_t);')
+        count += 1
+        # call _serialize()
+        buffer_var = '&xcb_aux'
+        serialize_args = get_serialize_args(self, buffer_var, '&xcb_out', 'serialize')
+        _c('    xcb_parts[%d].iov_len = %s (%s);', count, self.c_serialize_name, serialize_args)
+        _c('    xcb_parts[%d].iov_base = (char *) xcb_aux;', count)
+        free_calls.append('    free(xcb_aux);')
+        # no padding necessary - _serialize() keeps track of padding automatically
+
+    _c('    ')
+    for field in param_fields:
+        if field.isfd:
+            _c('    xcb_send_fd(c, %s);', field.c_field_name)
+
+    _c('    xcb_ret.sequence = xcb_send_request(c, %s, xcb_parts + 2, &xcb_req);', func_flags)
+
+    # free dyn. all. data, if any
+    for f in free_calls:
+        _c(f)
+    _c('    return xcb_ret;')
+    _c('}')
+
 def _cpp_request_helper(self, name, is_void):
     '''
     Declares a request function.
@@ -1832,6 +2171,7 @@ def _cpp_request_helper(self, name, is_void):
     #     obj_name = param_fields[0].field_type[-1]
     #     is_obj_func = obj_name in _type_objects[get_namespace(_ns)]
 
+    generate_request_specialization = False
     for field in param_fields:
         c_field_const_type = field.c_field_const_type
 
@@ -1846,16 +2186,46 @@ def _cpp_request_helper(self, name, is_void):
 
         _cpp_request_objects[request_name].add(param)
 
+        if (param.is_const and param.is_pointer
+                and param.c_type == 'void'):
+            generate_request_specialization = True
+
     _cpp_request_objects[request_name].make_wrapped()
 
     _protocol_class.add(_cpp_request_objects[request_name])
-    # try:
 
     for key in _object_classes:
         _object_classes[key].set_namespace(_ns)
         _object_classes[key].add(_cpp_request_objects[request_name])
 
-    # except: pass
+    ### C CODE ###
+
+    # if generate_request_specialization:
+    #     if self.reply:
+    #         # _c_type_setup(self.reply, name, ('reply',))
+    #         # Reply structure definition
+    #         # _c_complex(self.reply)
+    #         # Request prototypes
+    #         has_fds = _c_reply_has_fds(self.reply)
+    #         _c_request_helper(self, name, self.c_cookie_type, False, True, False, has_fds)
+    #         _c_request_helper(self, name, self.c_cookie_type, False, False, False, has_fds)
+    #         if self.need_aux:
+    #             _c_request_helper(self, name, self.c_cookie_type, False, True, True, has_fds)
+    #             _c_request_helper(self, name, self.c_cookie_type, False, False, True, has_fds)
+    #         # Reply accessors
+    #         # _c_accessors(self.reply, name + ('reply',), name)
+    #         # _c_reply(self, name)
+    #         # if has_fds:
+    #         #     _c_reply_fds(self, name)
+    #     else:
+    #         # Request prototypes
+    #         _c_request_helper(self, name, 'xcb_void_cookie_t', True, False)
+    #         _c_request_helper(self, name, 'xcb_void_cookie_t', True, True)
+    #         if self.need_aux:
+    #             _c_request_helper(self, name, 'xcb_void_cookie_t', True, False, True)
+    #             _c_request_helper(self, name, 'xcb_void_cookie_t', True, True, True)
+
+    ### C CODE ###
 
 def _c_reply(self, name):
     '''
