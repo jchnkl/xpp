@@ -632,13 +632,6 @@ class %s
 ########## OBJECTCLASS ##########
 
 
-_replace_special_classes = \
-        { "gcontext" : "gc" }
-
-def replace_class(method, class_name):
-    cn = _replace_special_classes.get(class_name, class_name)
-    return method.replace("_" + cn, "")
-
 
 
 ########## PARAMETER ##########

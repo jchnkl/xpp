@@ -1,3 +1,33 @@
+from utils import *
+from resource_classes import _resource_classes
+
+_field_accessor_template = \
+'''\
+      template<typename %s = %s>
+      %s
+      %s(void) const
+      {
+        return %s(*this, %s);
+      }\
+'''
+
+_field_accessor_template_specialization = \
+'''\
+template<>
+%s
+%s::%s<%s>(void) const
+{
+  return %s;
+}\
+'''
+
+_replace_special_classes = \
+        { "gcontext" : "gc" }
+
+def replace_class(method, class_name):
+    cn = _replace_special_classes.get(class_name, class_name)
+    return method.replace("_" + cn, "")
+
 class CppRequest(object):
     def __init__(self, request, name, is_void, namespace, reply):
         self.request = request
