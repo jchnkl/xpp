@@ -10,6 +10,12 @@ import time
 import re
 import collections
 
+from utils import \
+        get_namespace, \
+        get_ext_name, \
+        _n_item, \
+        _ext
+
 from cpprequest import CppRequest
 
 from templates import CppEvent, \
@@ -17,11 +23,7 @@ from templates import CppEvent, \
                       Accessor, \
                       ObjectClass, \
                       ProtocolClass, \
-                      ExtensionClass, \
-                      get_ext_name, \
-                      get_namespace, \
-                      _n_item, \
-                      _ext
+                      ExtensionClass
 
 _cpp_request_names = []
 _cpp_request_objects = {}
