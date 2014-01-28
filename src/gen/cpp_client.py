@@ -10,8 +10,9 @@ import time
 import re
 import collections
 
-from templates import CppRequest, \
-                      CppEvent, \
+from cpprequest import CppRequest
+
+from templates import CppEvent, \
                       Parameter, \
                       Accessor, \
                       ObjectClass, \
