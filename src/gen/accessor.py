@@ -1,5 +1,58 @@
 from resource_classes import _resource_classes
 
+_templates = {}
+
+_templates['iter_fixed'] = \
+"""\
+                     xpp::iterator<%s,
+                                   %s,
+                                   %s_reply_t,
+                                   CALLABLE(%s_%s),
+                                   CALLABLE(%s_%s_length)>\
+"""
+
+_templates['iter_variable'] = \
+"""\
+                        xpp::iterator<%s,
+                                      %s,
+                                      %s_reply_t,
+                                      %s_iterator_t,
+                                      CALLABLE(%s_next),
+                                      CALLABLE(%s_sizeof),
+                                      CALLABLE(%s_%s_iterator)>\
+"""
+
+_templates['list'] = \
+"""\
+    xpp::generic::list<%s_reply_t,
+                       %s
+                      >
+    %s(void)
+    {
+      return xpp::generic::list<%s_reply_t,
+                                %s
+                               >(%s);
+    }\
+"""
+
+_templates['iter_string'] = \
+"""\
+xpp::generic::string<
+                     %s_reply_t,
+                     &%s_%s,
+                     &%s_%s_length>\
+"""
+
+_templates['string'] = \
+"""\
+    %s
+    %s(void)
+    {
+      return %s
+               (this->get());
+    }\
+"""
+
 class Accessor(object):
     def __init__(self, is_fixed=False, is_string=False, is_variable=False, \
                  member="", c_type="", return_type="", iter_name="", c_name=""):
@@ -37,37 +90,23 @@ class Accessor(object):
     def iter_fixed(self):
         return_type = self.return_type
 
-        return \
-"""\
-                     xpp::iterator<%s,
-                                   %s,
-                                   %s_reply_t,
-                                   CALLABLE(%s_%s),
-                                   CALLABLE(%s_%s_length)>\
-""" % (self.c_type, \
-       return_type, \
-       self.c_name, \
-       self.c_name, self.member, \
-       self.c_name, self.member)
+        return _templates['iter_fixed'] \
+                % (self.c_type,
+                   return_type,
+                   self.c_name,
+                   self.c_name, self.member,
+                   self.c_name, self.member)
 
 
     def iter_variable(self):
-        return \
-"""\
-                        xpp::iterator<%s,
-                                      %s,
-                                      %s_reply_t,
-                                      %s_iterator_t,
-                                      CALLABLE(%s_next),
-                                      CALLABLE(%s_sizeof),
-                                      CALLABLE(%s_%s_iterator)>\
-""" % (self.c_type, \
-       self.return_type, \
-       self.c_name, \
-       self.iter_name, \
-       self.iter_name, \
-       self.iter_name, \
-       self.c_name, self.member)
+        return _templates['iter_variable'] \
+                % (self.c_type,
+                   self.return_type,
+                   self.c_name,
+                   self.iter_name,
+                   self.iter_name,
+                   self.iter_name,
+                   self.c_name, self.member)
 
 
     def list(self, iterator):
@@ -83,42 +122,18 @@ class Accessor(object):
 
         c_tor_params = "m_c, this->get()"
 
-        return template + \
-"""\
-    xpp::generic::list<%s_reply_t,
-                       %s
-                      >
-    %s(void)
-    {
-      return xpp::generic::list<%s_reply_t,
-                                %s
-                               >(%s);
-    }\
-""" % (self.c_name,
-       iterator,
-       self.member,
-       self.c_name,
-       iterator,
-       c_tor_params)
-
+        return template + _templates['list'] \
+                % (self.c_name,
+                   iterator,
+                   self.member,
+                   self.c_name,
+                   iterator,
+                   c_tor_params)
 
     def string(self):
-        string = \
-"""\
-xpp::generic::string<
-                     %s_reply_t,
-                     &%s_%s,
-                     &%s_%s_length>\
-""" % (self.c_name, \
-       self.c_name, self.member, \
-       self.c_name, self.member)
+        string = _templates['iter_string'] \
+                % (self.c_name,
+                   self.c_name, self.member,
+                   self.c_name, self.member)
 
-        return \
-"""\
-    %s
-    %s(void)
-    {
-      return %s
-               (this->get());
-    }\
-""" % (string, self.member, string)
+        return _templates['string'] % (string, self.member, string)
