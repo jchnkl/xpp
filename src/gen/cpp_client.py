@@ -17,13 +17,12 @@ from utils import \
         _ext
 
 from cppevent import CppEvent
+from accessor import Accessor
 from parameter import Parameter
 from cpprequest import CppRequest
 from objectclass import ObjectClass
 from protocolclass import ProtocolClass
 from extensionclass import ExtensionClass
-
-from templates import Accessor
 
 _cpp_request_names = []
 _cpp_request_objects = {}
