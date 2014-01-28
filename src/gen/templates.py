@@ -893,7 +893,7 @@ class CppRequest(object):
         return "\n".join(map(lambda a: "\n%s\n" % a, self.accessors))
 
 
-########## VOID REQUEST  ##########
+    ########## VOID REQUEST  ##########
 
     def void_request(self, regular):
         ############ def methods(...) ############
@@ -975,11 +975,11 @@ class %s {
              + self.make_accessors() \
              + tail
 
-########## VOID REQUEST  ##########
+    ########## VOID REQUEST  ##########
 
 
 
-########## REPLY_REQUEST ##########
+    ########## REPLY_REQUEST ##########
 
     def reply_request(self, regular):
         ############ def methods(...) ############
@@ -1099,7 +1099,7 @@ class %s
              + self.make_accessors() \
              + tail
 
-########## REPLY_REQUEST ##########
+    ########## REPLY_REQUEST ##########
 
 ########## REQUESTS  ##########
 
