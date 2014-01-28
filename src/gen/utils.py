@@ -1,5 +1,11 @@
 import re # compile
 
+_reserved_keywords = {'class' : '_class',
+                      'new'   : '_new',
+                      'delete': '_delete',
+                      'default' : '_default',
+                      'explicit': '_explicit'}
+
 def get_namespace(namespace):
     if namespace.is_ext:
         return get_ext_name(namespace.ext_name)
