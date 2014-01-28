@@ -46,6 +46,15 @@ _templates['void_request_tail'] = \
 }; };%s // request::%s%s
 """
 
+_templates['reply_request'] = \
+"""\
+    %s(xcb_connection_t * c%s)
+      : request(c), m_c(c)
+    {%s
+      request::prepare(&%s%s);
+    }
+"""
+
 _field_accessor_template = \
 '''\
       template<typename %s = %s>
@@ -274,17 +283,11 @@ class CppRequest(object):
         def methods(protos, calls, template="", initializer=[]):
             initializer = "\n      ".join([""] + initializer)
 
-            return template + \
-"""\
-    %s(xcb_connection_t * c%s)
-      : request(c), m_c(c)
-    {%s
-      request::prepare(&%s%s);
-    }
-""" % (self.name,
-       self.comma() + protos,
-       initializer,
-       self.c_name(regular), self.comma() + calls)
+            return template + _templates['reply_request'] \
+                    % (self.name,
+                       self.comma() + protos,
+                       initializer,
+                       self.c_name(regular), self.comma() + calls)
 
         ############ def methods(...) ############
 
