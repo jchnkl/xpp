@@ -3,9 +3,10 @@
 * valueparams
 
 * serialized fields (e.g. xcb_sync_create_alarm_value_list_serialize)
+  (is this necessary?)
 
 * specialize iterator for non-vector data structures:
-  Instead of converting to vector, check if it is possible to send send the data
+  Instead of converting to vector, check if it is possible to send the data
   directly through the socket (e.g. map { key, value }:
   for (k,v : map) { socket_send(v); } ...
 
