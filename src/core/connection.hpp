@@ -99,6 +99,15 @@ class connection
 
 }; // class connection
 
+template<>
+template<typename ... Parameters>
+connection<>::connection(Parameters ... parameters)
+  : xpp::core::core(parameters ...)
+  , m_root_window(static_cast<const core &>(*this))
+{
+  m_root_window = screen_of_display(default_screen())->root;
+}
+
 }; // namespace xpp
 
 #endif // XPP_CONNECTION_HPP
