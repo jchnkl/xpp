@@ -117,6 +117,8 @@ class ParameterList(object):
                     iter_begin = param.c_name + "_begin"
                     iter_end = param.c_name + "_end"
 
+                    if len(self.templates) > 0:
+                        self.templates[-1] += " = typename " + iter_type + "::value_type"
                     self.iterator_templates.append(iter_type)
 
                     self.iter_protos.append(Parameter(None, \

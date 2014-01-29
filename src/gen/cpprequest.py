@@ -207,8 +207,8 @@ class CppRequest(object):
 
     def iterator_template(self, indent="    ", tail="\n"):
         return indent + "template<typename " \
-                + ", typename ".join(self.parameter_list.templates \
-                                   + self.parameter_list.iterator_templates) \
+                + ", typename ".join(self.parameter_list.iterator_templates \
+                                   + self.parameter_list.templates) \
                 + ">" + tail \
                 if len(self.parameter_list.iterator_templates) > 0 \
                 else ""
