@@ -4,6 +4,49 @@ from utils import \
         _n_item, \
         _ext
 
+_templates = {}
+
+_templates['protocol_class'] = \
+"""\
+namespace protocol {
+
+class %s
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+{
+  public:
+%s\
+    virtual ~%s(void) {}
+
+%s\
+}; // class %s
+
+}; // namespace protocol
+"""
+
+_templates['dispatcher_class'] = \
+'''\
+namespace dispatcher {
+
+class %s
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+{
+  public:
+%s\
+%s\
+
+    template<typename Handler>
+    bool
+    operator()(const Handler & handler, xcb_generic_event_t * const event) const
+    {
+%s
+      return false;
+    }
+%s\
+}; // class %s
+
+}; // namespace dispatcher
+'''
+
 _ignore_events = \
         { "XCB_PRESENT_GENERIC" }
 
@@ -39,26 +82,12 @@ class ProtocolClass(object):
         else:
             typedef = ""
 
-        return \
-"""\
-namespace protocol {
-
-class %s
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
-{
-  public:
-%s\
-    virtual ~%s(void) {}
-
-%s\
-}; // class %s
-
-}; // namespace protocol
-""" % (ns, # class %s {
-       typedef,
-       ns,
-       methods,
-       ns) + "\n\n" + self.event_dispatcher_class()
+        return _templates['protocol_class'] \
+            % (ns, # class %s {
+               typedef,
+               ns,
+               methods,
+               ns) + "\n\n" + self.event_dispatcher_class()
 
     def event_dispatcher_class(self):
         ns = get_namespace(self.namespace)
@@ -111,34 +140,13 @@ class %s
         else:
             members = ""
 
-        return \
-'''\
-namespace dispatcher {
-
-class %s
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
-{
-  public:
-%s\
-%s\
-
-    template<typename Handler>
-    bool
-    operator()(const Handler & handler, xcb_generic_event_t * const event) const
-    {
-%s
-      return false;
-    }
-%s\
-}; // class %s
-
-}; // namespace dispatcher
-''' % (ns, # class %s {
-       typedef,
-       ctors,
-       self.event_switch_cases(opcode_switch, "handler", "event"),
-       members,
-       ns) # }; // class %s
+        return _templates['dispatcher_class'] \
+            % (ns, # class %s {
+               typedef,
+               ctors,
+               self.event_switch_cases(opcode_switch, "handler", "event"),
+               members,
+               ns) # }; // class %s
 
     def event_switch_cases(self, arg_switch, arg_handler, arg_event):
         cases = ""
