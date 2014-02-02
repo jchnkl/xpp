@@ -283,11 +283,11 @@ def c_close(self):
             hfile.write('\n')
     # hfile.close()
 
-    cfile = sys.stderr
-    for list in _clines:
-        for line in list:
-            cfile.write(line)
-            cfile.write('\n')
+    # cfile = sys.stderr
+    # for list in _clines:
+    #     for line in list:
+    #         cfile.write(line)
+    #         cfile.write('\n')
 
 def build_collision_table():
     global namecount
