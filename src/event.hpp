@@ -18,13 +18,11 @@ namespace xpp {
 
 namespace event {
 
-namespace dispatcher {
+class dispatcher {
 
-class sink {
   public:
-    virtual ~sink(void) {}
+    virtual ~dispatcher(void) {}
     template<typename Event> void dispatch(const Event & e);
-};
 
 }; // namespace dispatcher
 
@@ -105,7 +103,7 @@ class registry
     }
 
   private:
-    typedef std::multimap<priority, dispatcher::sink *> priority_map;
+    typedef std::multimap<priority, xpp::event::dispatcher *> priority_map;
 
     const xpp::connection<Extensions ...> & m_c;
     std::unordered_map<uint8_t, priority_map> m_dispatchers;
@@ -155,7 +153,7 @@ class registry
       attach(p, s, opcode<Event>());
     }
 
-    void attach(priority p, dispatcher::sink * d, uint8_t opcode)
+    void attach(priority p, xpp::event::dispatcher * d, uint8_t opcode)
     {
       m_dispatchers[opcode].emplace(p, d);
     }
@@ -168,7 +166,7 @@ class registry
     }
 
     void
-    detach(priority p, dispatcher::sink * d, uint8_t opcode)
+    detach(priority p, xpp::event::dispatcher * d, uint8_t opcode)
     {
       try {
         auto & prio_map = m_dispatchers.at(opcode);
