@@ -26,14 +26,12 @@ class CppError(object):
             self.scope.append(name)
 
     def get_name(self):
-        return self.name + "_error"
+        return _reserved_keywords.get(self.name, self.name)
 
-    def get_scope(self):
-        return "_".join(map(str.lower, self.names))
 
     def scoped_name(self):
         ns = get_namespace(self.namespace)
-        return "xpp::" + ns + "::" + self.get_name()
+        return "xpp::" + ns + "::error::" + self.get_name()
 
 
     def make_class(self):
@@ -80,7 +78,7 @@ class CppError(object):
 
         return \
 '''
-namespace %s {
+namespace %s { namespace error {
 class %s
   : public xpp::generic::error<%s,
                                %s>
@@ -93,7 +91,7 @@ class %s
 
 %s\
 }; // class %s
-}; // namespace %s
+}; }; // namespace %s::error
 ''' % (ns, # namespace %s {
        self.get_name(), # class %s
        self.opcode_name, # : public xpp::generic::error<%s,

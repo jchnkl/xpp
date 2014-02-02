@@ -58,14 +58,12 @@ class CppEvent(object):
             return 1
 
     def get_name(self):
-        return self.name + "_event"
+        return _reserved_keywords.get(self.name, self.name)
 
-    def get_scope(self):
-        return "_".join(map(str.lower, self.names))
 
     def scoped_name(self):
         ns = get_namespace(self.namespace)
-        return "xpp::" + ns + "::" + self.get_name()
+        return "xpp::" + ns + "::event::" + self.get_name()
 
     def make_class(self):
         member_accessors = []
@@ -77,7 +75,7 @@ class CppEvent(object):
                 method_name = field.field_name.lower()
                 if (method_name == self.get_name()
                     or method_name in _reserved_keywords):
-                    method_name += "_" + field.field_type[-1].lower()
+                    method_name += "_"
                 member = "(*this)->" + field.c_field_name
 
                 member_accessors.append(_field_accessor_template % \
@@ -140,7 +138,7 @@ class CppEvent(object):
 
         return \
 '''
-namespace %s {
+namespace %s { namespace event {
 class %s
   : public xpp::generic::event<%s,
                                %s>
@@ -155,7 +153,7 @@ class %s
 %s\
 }; // class %s
 %s\
-}; // namespace %s
+}; }; // namespace %s::event
 ''' % (ns, # namespace %s {
        self.get_name(), # class %s
        self.opcode_name, # : public xpp::generic::event<%s,
