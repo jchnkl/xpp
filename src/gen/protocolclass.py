@@ -126,10 +126,7 @@ class ProtocolClass(object):
     def event_dispatcher_class(self):
         ns = get_namespace(self.namespace)
 
-        fst_param = ""
-        snd_param = ""
         typedef = []
-
         ctors = []
         members = []
 
@@ -138,8 +135,6 @@ class ProtocolClass(object):
         # >>> if begin <<<
         if self.namespace.is_ext:
             opcode_switch = "(event->response_type & ~0x80) - m_first_event"
-            fst_param = ", m_first_event"
-            snd_param = ", uint8_t first_event"
             typedef = [ "typedef xpp::extension::%s extension;\n" % ns ]
 
             members += \
