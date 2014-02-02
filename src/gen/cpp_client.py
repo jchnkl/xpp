@@ -19,6 +19,7 @@ from utils import \
         _ext
 
 from cppevent import CppEvent
+from cpperror import CppError
 from accessor import Accessor
 from parameter import Parameter
 from cpprequest import CppRequest
@@ -33,6 +34,7 @@ _cpp_request_objects = {}
 _protocol_class = ProtocolClass()
 
 _cpp_events = []
+_cpp_errors = []
 
           # XPROTO
 _object_classes = \
@@ -224,6 +226,7 @@ def c_open(self):
     _h('#include "../request.hpp"')
     _h('#include "../iterator.hpp"')
     _h('#include "../core/event.hpp"')
+    _h('#include "../core/error.hpp"')
     _h('#include "../core/extension.hpp"')
     _h('#include "../core/generic/resource.hpp"')
     _h('')
@@ -244,6 +247,11 @@ def c_close(self):
 
     for cpp_event in _cpp_events:
         _h(cpp_event.make_class())
+
+    _h('')
+
+    for cpp_error in _cpp_errors:
+        _h(cpp_error.make_class())
 
     _h('')
 
@@ -3017,6 +3025,33 @@ def c_error(self, name):
         _h('')
         _h('typedef %s %s;', _t(self.name + ('error',)), _t(name + ('error',)))
 
+def cpp_error(self, name):
+    '''
+    Exported function that handles error declarations.
+    '''
+    _c_type_setup(self, name, ('error',))
+
+    # Opcode define
+    # _c_opcode(name, self.opcodes[name])
+
+    # sys.stderr.write("error declaration: %s\n" % str(self))
+    # sys.stderr.write("opcode: %s\n" % self.opcodes[name])
+    # sys.stderr.write('typedef %s %s;\n\n' % ( _t(self.name + ('error',)), _t(name + ('error',))))
+
+    opcode_name = _n(name).upper()
+    c_name = _t(self.name + ('error',))
+    cpp_error = CppError(self, _ns, name, c_name, self.opcodes[name], opcode_name)
+    _cpp_errors.append(cpp_error)
+    _protocol_class.add_error(cpp_error)
+
+    # if self.name == name:
+    #     # Structure definition
+    #     _c_complex(self)
+    # else:
+    #     # Typedef
+    #     _h('')
+    #     _h('typedef %s %s;', _t(self.name + ('error',)), _t(name + ('error',)))
+
 def cpp_prototypes():
     _h("namespace request {")
     for request in _request_classes:
@@ -3103,7 +3138,7 @@ output = {'open'    : c_open,
           'union'   : lambda x, y: None,
           'request' : c_request,
           'event'   : cpp_event,
-          'error'   : lambda x, y: None,
+          'error'   : cpp_error,
           }
 
 # Boilerplate below this point
