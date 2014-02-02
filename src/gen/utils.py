@@ -4,6 +4,7 @@ _reserved_keywords = {'class' : '_class',
                       'new'   : '_new',
                       'delete': '_delete',
                       'default' : '_default',
+                      'private' : '_private',
                       'explicit': '_explicit'}
 
 def get_namespace(namespace):
