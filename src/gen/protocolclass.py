@@ -115,7 +115,13 @@ class ProtocolClass(object):
                typedef,
                ns,
                methods,
-               ns) + "\n\n" + self.event_dispatcher_class()
+               ns) \
+            + "\n\n" \
+            + self.event_dispatcher_class() \
+            + "\n\n" \
+            + self.error_dispatcher_class()
+
+    ### event_dispatcher_class
 
     def event_dispatcher_class(self):
         ns = get_namespace(self.namespace)
