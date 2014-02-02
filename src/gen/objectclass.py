@@ -1,3 +1,5 @@
+# vim: set ts=4 sws=4 sw=4:
+
 import copy # deepcopy
 
 from utils import \

@@ -1,3 +1,5 @@
+# vim: set ts=4 sws=4 sw=4:
+
 from utils import *
 from parameter import *
 from resource_classes import _resource_classes

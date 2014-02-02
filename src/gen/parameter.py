@@ -1,3 +1,5 @@
+# vim: set ts=4 sws=4 sw=4:
+
 class ParameterList(object):
     def __init__(self):
         self.want_wrap = False

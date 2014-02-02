@@ -1,3 +1,5 @@
+# vim: set ts=4 sws=4 sw=4:
+
 from utils import \
         get_namespace, \
         get_ext_name, \
