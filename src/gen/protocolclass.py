@@ -25,9 +25,9 @@ class %s
 }; // namespace protocol
 """
 
-_templates['dispatcher_class'] = \
+_templates['event_dispatcher_class'] = \
 '''\
-namespace dispatcher {
+namespace dispatcher { namespace event {
 
 class %s
   : virtual protected xpp::xcb::type<xcb_connection_t * const>
@@ -46,7 +46,7 @@ class %s
 %s\
 }; // class %s
 
-}; // namespace dispatcher
+}; }; // namespace dispatcher::event
 '''
 
 _templates['error_dispatcher_class'] = \
@@ -168,7 +168,7 @@ class ProtocolClass(object):
         else:
             members = ""
 
-        return _templates['dispatcher_class'] \
+        return _templates['event_dispatcher_class'] \
             % (ns, # class %s {
                typedef,
                ctors,
