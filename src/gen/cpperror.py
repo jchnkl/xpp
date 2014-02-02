@@ -14,7 +14,7 @@ class CppError(object):
         self.opcode_name = opcode_name
 
         self.names = map(str.lower, _n_item(name[-1], True))
-        self.name = self.names[-1]
+        self.name = "_".join(map(str.lower, self.names))
 
         self.nssopen = ""
         self.nssclose = ""
@@ -26,18 +26,15 @@ class CppError(object):
             self.scope.append(name)
 
     def get_name(self):
-        name = self.name
-        if self.name in _reserved_keywords: name = self.name + "_"
-        scope = ("::".join(self.scope)) if len(self.scope) > 0 else ""
-        return (scope + "::" if len(scope) > 0 else "") + name
+        return self.name + "_error"
+
+    def get_scope(self):
+        return "_".join(map(str.lower, self.names))
 
     def scoped_name(self):
         ns = get_namespace(self.namespace)
-        # scope = ("::" + "::".join(self.scope)) if len(self.scope) > 0 else ""
-        # scope = ("_".join(self.scope)) if len(self.scope) > 0 else ""
-        # return "xpp::error::" + ns + "::" + scope + "_" + self.name
-        # return "xpp::error::" + ns + "::" + self.get_name
-        return "xpp::" + ns + "::" + self.get_name() + "::error"
+        return "xpp::" + ns + "::" + self.get_name()
+
 
     def make_class(self):
         ns = get_namespace(self.namespace)
@@ -69,12 +66,12 @@ class CppError(object):
             typedef = [ "typedef void extension;" ]
 
         if len(opcode_accessor) > 0:
-            opcode_accessor = "\n".join(map(lambda s: "      " + s, opcode_accessor)) + "\n"
+            opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"
         else:
             opcode_accessor = ""
 
         if len(typedef) > 0:
-            typedef = "\n".join(map(lambda s: "      " + s, typedef)) + "\n\n"
+            typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n\n"
         else:
             typedef = ""
 
@@ -83,28 +80,27 @@ class CppError(object):
 
         return \
 '''
-namespace %s {%s namespace %s {
-  class error
-    : public xpp::error::generic<%s,
-                                 %s>
-  {
-    public:
+namespace %s {
+class %s
+  : public xpp::generic::error<%s,
+                               %s>
+{
+  public:
 %s\
-      using xpp::error::generic<%s, %s>::generic;
+    using xpp::generic::error<%s, %s>::error;
 
-      virtual ~error(void) {}
+    virtual ~%s(void) {}
 
 %s\
-  };
-}; };%s // %s
-''' % (ns, self.nssopen, # namespace error { namespace %s {%s
-       name, # class %s
+}; // class %s
+}; // namespace %s
+''' % (ns, # namespace %s {
+       self.get_name(), # class %s
        self.opcode_name, # : public xpp::generic::error<%s,
        self.c_name, # %s>
        typedef,
-       self.opcode_name, self.c_name, # using xpp::error::generic<%s, %s>::generic;
-       # self.name, # virtual ~%s(void) {}
+       self.opcode_name, self.c_name, # using xpp::generic::error<%s, %s>::error;
+       self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
-       self.nssclose, # }; };%s
-       self.scoped_name())
-       # ("::" + "::".join(self.scope)) if len(self.scope) > 0 else "")
+       self.get_name(), # // class %s
+       ns) # }; // namespace %s

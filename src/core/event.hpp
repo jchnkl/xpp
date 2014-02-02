@@ -5,22 +5,20 @@
 #include <xcb/xcb.h> // xcb_generic_event_t
 #include "type.hpp"
 
-namespace xpp {
-
-namespace event {
+namespace xpp { namespace generic {
 
 template<int OpCode, typename Event>
-class generic
+class event
   : virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
-    generic(xcb_connection_t * const c, xcb_generic_event_t * event)
+    event(xcb_connection_t * const c, xcb_generic_event_t * event)
       : m_c(c)
       , m_event(reinterpret_cast<Event *>(event))
     {}
 
     virtual
-    ~generic(void) {}
+    ~event(void) {}
 
     virtual
     operator xcb_connection_t * const(void) const
@@ -53,12 +51,8 @@ class generic
   protected:
     xcb_connection_t * m_c;
     std::shared_ptr<Event> m_event;
-}; // class generic
+}; // class event
 
-}; // namespace event
-
-}; // namespace xpp
-
-// }; }; // xpp::event
+}; }; // namespace xpp::generic
 
 #endif // XPP_EVENT_HPP

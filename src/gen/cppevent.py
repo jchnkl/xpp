@@ -9,12 +9,12 @@ from resource_classes import _resource_classes
 
 _field_accessor_template = \
 '''\
-      template<typename %s = %s>
-      %s
-      %s(void) const
-      {
-        return %s(*this, %s);
-      }\
+    template<typename %s = %s>
+    %s
+    %s(void) const
+    {
+      return %s(*this, %s);
+    }\
 '''
 
 _field_accessor_template_specialization = \
@@ -38,7 +38,7 @@ class CppEvent(object):
         self.fields = fields
 
         self.names = map(str.lower, _n_item(name[-1], True))
-        self.name = self.names[-1]
+        self.name = "_".join(map(str.lower, self.names))
 
         self.nssopen = ""
         self.nssclose = ""
@@ -58,14 +58,14 @@ class CppEvent(object):
             return 1
 
     def get_name(self):
-        name = self.name
-        if self.name in _reserved_keywords: name = self.name + "_"
-        scope = ("::".join(self.scope)) if len(self.scope) > 0 else ""
-        return (scope + "::" if len(scope) > 0 else "") + name
+        return self.name + "_event"
+
+    def get_scope(self):
+        return "_".join(map(str.lower, self.names))
 
     def scoped_name(self):
         ns = get_namespace(self.namespace)
-        return "xpp::" + ns + "::" + self.get_name() + "::event"
+        return "xpp::" + ns + "::" + self.get_name()
 
     def make_class(self):
         member_accessors = []
@@ -75,7 +75,9 @@ class CppEvent(object):
                 template_name = field.field_name.capitalize()
                 c_name = field.c_field_type
                 method_name = field.field_name.lower()
-                if method_name == "event": method_name += "_"
+                if (method_name == self.get_name()
+                    or method_name in _reserved_keywords):
+                    method_name += "_" + field.field_type[-1].lower()
                 member = "(*this)->" + field.c_field_name
 
                 member_accessors.append(_field_accessor_template % \
@@ -87,7 +89,7 @@ class CppEvent(object):
 
                 member_accessors_special.append(_field_accessor_template_specialization % \
                     ( c_name
-                    , "event", method_name, c_name
+                    , self.get_name(), method_name, c_name
                     , member
                     ))
 
@@ -120,12 +122,12 @@ class CppEvent(object):
             typedef = [ "typedef void extension;" ]
 
         if len(opcode_accessor) > 0:
-            opcode_accessor = "\n".join(map(lambda s: "      " + s, opcode_accessor)) + "\n"
+            opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"
         else:
             opcode_accessor = ""
 
         if len(typedef) > 0:
-            typedef = "\n".join(map(lambda s: "      " + s, typedef)) + "\n\n"
+            typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n\n"
         else:
             typedef = ""
 
@@ -136,37 +138,33 @@ class CppEvent(object):
             member_accessors = ""
             member_accessors_special = ""
 
-        name = self.name
-        if self.name in _reserved_keywords: name = self.name + "_"
-
         return \
 '''
-namespace %s {%s namespace %s {
-  class event
-    : public xpp::event::generic<%s,
-                                 %s>
-  {
-    public:
+namespace %s {
+class %s
+  : public xpp::generic::event<%s,
+                               %s>
+{
+  public:
 %s\
-      using xpp::event::generic<%s, %s>::generic;
+    using xpp::generic::event<%s, %s>::event;
 
-      virtual ~event(void) {}
+    virtual ~%s(void) {}
 
 %s\
 %s\
-  };
+}; // class %s
 %s\
-}; };%s // %s
-''' % (ns, self.nssopen, # namespace event { namespace %s {%s
-       name, # class %s
+}; // namespace %s
+''' % (ns, # namespace %s {
+       self.get_name(), # class %s
        self.opcode_name, # : public xpp::generic::event<%s,
        self.c_name, # %s>
        typedef,
-       self.opcode_name, self.c_name, # using xpp::event::generic<%s, %s>::generic;
-       # self.name, # virtual ~%s(void) {}
+       self.opcode_name, self.c_name, # using xpp::generic::event<%s, %s>::event;
+       self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
        member_accessors,
+       self.get_name(), # // class %s
        member_accessors_special,
-       self.nssclose, # }; };%s
-       self.scoped_name())
-       # ("::" + "::".join(self.scope)) if len(self.scope) > 0 else "")
+       ns) # }; // namespace %s

@@ -4,22 +4,18 @@
 #include <memory> // shared_ptr
 #include <xcb/xcb.h> // xcb_generic_error_t
 
-namespace xpp {
-
-  // namespace error { namespace x { class window ..
-
-namespace error {
+namespace xpp { namespace generic {
 
 template<int OpCode, typename Error>
-class generic : public std::runtime_error {
+class error : public std::runtime_error {
   public:
-    generic(xcb_generic_error_t * error)
+    error(xcb_generic_error_t * error)
       : runtime_error(get_error_description(error))
       , m_error(reinterpret_cast<Error *>(error))
     {}
 
     virtual
-    ~generic(void)
+    ~error(void)
     {}
 
     virtual
@@ -53,8 +49,8 @@ class generic : public std::runtime_error {
     static const int opcode = OpCode;
 
     std::shared_ptr<Error> m_error;
-}; // class generic
+}; // class error
 
-}; }; // xpp::error
+}; }; // xpp::generic
 
 #endif // XPP_ERROR_HPP
