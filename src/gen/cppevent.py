@@ -57,10 +57,15 @@ class CppEvent(object):
         else:
             return 1
 
+    def get_name(self):
+        name = self.name
+        if self.name in _reserved_keywords: name = self.name + "_"
+        scope = ("::".join(self.scope)) if len(self.scope) > 0 else ""
+        return (scope + "::" if len(scope) > 0 else "") + name
+
     def scoped_name(self):
         ns = get_namespace(self.namespace)
-        scope = ("::" + "::".join(self.scope)) if len(self.scope) > 0 else ""
-        return "xpp::event::" + ns + scope + "::" + self.name
+        return "xpp::" + ns + "::" + self.get_name() + "::event"
 
     def make_class(self):
         member_accessors = []
@@ -70,7 +75,7 @@ class CppEvent(object):
                 template_name = field.field_name.capitalize()
                 c_name = field.c_field_type
                 method_name = field.field_name.lower()
-                if method_name == self.name: method_name += "_"
+                if method_name == "event": method_name += "_"
                 member = "(*this)->" + field.c_field_name
 
                 member_accessors.append(_field_accessor_template % \
@@ -82,7 +87,7 @@ class CppEvent(object):
 
                 member_accessors_special.append(_field_accessor_template_specialization % \
                     ( c_name
-                    , self.name, method_name, c_name
+                    , "event", method_name, c_name
                     , member
                     ))
 
@@ -131,10 +136,13 @@ class CppEvent(object):
             member_accessors = ""
             member_accessors_special = ""
 
+        name = self.name
+        if self.name in _reserved_keywords: name = self.name + "_"
+
         return \
 '''
-namespace event { namespace %s {%s
-  class %s
+namespace %s {%s namespace %s {
+  class event
     : public xpp::event::generic<%s,
                                  %s>
   {
@@ -142,22 +150,23 @@ namespace event { namespace %s {%s
 %s\
       using xpp::event::generic<%s, %s>::generic;
 
-      virtual ~%s(void) {}
+      virtual ~event(void) {}
 
 %s\
 %s\
   };
 %s\
-}; };%s // xpp::event%s
+}; };%s // %s
 ''' % (ns, self.nssopen, # namespace event { namespace %s {%s
-       self.name, # class %s
+       name, # class %s
        self.opcode_name, # : public xpp::generic::event<%s,
        self.c_name, # %s>
        typedef,
        self.opcode_name, self.c_name, # using xpp::event::generic<%s, %s>::generic;
-       self.name, # virtual ~%s(void) {}
+       # self.name, # virtual ~%s(void) {}
        opcode_accessor,
        member_accessors,
        member_accessors_special,
        self.nssclose, # }; };%s
-       ("::" + "::".join(self.scope)) if len(self.scope) > 0 else "")
+       self.scoped_name())
+       # ("::" + "::".join(self.scope)) if len(self.scope) > 0 else "")
