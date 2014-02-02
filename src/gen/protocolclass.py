@@ -141,13 +141,14 @@ class ProtocolClass(object):
                 , "  const uint8_t m_first_event;"
                 ]
 
+            ctor = "dispatcher"
             ctors += \
-                [ "%s(uint8_t first_event)" % ns
+                [ "%s(uint8_t first_event)" % ctor
                 , "  : m_first_event(first_event)"
                 , "{}"
                 , ""
-                , "%s(const xpp::extension::%s & extension)" % (ns, ns)
-                , "  : %s(extension->first_event)" % ns
+                , "%s(const xpp::extension::%s & extension)" % (ctor, ns)
+                , "  : %s(extension->first_event)" % ctor
                 , "{}"
                 ]
 
@@ -227,13 +228,14 @@ class ProtocolClass(object):
                 , "  const uint8_t m_first_error;"
                 ]
 
+            ctor = "dispatcher"
             ctors += \
-                [ "%s(uint8_t first_error)" % ns
+                [ "%s(uint8_t first_error)" % ctor
                 , "  : m_first_error(first_error)"
                 , "{}"
                 , ""
-                , "%s(const xpp::extension::%s & extension)" % (ns, ns)
-                , "  : %s(extension->first_error)" % ns
+                , "%s(const xpp::extension::%s & extension)" % (ctor, ns)
+                , "  : %s(extension->first_error)" % ctor
                 , "{}"
                 ]
 
