@@ -10,26 +10,26 @@ _templates = {}
 
 _templates['protocol_class'] = \
 """\
-namespace protocol {
+namespace %s {
 
-class %s
+class protocol
   : virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
 %s\
-    virtual ~%s(void) {}
+    virtual ~protocol(void) {}
 
 %s\
-}; // class %s
+}; // class protocol
 
-}; // namespace protocol
+}; // namespace %s
 """
 
 _templates['event_dispatcher_class'] = \
 '''\
-namespace dispatcher { namespace event {
+namespace %s { namespace event {
 
-class %s
+class dispatcher
   : virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
@@ -44,16 +44,16 @@ class %s
       return false;
     }
 %s\
-}; // class %s
+}; // class dispatcher
 
-}; }; // namespace dispatcher::event
+}; }; // namespace %s::event
 '''
 
 _templates['error_dispatcher_class'] = \
 '''\
-namespace dispatcher { namespace error {
+namespace %s { namespace error {
 
-class %s {
+class dispatcher {
   public:
 %s\
 %s\
@@ -65,9 +65,9 @@ class %s {
     }
 
 %s\
-}; // class %s
+}; // class dispatcher
 
-}; }; // namespace dispatcher::error
+}; }; // namespace %s::error
 '''
 
 
@@ -111,9 +111,8 @@ class ProtocolClass(object):
             typedef = ""
 
         return _templates['protocol_class'] \
-            % (ns, # class %s {
+            % (ns, # namespace %s {
                typedef,
-               ns,
                methods,
                ns) \
             + "\n\n" \

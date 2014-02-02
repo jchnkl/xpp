@@ -40,7 +40,7 @@ class ObjectClass(object):
         else:
             return \
 """\
-namespace resource { namespace %s {
+namespace %s {
 
 class %s
   : virtual public xpp::xcb::type<const %s &>
@@ -52,11 +52,11 @@ class %s
 %s
 }; // class %s
 
-}; }; // namespace resource::%s
-""" % (name, # namespace %s {
-       ns,   # class %s
-       c_name, # public resource<%s>
-       ns, # virtual ~%s(void)
+}; // namespace %s
+""" % (ns, # namespace %s {
+       name,   # class %s
+       c_name, # public xpp::xcb::type<const %s &>
+       name, # virtual ~%s(void)
        methods,
-       ns, # }; // class %s
-       name) # }; // namespace %s
+       name, # }; // class %s
+       ns) # }; // namespace %s
