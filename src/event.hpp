@@ -52,8 +52,8 @@ void dispatcher::sink::dispatch(const Event & e)
 
 template<typename ... Extensions>
 class registry
-  : virtual public xpp::dispatcher::x
-  , virtual public Extensions::dispatcher ...
+  : virtual public xpp::dispatcher::event::x
+  , virtual public Extensions::event_dispatcher ...
   , virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
@@ -61,7 +61,7 @@ class registry
 
     explicit
     registry(const xpp::connection<Extensions ...> & c)
-      : Extensions::dispatcher(c) ...
+      : Extensions::event_dispatcher(c) ...
       , m_c(c)
     {}
 
@@ -136,7 +136,7 @@ class registry
     bool
     dispatch(xcb_generic_event_t * event) const
     {
-      typedef const typename Extension::dispatcher & dispatcher;
+      typedef const typename Extension::event_dispatcher & dispatcher;
       return static_cast<dispatcher>(*this)(*this, event);
     }
 

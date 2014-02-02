@@ -21,21 +21,25 @@ class ExtensionClass(object):
         return \
 '''
 namespace protocol { class %s; };
-namespace dispatcher { class %s; };
+namespace dispatcher { namespace event { class %s; }; };
+namespace dispatcher { namespace error { class %s; }; };
 
 namespace extension {
 
 class %s%s{
   public:
     typedef xpp::protocol::%s protocol;
-    typedef xpp::dispatcher::%s dispatcher;
+    typedef xpp::dispatcher::event::%s event_dispatcher;
+    typedef xpp::dispatcher::error::%s error_dispatcher;
 };
 
 }; // namespace extension
 ''' % (ns, # namespace protocol { class %s; };
-       ns, # namespace dispatcher { class %s; };
+       ns, # namespace event { namespace dispatcher { class %s; }; };
+       ns, # namespace error { namespace dispatcher { class %s; }; };
        ns, # class %s
        base,
        # ns, # : public xpp::extension::generic<&xcb_%s_id>
        ns, # typedef xpp::protocol::%s protocol;
-       ns) # typedef xpp::dispatcher::%s dispatcher;
+       ns, # typedef xpp::event::dispatcher::%s dispatcher;
+       ns) # typedef xpp::error::dispatcher::%s dispatcher;
