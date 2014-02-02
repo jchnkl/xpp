@@ -228,6 +228,7 @@ def c_open(self):
     _h('#include "../core/event.hpp"')
     _h('#include "../core/error.hpp"')
     _h('#include "../core/extension.hpp"')
+    _h('#include "../core/value_iterator.hpp"')
     _h('#include "../core/generic/resource.hpp"')
     _h('')
     _h('namespace xpp {')
