@@ -25,8 +25,8 @@ namespace xpp {
 // class output {};
 // class provider {};
 
-class window : virtual public xpp::resource::window::x
-             , virtual public xpp::resource::drawable::x
+class window : virtual public xpp::x::window
+             , virtual public xpp::x::drawable
              , virtual public xpp::iterable<void>
              , virtual public xpp::iterable<xcb_window_t>
 {
@@ -193,7 +193,7 @@ class window : virtual public xpp::resource::window::x
       for (auto & item : m_values) {
         values.push_back(item.second);
       }
-      xpp::resource::window::x::configure(m_mask, values.data());
+      xpp::x::window::configure(m_mask, values.data());
       return *this;
     }
 

@@ -32,7 +32,7 @@ template<typename ... Events>
 class sink;
 
 template<typename Event>
-class sink<Event> : virtual public dispatcher::sink {
+class sink<Event> : virtual public dispatcher {
   public:
     virtual ~sink(void) {}
     virtual void handle(const Event &) = 0;
@@ -45,14 +45,14 @@ class sink<Event, Events ...>
 {};
 
 template<typename Event>
-void dispatcher::sink::dispatch(const Event & e)
+void dispatcher::dispatch(const Event & e)
 {
   dynamic_cast<xpp::event::sink<Event> *>(this)->handle(e);
 }
 
 template<typename ... Extensions>
 class registry
-  : virtual public xpp::dispatcher::event::x
+  : virtual public xpp::x::event::dispatcher
   , virtual public Extensions::event_dispatcher ...
   , virtual protected xpp::xcb::type<xcb_connection_t * const>
 {

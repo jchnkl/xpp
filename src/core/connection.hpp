@@ -13,7 +13,7 @@ namespace xpp {
 template<typename ... Extensions>
 class connection
   : virtual public xpp::core
-  , virtual public xpp::protocol::x
+  , virtual public xpp::x::protocol
   , virtual public Extensions ...
   , virtual public Extensions::protocol ...
 {
