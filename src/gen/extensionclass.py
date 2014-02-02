@@ -14,7 +14,7 @@ class ExtensionClass(object):
         # else:
         ns = get_namespace(self.namespace)
         if self.namespace.is_ext:
-            base = "\n  : public xpp::extension::generic<&xcb_%s_id>\n" % ns
+            base = "\n  : public xpp::generic::extension<&xcb_%s_id>\n" % ns
         else:
             base = " "
 
