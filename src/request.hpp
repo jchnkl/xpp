@@ -16,13 +16,13 @@ class request
   : virtual protected xpp::xcb::type<xcb_connection_t * const>
 {
   public:
-    template<typename ... COOKIE_ARGS>
+    template<typename ... CookieParameter>
     request(xcb_connection_t * const c,
-            COOKIE (*cookie_fun)(xcb_connection_t *, COOKIE_ARGS ...),
-            COOKIE_ARGS ... cookie_args)
+            Cookie (*cookie_function)(xcb_connection_t *, CookieParameter ...),
+            CookieParameter ... cookie_parameter)
       : m_c(c)
     {
-      prepare(cookie_fun, cookie_args ...);
+      prepare(cookie_function, cookie_parameter ...);
     }
 
     virtual
@@ -31,21 +31,21 @@ class request
       return m_c;
     }
 
-    const REPLY & operator*(void)
+    const Reply & operator*(void)
     {
       return *this->get();
     }
 
-    const REPLY * const operator->(void)
+    const Reply * const operator->(void)
     {
       return this->get().get();
     }
 
-    std::shared_ptr<REPLY>
+    std::shared_ptr<Reply>
     get(void)
     {
       if (! m_reply) {
-        m_reply = std::shared_ptr<REPLY>(REPLY_FUN(m_c, m_cookie, NULL));
+        m_reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, nullptr));
       }
       return m_reply;
     }
@@ -57,19 +57,19 @@ class request
 
   protected:
     xcb_connection_t * m_c;
-    COOKIE m_cookie;
-    std::shared_ptr<REPLY> m_reply;
+    Cookie m_cookie;
+    std::shared_ptr<Reply> m_reply;
 
     request(xcb_connection_t * const c)
       : m_c(c)
     {}
 
-    template<typename ... COOKIE_ARGS>
+    template<typename ... CookieParameter>
     void
-    prepare(COOKIE (*cookie_fun)(xcb_connection_t *, COOKIE_ARGS ...),
-            COOKIE_ARGS ... cookie_args)
+    prepare(Cookie (*cookie_function)(xcb_connection_t *, CookieParameter ...),
+            CookieParameter ... cookie_parameter)
     {
-      m_cookie = cookie_fun(m_c, cookie_args ...);
+      m_cookie = cookie_function(m_c, cookie_parameter ...);
     }
 
     xcb_connection_t * const
