@@ -267,7 +267,7 @@ class ProtocolClass(object):
     def error_switch_cases(self, arg_switch, arg_error):
         cases = ""
         errors = self.errors
-        templ = [ "        case %s:"
+        templ = [ "        case %s: // %s"
                 , "          throw %s" + "(%s);" % arg_error
                 , ""
                 , ""
@@ -275,7 +275,7 @@ class ProtocolClass(object):
 
         cases += "\n      switch (%s) {\n\n" % arg_switch
         for e in errors:
-            cases += "\n".join(templ) % (e.opcode_name, e.scoped_name())
+            cases += "\n".join(templ) % (e.opcode_name, e.opcode, e.scoped_name())
             # cases += "\n".join(templ) % (e.opcode_name, e.get_name())
         cases += "      };\n"
 
