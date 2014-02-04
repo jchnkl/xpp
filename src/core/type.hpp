@@ -3,9 +3,7 @@
 
 #include <cstddef> // size_t
 
-namespace xpp {
-
-namespace xcb {
+namespace xpp { namespace xcb {
 
 template<typename Type>
 class type {
@@ -14,8 +12,6 @@ class type {
     virtual operator Type(void) const = 0;
 }; // class type
 
-}; // namespace xcb
-
-}; // namespace xpp
+}; }; // namespace xpp::xcb
 
 #endif // XPP_XCB_TYPE_HPP
