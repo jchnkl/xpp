@@ -253,11 +253,11 @@ class CppRequest(object):
         self.accessors = []
         self.parameter_list = ParameterList()
 
+    def add(self, param):
+        self.parameter_list.add(param)
+
     def make_wrapped(self):
         self.parameter_list.make_wrapped()
-
-    def make_proto(self):
-        return "  class " + self.name + ";"
 
     def make_class(self):
         cppcookie = CppCookie(self.namespace, self.is_void, self.request.name, self.reply, self.parameter_list)
@@ -284,65 +284,3 @@ class CppRequest(object):
             return _inline_void_class(self.request_name, method_name, member, get_namespace(self.namespace))
         else:
             return _inline_reply_class(self.request_name, method_name, member, get_namespace(self.namespace))
-
-    def add(self, param):
-        self.parameter_list.add(param)
-
-    def comma(self):
-        return self.parameter_list.comma()
-
-    def c_name(self, regular=True):
-        ns = "" if self.c_namespace == "" else (self.c_namespace + "_")
-        name = "xcb_" + ns + self.name
-
-        # checked = void and not regular
-        # unchecked = not void and not regular
-        if not regular:
-            if self.is_void:
-                return name + "_checked"
-            else:
-                return name + "_unchecked"
-        else:
-            return name
-
-    def calls(self, sort):
-        return self.parameter_list.calls(sort)
-
-    def protos(self, sort, defaults):
-        return self.parameter_list.protos(sort, defaults)
-
-    def template(self, indent="    ", tail="\n"):
-        return indent + "template<typename " \
-                + ", typename ".join(self.parameter_list.templates) \
-                + ">" + tail \
-                if len(self.parameter_list.templates) > 0 \
-                else ""
-
-    def iterator_template(self, indent="    ", tail="\n"):
-        return indent + "template<typename " \
-                + ", typename ".join(self.parameter_list.iterator_templates \
-                                   + self.parameter_list.templates) \
-                + ">" + tail \
-                if len(self.parameter_list.iterator_templates) > 0 \
-                else ""
-
-    def wrapped_calls(self, sort):
-        return self.parameter_list.wrapped_calls(sort)
-
-    def wrapped_protos(self, sort, defaults):
-        return self.parameter_list.wrapped_protos(sort, defaults)
-
-    def iterator_calls(self, sort):
-        return self.parameter_list.iterator_calls(sort)
-
-    def iterator_2nd_lvl_calls(self, sort):
-        return self.parameter_list.iterator_2nd_lvl_calls(sort)
-
-    def iterator_protos(self, sort, defaults):
-        return self.parameter_list.iterator_protos(sort, defaults)
-
-    def iterator_initializers(self):
-        return self.parameter_list.iterator_initializers()
-
-    def make_accessors(self):
-        return "\n".join(map(lambda a: "\n%s\n" % a, self.accessors))
