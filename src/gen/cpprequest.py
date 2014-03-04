@@ -9,22 +9,6 @@ from cppcookie import CppCookie
 
 _templates = {}
 
-'''\
-template<typename ... Parameter>
-checked::cookie::%s
-%s_checked(Parameter ... parameter)
-{
-  return checked::cookie::%s(parameter ...);
-}
-
-template<typename ... Parameter>
-unchecked::cookie::%s
-%s(Parameter ... parameter)
-{
-  return unchecked::cookie::%s(parameter ...);
-}
-'''
-
 _templates['void_request_function'] = \
 '''\
 template<typename Connection, typename ... Parameter>
@@ -51,24 +35,6 @@ def _void_request_function(name):
             , name
             , name
             )
-
-
-'''
-template<typename ... Parameter>
-checked::reply::%s
-%s(xcb_connection_t * const c, Parameter ... parameter)
-{
-  return checked::reply::%s(c, checked::cookie::%s(c, parameter ...));
-}
-
-template<typename ... Parameter>
-unchecked::reply::%s
-%s_unchecked(xcb_connection_t * const c, Parameter ... parameter)
-{
-  return unchecked::reply::%s(c, unchecked::cookie::%s(c, parameter ...));
-}
-'''
-
 
 _templates['reply_request_function'] = \
 '''\
@@ -167,14 +133,6 @@ def _inline_void_class(request_name, method_name, member, ns):
             , request_name
             , member
             )
-
-"""\
-    %s
-    %s(%s) const
-    {
-      %s
-    }\
-"""
 
 _templates['void_constructor'] = \
 """\
@@ -302,49 +260,23 @@ class CppRequest(object):
         return "  class " + self.name + ";"
 
     def make_class(self):
-        # sys.stderr.write("\nnamespace xpp { namespace %s {\n\n" % get_namespace(self.namespace))
-
         cppcookie = CppCookie(self.namespace, self.is_void, self.request.name, self.reply, self.parameter_list)
-        # sys.stderr.write("// COOKIE\n")
-        # sys.stderr.write("%s\n" % cppcookie.make())
 
         if self.is_void:
             void_functions = cppcookie.make_void_functions()
             if len(void_functions) > 0:
-                # sys.stderr.write("\n%s\n" % void_functions)
                 return void_functions
             else:
-                # sys.stderr.write("%s\n" % _void_request_function(self.request_name))
                 return _void_request_function(self.request_name)
-
-            # sys.stderr.write("}; }; // namespace xpp::%s\n\n" % get_namespace(self.namespace))
-            # return self.void_request(True) + "\n\n" + self.void_request(False)
 
         else:
             cppreply = CppReply(self.namespace, self.request.name, cppcookie, self.reply, self.accessors, self.parameter_list)
-            # sys.stderr.write("// REPLY\n")
-
             return cppreply.make() + "\n\n" + _reply_request_function(self.request_name)
 
-            # sys.stderr.write("\n%s\n\n" % cppreply.make())
-            # sys.stderr.write("%s\n" % _reply_request_function(self.request_name))
-
-            # sys.stderr.write("}; }; // namespace xpp::%s\n\n" % get_namespace(self.namespace))
-            # return self.reply_request(True) + "\n\n" + self.reply_request(False)
-
     def make_object_class_inline(self, is_connection, class_name=""):
-        # connection = "static_cast<connection &>(*this).get(), "
-        # member = "" if is_connection else "static_cast<xpp::xcb::type<const %s &>>(*this),\n" % self.c_name()
-
-        # if self.namespace.is_ext:
-        #     c_member_name = "xcb_%s_%s_t" % (get_namespace(self.namespace), class_name)
-        # else:
-        #     c_member_name = "xcb_%s_t" % class_name
-
         member = ""
         method_name = self.name
         if not is_connection:
-            # member = "static_cast<const %s &>(*this),\n" % c_member_name
             member = "*this,\n"
             method_name = replace_class(method_name, class_name)
 
@@ -352,53 +284,6 @@ class CppRequest(object):
             return _inline_void_class(self.request_name, method_name, member, get_namespace(self.namespace))
         else:
             return _inline_reply_class(self.request_name, method_name, member, get_namespace(self.namespace))
-
-    # '''
-    #     def make_object_class_inline(self, is_connection, class_name=""):
-    #         checked_appendix = ("checked" if self.is_void else "unchecked")
-    #         unchecked_appendix = ("unchecked" if self.is_void else "checked")
-
-    #         # "%s": ::{un,}checked
-    #         request_name = "xpp::" + get_namespace(self.namespace) + "::%s" + "request::"
-    #         # request_name = "xpp::request::" + "%s" + get_namespace(self.namespace) + "::"
-    #         return_type = self.iterator_template(indent="")
-    #         return_type += "virtual\n" if return_type == "" else ""
-    #         return_type += "    "
-
-    #         if self.is_void:
-    #             return_type += "void"
-    #         else:
-    #             return_type += request_name + self.name
-
-    #         method = self.name
-    #         if not is_connection:
-    #             method = replace_class(method, class_name)
-
-    #         calls = self.iterator_2nd_lvl_calls(False)
-    #         proto_params = self.iterator_protos(True, True)
-
-    #         # call_params = ["*this"]
-    #         call_params = ["static_cast<xcb_connection_t * const>(*this)"]
-    #         if not is_connection: call_params += ["*this"]
-
-    #         if len(calls) > 0: call_params += [calls]
-
-    #         call = ("" if self.is_void else "return ") \
-    #              + request_name + self.name \
-    #              + ("()" if self.is_void else "") \
-    #              + "(" + ", ".join(call_params) + ");"
-
-    #         return \
-    #             (_templates['inline_class'] \
-    #                 % (return_type if self.is_void else return_type % (checked_appendix + "::"),
-    #                    method + "_" + checked_appendix, proto_params,
-    #                    call % (checked_appendix + "::"))) \
-    #             + "\n\n" + \
-    #             (_templates['inline_class'] \
-    #                 % (return_type if self.is_void else return_type % (unchecked_appendix + "::"),
-    #                    method, proto_params,
-    #                    call % (unchecked_appendix + "::")))
-    # '''
 
     def add(self, param):
         self.parameter_list.add(param)
