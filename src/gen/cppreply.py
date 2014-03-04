@@ -3,29 +3,6 @@ from resource_classes import _resource_classes
 
 _templates = {}
 
-_templates['reply_using'] = \
-'''\
-namespace checked { namespace reply {
-using %s =
-  xpp::generic::reply<
-    xpp::generic::checked::reply<SIGNATURE(xcb_%s_reply)>>;
-}; }; // namespace checked::reply
-
-namespace unchecked { namespace reply {
-using %s =
-  xpp::generic::reply<
-    xpp::generic::unchecked::reply<SIGNATURE(xcb_%s_reply)>>;
-}; }; // namespace unchecked::reply
-'''
-
-def _reply_using(name):
-    return _templates['reply_using'] % \
-            ( name
-            , name
-            , name
-            , name
-            )
-
 _templates['reply_class'] = \
 '''\
 namespace reply {
@@ -83,48 +60,6 @@ def _reply_class(name, c_name, ns, cookie, accessors):
             , name
             )
 
-'''\
-namespace generic { namespace reply {
-template<typename ReplyMethod>
-class %s
-  : public xpp::generic::reply<ReplyMethod>
-             // xpp::generic::checked::reply<SIGNATURE(xcb_%s_reply)>>
-{
-  public:
-    // typedef %s self;
-    typedef xpp::generic::reply<ReplyMethod> base;
-    using base::base;
-%s\
-};
-}; }; // namespace generic::reply
-
-namespace checked { namespace reply {
-using %s =
-  generic::reply::%s<
-    xpp::generic::checked::reply<SIGNATURE(xcb_%s_reply)>>;
-}; }; // namespace checked::reply
-
-namespace unchecked { namespace reply {
-using %s =
-  generic::reply::%s<
-    xpp::generic::unchecked::reply<SIGNATURE(xcb_%s_reply)>>;
-}; }; // namespace unchecked::reply
-'''
-
-# def _reply_class(name, accessors):
-#     return _templates['reply_class'] % \
-#             ( name
-#             , name
-#             , name
-#             , accessors
-#             , name
-#             , name
-#             , name
-#             , name
-#             , name
-#             , name
-#             )
-
 _templates['reply_member_accessor'] = \
 '''\
     template<typename ReturnType = %s, typename ... Parameter>
@@ -180,15 +115,8 @@ class CppReply(object):
 
                 accessors.append(_reply_member_accessor(self.request_name, name, c_type, template_type))
 
-        # result = "namespace reply {\n"
         result = ""
         result += _reply_class(
             self.request_name, self.c_name, get_namespace(self.namespace),
             self.cookie, "\n".join(accessors))
         return result
-
-        # if naccessors > 0:
-        #     result += _reply_class(self.request_name, "\n".join(accessors))
-        # else:
-        #     result += _reply_using(self.request_name)
-        # return result # + "}; // reply\n"
