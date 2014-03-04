@@ -30,23 +30,6 @@ struct callable<Return(Args ...), Function> {
 
 }; // namespace generic
 
-// interface for object types to be used with an itertor
-
-// template<typename Type>
-// class iterable {
-//   public:
-//     virtual ~iterable(void) {}
-//     virtual void operator=(Type) = 0;
-// }; // class iterable
-
-// template<>
-// class iterable<void> {
-//   public:
-//     virtual ~iterable(void) {}
-//     static std::size_t size_of(void);
-//     virtual void operator=(void * const) = 0;
-// };
-
 template<typename ... Arguments>
 class iterator;
 
@@ -211,7 +194,6 @@ class iterator<Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, G
     using base::base;
 
     virtual
-    // const ReturnData &
     ReturnData
     operator*(void)
     {
@@ -478,8 +460,6 @@ class object
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
       : base(std::forward<Connection>(c), reply, index)
-      // , m_return(std::forward<Connection>(c))
-      // , m_c(std::forward<Connection>(c))
     {
       if (std::is_void<Data>::value) {
         this->m_index /= ReturnData::size_of();
@@ -487,7 +467,6 @@ class object
     }
 
     virtual
-    // const ReturnData &
     ReturnData
     operator*(void)
     {
@@ -496,16 +475,8 @@ class object
                              Accessor()(this->m_reply.get()),
                              this->m_index);
       return rd;
-      // data_traits<Data>::set(m_return,
-      //                        Accessor()(this->m_reply.get()),
-      //                        this->m_index);
-      // return m_return;
     }
-
-  // private:
-  //   Connection m_c;
-    // ReturnData m_return;
-};
+}; // class object
 
 }; }; // fixed::iterator
 
