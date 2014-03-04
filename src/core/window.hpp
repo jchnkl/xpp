@@ -4,30 +4,9 @@
 #include <map>
 #include <vector>
 
-// #include "../iterator.hpp"
-// #include "../request.hpp"
-// #include "../iterable.hpp"
-// #include "../gen/xproto-stub.hpp"
-// #include "../gen/protos.hpp"
 #include "../gen/xproto.hpp"
 
 namespace xpp {
-
-// // xproto
-// class drawable {};
-// class pixmap {};
-// // class window {};
-// class atom {};
-// class cursor {};
-// class font {};
-// class gcontext {};
-// class fontable {};
-
-// // randr
-// class mode {};
-// class crtc {};
-// class output {};
-// class provider {};
 
 template<typename Connection>
 class window : virtual public xpp::x::window<Connection>
@@ -38,11 +17,6 @@ class window : virtual public xpp::x::window<Connection>
 {
   protected:
 
-    // virtual const Connection get(void) const
-    // {
-    //   return m_c;
-    // }
-
     virtual Connection get(void)
     {
       return m_c;
@@ -50,8 +24,6 @@ class window : virtual public xpp::x::window<Connection>
 
   public:
 
-    // window(void)
-    // {}
     static std::size_t size_of(void)
     {
       return sizeof(xcb_window_t);
@@ -68,8 +40,6 @@ class window : virtual public xpp::x::window<Connection>
 
     window(const xcb_window_t & window, Connection && c)
       : xpp::window<Connection>(c, window)
-      // : m_c(std::forward<Connection>(c))
-      // , m_window(std::make_shared<xcb_window_t>(window))
     {}
 
     window(Connection && c,
@@ -90,24 +60,13 @@ class window : virtual public xpp::x::window<Connection>
           width, height, border_width, _class, visual, value_mask, value_list);
     }
 
-    // // xpp::iterable<void * const>
-    // virtual
-    // std::size_t size_of(void)
-    // {
-    //   return sizeof(xcb_window_t);
-    // }
-
     // xpp::iterable<void * const>
     virtual
     void
     operator=(void * const data)
     {
-      // xcb_window_t * windows = static_cast<xcb_window_t *>(data);
       m_window =
         std::make_shared<xcb_window_t>(*static_cast<xcb_window_t *>(data));
-        // std::make_shared<xcb_window_t>(*static_cast<xcb_window_t *>(ptr));
-      // return sizeof(xcb_window_t);
-      // return *m_window;
     }
 
     virtual
@@ -124,13 +83,6 @@ class window : virtual public xpp::x::window<Connection>
     {
       m_window = std::make_shared<xcb_window_t>(window);
     }
-
-    // virtual
-    // void
-    // operator=(Connection && c)
-    // {
-    //   m_c = std::forward<Connection>(c);
-    // }
 
     // xpp::xcb::type<const xcb_window_t &>
     virtual
@@ -218,7 +170,6 @@ class window : virtual public xpp::x::window<Connection>
         values.push_back(item.second);
       }
       xpp::x::window<Connection>::configure(m_mask, values.data());
-      // xpp::x::configure_window(m_c, *m_window, m_mask, values.data());
       return *this;
     }
 
@@ -237,62 +188,6 @@ class window : virtual public xpp::x::window<Connection>
 // {
 //   return os << std::hex << "0x" << *window << std::dec;
 // }
-
-// template<typename Reply,
-//          typename Accessor,
-//          typename Length>
-// class iterator<xcb_window_t, xpp::window, Reply, Accessor, Length>
-//   : public iterator<iterator<xcb_window_t, xpp::window, Reply, Accessor, Length>,
-//                     xcb_window_t, xpp::window, Reply, Accessor, Length>
-// {
-//   public:
-//     typedef iterator<iterator<xcb_window_t, xpp::window, Reply, Accessor, Length>,
-//                      xcb_window_t, xpp::window, Reply, Accessor, Length>
-//                        base;
-// 
-//     iterator(xcb_connection_t * const c,
-//              const std::shared_ptr<Reply> & reply,
-//              std::size_t index)
-//       : base(c, reply, index), m_window(c)
-//     {}
-// 
-//     virtual
-//     const xpp::window & operator*(void)
-//     {
-//       m_window = (static_cast<xcb_window_t *>(
-//             Accessor()(this->m_reply.get()))[this->m_index]);
-//       return m_window;
-//     }
-// 
-//   private:
-//     xpp::window m_window;
-// 
-// }; // class iterator
-
-// template<typename Reply,
-//          typename Accessor,
-//          typename Length>
-// class iterator<void, xpp::window, Reply, Accessor, Length>
-//   : public iterator<xcb_window_t, xpp::window, Reply, Accessor, Length>
-// {
-//   public:
-//     using iterator<xcb_window_t, xpp::window, Reply, Accessor, Length>::iterator;
-// 
-//     static
-//     iterator
-//     begin(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
-//     {
-//       return iterator(c, reply, 0);
-//     }
-// 
-//     static
-//     iterator
-//     end(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
-//     {
-//       return iterator(c, reply, Length()(reply.get()) / sizeof(xcb_window_t));
-//     }
-// 
-// }; // class iterator
 
 }; // namespace xpp
 
