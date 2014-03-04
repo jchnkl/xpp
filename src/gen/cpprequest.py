@@ -353,7 +353,6 @@ class CppRequest(object):
     def void_request(self, regular):
         ############ def methods(...) ############
         def methods(protos, calls, template="", initializer=[]):
-            # if len(initializer) > 0:
             initializer = "\n      ".join([""] + initializer)
 
             ctor = _templates['void_constructor'] \
@@ -367,9 +366,6 @@ class CppRequest(object):
                    self.comma() + calls)
 
             return template + ctor + "\n" + template + operator
-
-            # else:
-            #     return ""
 
         ############ def methods(...) ############
 
@@ -409,9 +405,6 @@ class CppRequest(object):
         if (self.parameter_list.has_defaults):
             default = methods(self.protos(True, True), self.calls(False))
 
-        # if len(default) == 0:
-        #     default = "    using request::request;\n"
-
         wrapped = ""
         if self.parameter_list.want_wrap:
             wrapped = "\n" + \
@@ -432,7 +425,6 @@ class CppRequest(object):
              + default_args \
              + wrapped \
              + tail
-             # + self.make_accessors()
 
     ########## VOID REQUEST  ##########
 
@@ -449,7 +441,6 @@ class CppRequest(object):
                     % (self.name,
                        self.comma() + protos,
                        initializer,
-                       # self.c_name(regular), self.comma() + calls)
                        self.comma() + calls)
 
         ############ def methods(...) ############
@@ -505,10 +496,6 @@ class CppRequest(object):
             unchecked_close = " };"
             unchecked_comment = "unchecked::"
 
-        # extension = ""
-        # if regular:
-        #     extension = if self.namespace.is_ext else "void",
-
         head = _templates['reply_request_head'] \
                 % (namespace, unchecked_open,
                    self.name,
@@ -542,13 +529,6 @@ class CppRequest(object):
             default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
 
-        # sys.stderr.write("REPLY:\n%s\n\n" % head \
-        #      + default \
-        #      + default_args \
-        #      + wrapped \
-        #      + self.make_accessors() \
-        #      + tail)
-
         return head \
              + default \
              + default_args \
@@ -557,28 +537,5 @@ class CppRequest(object):
              + tail
 
     ########## REPLY_REQUEST ##########
-
-# template<typename Connection = xcb_connection_t * const,
-#          typename ... ErrorHandlers>
-# class get_window_attributes_reply
-#   : public xpp::generic::reply<Connection,
-#                                xcb_get_window_attributes_cookie_t,
-#                                SIGNATURE(xcb_get_window_attributes_reply),
-#                                ErrorHandlers ...>
-# {
-#   public:
-#     typedef xpp::generic::reply<Connection,
-#                                 xcb_get_window_attributes_cookie_t,
-#                                 SIGNATURE(xcb_get_window_attributes_reply),
-#                                 ErrorHandlers ...>
-#                                   base;
-#     using base::base;
-# 
-#     xcb_colormap_t
-#     colormap(void) const
-#     {
-#       return this->m_reply->colormap;
-#     }
-# };
 
 ########## REQUESTS  ##########
