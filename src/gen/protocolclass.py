@@ -68,10 +68,10 @@ class ProtocolClass(object):
             typedef = ""
 
         return _templates['protocol_class'] \
-            % (ns, # namespace %s {
-               typedef,
-               methods,
-               ns) # \
+            % (typedef,
+               methods)
+
+            # \
             # + "\n\n" \
             # + event_dispatcher_class(self.namespace, self.events) \
             # + "\n\n" \

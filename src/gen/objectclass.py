@@ -55,10 +55,8 @@ class %s
 
 %s
 }; // class %s
-""" % (ns, # namespace %s {
-       name,   # class %s
+""" % (name,   # class %s
        c_name, # public xpp::xcb::type<const %s &>
        name, # virtual ~%s(void)
        methods,
-       name, # }; // class %s
-       ns) # }; // namespace %s
+       name) # }; // class %s
