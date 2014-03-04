@@ -140,22 +140,6 @@ class CppCookie(object):
     def iterator_initializers(self):
         return self.parameter_list.iterator_initializers()
 
-    def methods(self, protos, calls, template="", initializer=[]):
-        inits = "" if len(initializer) > 0 else "\n"
-        for i in initializer:
-            inits += "\n"
-            for line in i.split('\n'):
-                inits += "      " + line + "\n"
-
-        if self.is_void: return_value = "xcb_void_cookie_t"
-        else: return_value = "%s_cookie_t" % self.c_name
-
-        return _cookie_class_static_ctor(template,
-                                         return_value,
-                                         self.comma() + protos,
-                                         self.comma() + calls,
-                                         inits)
-
     def void_functions(self, protos, calls, template="", initializer=[]):
         inits = "" if len(initializer) > 0 else "\n"
         for i in initializer:
