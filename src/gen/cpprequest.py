@@ -1,12 +1,173 @@
 # vim: set ts=4 sws=4 sw=4:
 
-from utils import *
+# from utils import *
+from utils import _n, _ext, _n_item, get_namespace
 from parameter import *
 from resource_classes import _resource_classes
+from cppreply import CppReply
+from cppcookie import CppCookie
 
 _templates = {}
 
-_templates['inline_class'] = \
+'''\
+template<typename ... Parameter>
+checked::cookie::%s
+%s_checked(Parameter ... parameter)
+{
+  return checked::cookie::%s(parameter ...);
+}
+
+template<typename ... Parameter>
+unchecked::cookie::%s
+%s(Parameter ... parameter)
+{
+  return unchecked::cookie::%s(parameter ...);
+}
+'''
+
+_templates['void_request_function'] = \
+'''\
+template<typename Connection, typename ... Parameter>
+void
+%s_checked(Connection && c, Parameter && ... parameter)
+{
+  xpp::generic::check(std::forward<Connection>(c),
+                      xcb_%s_checked(std::forward<Connection>(c),
+                                     std::forward<Parameter>(parameter) ...));
+}
+
+template<typename ... Parameter>
+void
+%s(Parameter && ... parameter)
+{
+  xcb_%s(std::forward<Parameter>(parameter) ...);
+}
+'''
+
+def _void_request_function(name):
+    return _templates['void_request_function'] % \
+            ( name
+            , name
+            , name
+            , name
+            )
+
+
+'''
+template<typename ... Parameter>
+checked::reply::%s
+%s(xcb_connection_t * const c, Parameter ... parameter)
+{
+  return checked::reply::%s(c, checked::cookie::%s(c, parameter ...));
+}
+
+template<typename ... Parameter>
+unchecked::reply::%s
+%s_unchecked(xcb_connection_t * const c, Parameter ... parameter)
+{
+  return unchecked::reply::%s(c, unchecked::cookie::%s(c, parameter ...));
+}
+'''
+
+
+_templates['reply_request_function'] = \
+'''\
+template<typename Connection, typename ... Parameter>
+reply::%s<Connection, xpp::generic::checked_tag>
+%s(Connection && c, Parameter && ... parameter)
+{
+  return reply::%s<Connection, xpp::generic::checked_tag>(
+      std::forward<Connection>(c), std::forward<Parameter>(parameter) ...);
+}
+
+template<typename Connection, typename ... Parameter>
+reply::%s<Connection, xpp::generic::unchecked_tag>
+%s_unchecked(Connection && c, Parameter && ... parameter)
+{
+  return reply::%s<Connection, xpp::generic::unchecked_tag>(
+      std::forward<Connection>(c), std::forward<Parameter>(parameter) ...);
+}
+'''
+
+def _reply_request_function(name):
+    return _templates['reply_request_function'] % \
+            ( name
+            , name
+            , name
+            , name
+            , name
+            , name)
+
+_templates['inline_reply_class'] = \
+'''\
+    template<typename ... Parameter>
+    reply::%s<Connection, xpp::generic::checked_tag>
+    %s(Parameter && ... parameter)
+    {
+      return xpp::%s::%s(
+          static_cast<connection &>(*this).get(),
+          %s\
+          std::forward<Parameter>(parameter) ...);
+    }
+
+    template<typename ... Parameter>
+    reply::%s<Connection, xpp::generic::unchecked_tag>
+    %s_unchecked(Parameter && ... parameter)
+    {
+      return xpp::%s::%s_unchecked(
+          static_cast<connection &>(*this).get(),
+          %s\
+          std::forward<Parameter>(parameter) ...);
+    }
+'''
+
+def _inline_reply_class(request_name, method_name, member, ns):
+    return _templates['inline_reply_class'] % \
+            ( request_name
+            , method_name
+            , ns
+            , request_name
+            , member
+            , request_name
+            , method_name
+            , ns
+            , request_name
+            , member
+            )
+
+_templates['inline_void_class'] = \
+'''\
+    template<typename ... Parameter>
+    void
+    %s_checked(Parameter && ... parameter)
+    {
+      xpp::%s::%s_checked(static_cast<connection &>(*this).get(),
+                          %s\
+                          std::forward<Parameter>(parameter) ...);
+    }
+
+    template<typename ... Parameter>
+    void
+    %s(Parameter && ... parameter)
+    {
+      xpp::%s::%s(static_cast<connection &>(*this).get(),
+                  %s\
+                  std::forward<Parameter>(parameter) ...);
+    }
+'''
+
+def _inline_void_class(request_name, method_name, member, ns):
+    return _templates['inline_void_class'] % \
+            ( method_name
+            , ns
+            , request_name
+            , member
+            , method_name
+            , ns
+            , request_name
+            , member
+            )
+
 """\
     %s
     %s(%s) const
@@ -19,27 +180,31 @@ _templates['void_constructor'] = \
 """\
     %s(xcb_connection_t * c%s)
     {%s
-      %s(c%s);
+      request::operator()(c%s);
     }
 """
 
 _templates['void_operator'] = \
 """\
     void
-    operator()(xcb_connection_t * c%s)
+    operator()(xcb_connection_t * c%s) const
     {%s
-      %s(c%s);
+      request::operator()(c%s);
     }
 """
 
 _templates['void_request_head'] = \
 """\
-namespace request {%s namespace %s {
+namespace %s {%s namespace request {
 
-class %s {
+class %s
+  : public xpp::generic::%s::request<
+        %s\
+        FUNCTION_SIGNATURE(%s)>
+{
   public:
-    %s(void) {}
-
+    %s(void)
+    {}
 """
 
 _templates['void_request_tail'] = \
@@ -52,20 +217,22 @@ _templates['void_request_tail'] = \
 _templates['reply_request'] = \
 """\
     %s(xcb_connection_t * c%s)
-      : request(c), m_c(c)
+      // : request(c), m_c(c)
+      : m_c(c)
     {%s
-      request::prepare(&%s%s);
+      request::prepare(c%s);
     }
 """
 
 _templates['reply_request_head'] = \
 """\
-namespace request {%s namespace %s {
+namespace %s {%s namespace request {
 
 class %s
-  : public generic::request<%s_cookie_t,
-                            %s_reply_t,
-                            &%s_reply>
+  : public xpp::generic::%s::request<
+        %s\
+        FUNCTION_SIGNATURE(%s_reply),
+        FUNCTION_SIGNATURE(%s)>
 {
   public:
 """
@@ -73,6 +240,13 @@ class %s
 _templates['reply_request_tail'] = \
 """\
 %s\
+
+  protected:
+    operator xcb_connection_t * const(void) const
+    {
+      return m_c;
+    }
+
   private:
     xcb_connection_t * m_c;
 }; // class %s
@@ -111,6 +285,7 @@ class CppRequest(object):
     def __init__(self, request, name, is_void, namespace, reply):
         self.request = request
         self.name = name
+        self.request_name = _ext(_n_item(self.request.name[-1]))
         self.is_void = is_void
         self.namespace = namespace
         self.reply = reply
@@ -127,52 +302,103 @@ class CppRequest(object):
         return "  class " + self.name + ";"
 
     def make_class(self):
+        # sys.stderr.write("\nnamespace xpp { namespace %s {\n\n" % get_namespace(self.namespace))
+
+        cppcookie = CppCookie(self.namespace, self.is_void, self.request.name, self.reply, self.parameter_list)
+        # sys.stderr.write("// COOKIE\n")
+        # sys.stderr.write("%s\n" % cppcookie.make())
+
         if self.is_void:
-            return self.void_request(True) + "\n\n" + self.void_request(False)
+            void_functions = cppcookie.make_void_functions()
+            if len(void_functions) > 0:
+                # sys.stderr.write("\n%s\n" % void_functions)
+                return void_functions
+            else:
+                # sys.stderr.write("%s\n" % _void_request_function(self.request_name))
+                return _void_request_function(self.request_name)
+
+            # sys.stderr.write("}; }; // namespace xpp::%s\n\n" % get_namespace(self.namespace))
+            # return self.void_request(True) + "\n\n" + self.void_request(False)
+
         else:
-            return self.reply_request(True) + "\n\n" + self.reply_request(False)
+            cppreply = CppReply(self.namespace, self.request.name, cppcookie, self.reply, self.accessors, self.parameter_list)
+            # sys.stderr.write("// REPLY\n")
+
+            return cppreply.make() + "\n\n" + _reply_request_function(self.request_name)
+
+            # sys.stderr.write("\n%s\n\n" % cppreply.make())
+            # sys.stderr.write("%s\n" % _reply_request_function(self.request_name))
+
+            # sys.stderr.write("}; }; // namespace xpp::%s\n\n" % get_namespace(self.namespace))
+            # return self.reply_request(True) + "\n\n" + self.reply_request(False)
 
     def make_object_class_inline(self, is_connection, class_name=""):
-        appendix = ("checked" if self.is_void else "unchecked")
+        # connection = "static_cast<connection &>(*this).get(), "
+        # member = "" if is_connection else "static_cast<xpp::xcb::type<const %s &>>(*this),\n" % self.c_name()
 
-        # "%s": ::{un,}checked
-        request_name = "xpp::request::" + "%s" + get_namespace(self.namespace) + "::"
-        return_type = self.iterator_template(indent="")
-        return_type += "virtual\n" if return_type == "" else ""
-        return_type += "    "
+        # if self.namespace.is_ext:
+        #     c_member_name = "xcb_%s_%s_t" % (get_namespace(self.namespace), class_name)
+        # else:
+        #     c_member_name = "xcb_%s_t" % class_name
+
+        member = ""
+        method_name = self.name
+        if not is_connection:
+            # member = "static_cast<const %s &>(*this),\n" % c_member_name
+            member = "*this,\n"
+            method_name = replace_class(method_name, class_name)
 
         if self.is_void:
-            return_type += "void"
+            return _inline_void_class(self.request_name, method_name, member, get_namespace(self.namespace))
         else:
-            return_type += request_name + self.name
+            return _inline_reply_class(self.request_name, method_name, member, get_namespace(self.namespace))
 
-        method = self.name
-        if not is_connection:
-            method = replace_class(method, class_name)
+    # '''
+    #     def make_object_class_inline(self, is_connection, class_name=""):
+    #         checked_appendix = ("checked" if self.is_void else "unchecked")
+    #         unchecked_appendix = ("unchecked" if self.is_void else "checked")
 
-        calls = self.iterator_2nd_lvl_calls(False)
-        proto_params = self.iterator_protos(True, True)
+    #         # "%s": ::{un,}checked
+    #         request_name = "xpp::" + get_namespace(self.namespace) + "::%s" + "request::"
+    #         # request_name = "xpp::request::" + "%s" + get_namespace(self.namespace) + "::"
+    #         return_type = self.iterator_template(indent="")
+    #         return_type += "virtual\n" if return_type == "" else ""
+    #         return_type += "    "
 
-        call_params = ["*this"]
-        if not is_connection: call_params += ["*this"]
+    #         if self.is_void:
+    #             return_type += "void"
+    #         else:
+    #             return_type += request_name + self.name
 
-        if len(calls) > 0: call_params += [calls]
+    #         method = self.name
+    #         if not is_connection:
+    #             method = replace_class(method, class_name)
 
-        call = ("" if self.is_void else "return ") \
-             + request_name + self.name \
-             + ("()" if self.is_void else "") \
-             + "(" + ", ".join(call_params) + ");"
+    #         calls = self.iterator_2nd_lvl_calls(False)
+    #         proto_params = self.iterator_protos(True, True)
 
-        return \
-            (_templates['inline_class'] \
-                % (return_type if self.is_void else return_type % (appendix + "::"),
-                   method + "_" + appendix, proto_params,
-                   call % (appendix + "::"))) \
-            + "\n\n" + \
-            (_templates['inline_class'] \
-                % (return_type if self.is_void else return_type % "",
-                   method, proto_params,
-                   call % ""))
+    #         # call_params = ["*this"]
+    #         call_params = ["static_cast<xcb_connection_t * const>(*this)"]
+    #         if not is_connection: call_params += ["*this"]
+
+    #         if len(calls) > 0: call_params += [calls]
+
+    #         call = ("" if self.is_void else "return ") \
+    #              + request_name + self.name \
+    #              + ("()" if self.is_void else "") \
+    #              + "(" + ", ".join(call_params) + ");"
+
+    #         return \
+    #             (_templates['inline_class'] \
+    #                 % (return_type if self.is_void else return_type % (checked_appendix + "::"),
+    #                    method + "_" + checked_appendix, proto_params,
+    #                    call % (checked_appendix + "::"))) \
+    #             + "\n\n" + \
+    #             (_templates['inline_class'] \
+    #                 % (return_type if self.is_void else return_type % (unchecked_appendix + "::"),
+    #                    method, proto_params,
+    #                    call % (unchecked_appendix + "::")))
+    # '''
 
     def add(self, param):
         self.parameter_list.add(param)
@@ -242,19 +468,24 @@ class CppRequest(object):
     def void_request(self, regular):
         ############ def methods(...) ############
         def methods(protos, calls, template="", initializer=[]):
+            # if len(initializer) > 0:
             initializer = "\n      ".join([""] + initializer)
 
             ctor = _templates['void_constructor'] \
                 % (self.name, self.comma() + protos,
                    initializer,
-                   self.c_name(regular), self.comma() + calls)
+                   self.comma() + calls)
 
             operator = _templates['void_operator'] \
                 % (self.comma() + protos,
                    initializer,
-                   self.c_name(regular), self.comma() + calls)
+                   self.comma() + calls)
 
             return template + ctor + "\n" + template + operator
+
+            # else:
+            #     return ""
+
         ############ def methods(...) ############
 
         namespace = get_namespace(self.namespace)
@@ -262,21 +493,39 @@ class CppRequest(object):
         checked_open = ""
         checked_close = ""
         checked_comment = ""
+        extension = ""
         if not regular:
             checked_open = " namespace checked {"
             checked_close = " };"
             checked_comment = "checked::"
+            extension = (namespace if self.namespace.is_ext else "void") + ",\n"
+
+        else:
+            checked_open = " namespace unchecked {"
+            checked_close = " };"
+            checked_comment = "unchecked::"
 
         head = _templates['void_request_head'] \
-            % (checked_open, namespace, self.name, self.name)
+            % (namespace, checked_open,
+               self.name,
+               "checked" if not regular else "unchecked",
+               extension,
+               self.c_name(regular),
+               self.name)
 
         tail = _templates['void_request_tail'] \
-            % (self.name, checked_close, checked_comment, namespace)
+            % (self.name,
+               checked_close,
+               checked_comment,
+               namespace)
 
         default = methods(self.protos(False, False), self.calls(False))
 
         if (self.parameter_list.has_defaults):
             default = methods(self.protos(True, True), self.calls(False))
+
+        # if len(default) == 0:
+        #     default = "    using request::request;\n"
 
         wrapped = ""
         if self.parameter_list.want_wrap:
@@ -290,12 +539,15 @@ class CppRequest(object):
             default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
 
+        if len(self.accessors) > 0:
+            sys.stderr.write("FOOBAR!!!\n")
+
         return head \
              + default \
              + default_args \
              + wrapped \
-             + self.make_accessors() \
              + tail
+             # + self.make_accessors()
 
     ########## VOID REQUEST  ##########
 
@@ -312,7 +564,8 @@ class CppRequest(object):
                     % (self.name,
                        self.comma() + protos,
                        initializer,
-                       self.c_name(regular), self.comma() + calls)
+                       # self.c_name(regular), self.comma() + calls)
+                       self.comma() + calls)
 
         ############ def methods(...) ############
 
@@ -355,17 +608,29 @@ class CppRequest(object):
         unchecked_open = ""
         unchecked_close = ""
         unchecked_comment = ""
-        if not regular:
+        extension = ""
+        if regular:
+            unchecked_open = " namespace checked {"
+            unchecked_close = " };"
+            unchecked_comment = "checked::"
+            extension = (namespace if self.namespace.is_ext else "void") + ",\n"
+
+        else:
             unchecked_open = " namespace unchecked {"
             unchecked_close = " };"
             unchecked_comment = "unchecked::"
 
+        # extension = ""
+        # if regular:
+        #     extension = if self.namespace.is_ext else "void",
+
         head = _templates['reply_request_head'] \
-                % (unchecked_open, namespace,
+                % (namespace, unchecked_open,
                    self.name,
+                   "checked" if regular else "unchecked",
+                   extension,
                    self.c_name(),
-                   self.c_name(),
-                   self.c_name())
+                   self.c_name(regular))
 
         tail = _templates['reply_request_tail'] \
                 % (member_accessors,
@@ -392,6 +657,13 @@ class CppRequest(object):
             default_args = "\n" + \
                 methods(self.protos(True, True), self.calls(False))
 
+        # sys.stderr.write("REPLY:\n%s\n\n" % head \
+        #      + default \
+        #      + default_args \
+        #      + wrapped \
+        #      + self.make_accessors() \
+        #      + tail)
+
         return head \
              + default \
              + default_args \
@@ -400,5 +672,28 @@ class CppRequest(object):
              + tail
 
     ########## REPLY_REQUEST ##########
+
+# template<typename Connection = xcb_connection_t * const,
+#          typename ... ErrorHandlers>
+# class get_window_attributes_reply
+#   : public xpp::generic::reply<Connection,
+#                                xcb_get_window_attributes_cookie_t,
+#                                SIGNATURE(xcb_get_window_attributes_reply),
+#                                ErrorHandlers ...>
+# {
+#   public:
+#     typedef xpp::generic::reply<Connection,
+#                                 xcb_get_window_attributes_cookie_t,
+#                                 SIGNATURE(xcb_get_window_attributes_reply),
+#                                 ErrorHandlers ...>
+#                                   base;
+#     using base::base;
+# 
+#     xcb_colormap_t
+#     colormap(void) const
+#     {
+#       return this->m_reply->colormap;
+#     }
+# };
 
 ########## REQUESTS  ##########

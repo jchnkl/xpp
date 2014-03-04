@@ -1,5 +1,28 @@
 # vim: set ts=4 sws=4 sw=4:
 
+import sys # stderr
+
+_templates = {}
+
+_templates['initializer'] = \
+'''\
+typedef typename value_type<%s, ! std::is_pointer<%s>::value>::type
+          vector_type;
+std::vector<vector_type> %s =
+  { value_iterator<%s>(%s), value_iterator<%s>(%s) };
+'''
+
+def _initializer(iter_type, c_name, iter_begin, iter_end):
+    return _templates['initializer'] % \
+            ( iter_type
+            , iter_type
+            , c_name
+            , iter_type
+            , iter_begin
+            , iter_type
+            , iter_end
+            )
+
 class ParameterList(object):
     def __init__(self):
         self.want_wrap = False
@@ -55,11 +78,26 @@ class ParameterList(object):
         self.templates = []
         self.iterator_templates = []
 
+        lenfields = {}
         # if a parameter is removed, take reduced parameter size into account
         adjust = 0
         for index, param in enumerate(self.parameter):
             prev = index - adjust - 1
 
+            if param.field.type.is_list:
+                name = param.field.type.expr.lenfield_name
+                if lenfields.has_key(name):
+                    lenfields[name].append(param.c_name)
+                else:
+                    lenfields[name] = [ param.c_name ]
+
+                # sys.stderr.write("list: %s %s\n\n"
+                #         % ( param.field.type.expr.lenfield_type
+                #           , param.field.type.expr.lenfield_name
+                #           ))
+
+            # SetGamma: takes 1 size, but 3 value lists
+            # if param.field.type.is_list and prev >= 0:
             if (param.is_const and param.is_pointer
                     and prev >= 0
                     and self.parameter[prev].c_name == param.c_name + "_len"):
@@ -145,9 +183,22 @@ class ParameterList(object):
                     self.iter_2nd_lvl_calls.append(Parameter(None, \
                             c_name=iter_end))
 
-                    self.initializer.append( \
-                            "std::vector<%s> %s = { %s, %s };" \
-                            % (param_type, param.c_name, iter_begin, iter_end))
+#                     vector_type = \
+#                     '''\
+# typename value_type<%s,
+#                   ! std::is_pointer<%s>::value
+#                  >::type\
+#                     ''' % (iter_type, iter_type)
+
+                    # self.initializer.append( \
+                    #         "std::vector<%s> %s = { value_iterator<%s>(%s), \
+                    #         value_iterator<%s>(%s) };" \
+                    #         % (vector_type, param.c_name,
+                    #             iter_type, iter_begin,
+                    #             iter_type, iter_end))
+
+                    self.initializer.append(
+                            _initializer(iter_type, param.c_name, iter_begin, iter_end))
 
             else:
                 self.wrap_calls.append(param)
@@ -155,6 +206,13 @@ class ParameterList(object):
                 self.iter_calls.append(param)
                 self.iter_2nd_lvl_calls.append(param)
                 self.iter_protos.append(param)
+
+        # end: for index, param in enumerate(self.parameter):
+
+        for k, v in lenfields.items():
+            if len(v) > 1:
+                sys.stderr.write("list: %s, %s\n" % (k, v))
+
 
     def wrapped_calls(self, sort):
         return self.calls(sort, params=self.wrap_calls)

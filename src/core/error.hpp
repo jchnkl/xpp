@@ -1,6 +1,7 @@
 #ifndef XPP_ERROR_HPP
 #define XPP_ERROR_HPP
 
+#include <iostream> // shared_ptr
 #include <memory> // shared_ptr
 #include <xcb/xcb.h> // xcb_generic_error_t
 
@@ -14,9 +15,16 @@ class error : public std::runtime_error {
       , m_error(reinterpret_cast<Error *>(error))
     {}
 
+    error(std::shared_ptr<xcb_generic_error_t> error)
+      : runtime_error(get_error_description(error.get()))
+      , m_error(error)
+    {}
+
     virtual
     ~error(void)
-    {}
+    {
+      std::cerr << __PRETTY_FUNCTION__ << " " << m_error.use_count() << std::endl;
+    }
 
     virtual
     operator Error &(void) const

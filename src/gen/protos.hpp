@@ -27,7 +27,7 @@
 #include "xevie.hpp"
 #include "glx.hpp"
 #include "xv.hpp"
-#include "xselinux.hpp"
+// #include "xselinux.hpp"
 #include "xf86dri.hpp"
 #include "composite.hpp"
 

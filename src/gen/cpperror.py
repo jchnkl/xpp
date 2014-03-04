@@ -5,6 +5,122 @@ from utils import \
         _ext, \
         _reserved_keywords
 
+_templates = {}
+
+_templates['error_dispatcher_class'] = \
+'''\
+namespace xpp { namespace %s { namespace error {
+
+class dispatcher {
+  public:
+%s\
+%s\
+
+    void
+    operator()(xcb_generic_error_t * error) const
+    {
+%s
+    }
+
+%s\
+}; // class dispatcher
+
+}; }; // namespace xpp::%s::error
+'''
+
+_templates['error_dispatcher_class_impl'] = \
+'''\
+namespace xpp { namespace %s { namespace error {
+
+void
+dispatcher::operator()(xcb_generic_error_t * error) const
+{
+%s
+}
+
+}; }; // namespace xpp::%s::error
+'''
+
+def error_dispatcher_class(namespace, cpperrors):
+    ns = get_namespace(namespace)
+
+    typedef = []
+    ctors = []
+    members = []
+    opcode_switch = "error->error_code & ~0x80"
+
+    # >>> if begin <<<
+    if namespace.is_ext:
+        opcode_switch = "(error->error_code & ~0x80) - m_first_error"
+        '''
+        typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
+        '''
+
+        members += \
+            [ "private:"
+            , "  const uint8_t m_first_error;"
+            ]
+
+        ctor = "dispatcher"
+        ctors += \
+            [ "%s(uint8_t first_error)" % ctor
+            , "  : m_first_error(first_error)"
+            , "{}"
+            , ""
+            , "%s(const xpp::%s::extension & extension)" % (ctor, ns)
+            , "  : %s(extension->first_error)" % ctor
+            , "{}"
+            ]
+
+    # >>> if end <<<
+
+    if len(typedef) > 0:
+        typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n"
+    else:
+        typedef = ""
+
+    if len(ctors) > 0:
+        ctors = "\n".join(map(lambda s: "    " + s, ctors)) + "\n"
+    else:
+        ctors = ""
+
+    if len(members) > 0:
+        members = "\n".join(map(lambda s: "  " + s, members)) + "\n"
+    else:
+        members = ""
+
+    if namespace.is_ext:
+        return _templates['error_dispatcher_class'] \
+            % (ns, # class %s {
+               typedef,
+               ctors,
+               error_switch_cases(cpperrors, opcode_switch, "error"),
+               members,
+               ns) # }; // class %s
+
+    else:
+        return _templates['error_dispatcher_class_impl'] \
+            % (ns, # namespace %s {
+               error_switch_cases(cpperrors, opcode_switch, "error"),
+               ns) # }; // class %s
+
+def error_switch_cases(cpperrors, arg_switch, arg_error):
+    cases = ""
+    errors = cpperrors
+    templ = [ "        case %s: // %s"
+            , "          throw %s" + "(%s);" % arg_error
+            , ""
+            , ""
+            ]
+
+    cases += "\n      switch (%s) {\n\n" % arg_switch
+    for e in errors:
+        cases += "\n".join(templ) % (e.opcode_name, e.opcode, e.scoped_name())
+    cases += "      };\n"
+
+    return cases
+
+
 class CppError(object):
     def __init__(self, error, namespace, name, c_name, opcode, opcode_name):
         self.error = error
@@ -33,7 +149,6 @@ class CppError(object):
         ns = get_namespace(self.namespace)
         return "xpp::" + ns + "::error::" + self.get_name()
 
-
     def make_class(self):
         ns = get_namespace(self.namespace)
         typedef = []
@@ -46,7 +161,9 @@ class CppError(object):
             ]
 
         if self.namespace.is_ext:
-            typedef = [ "typedef xpp::extension::%s extension;" % ns ]
+            '''
+            typedef = [ "typedef xpp::%s::extension extension;" % ns ]
+            '''
             opcode_accessor += \
                 [ ""
                 , "static uint8_t opcode(uint8_t first_error)"
@@ -54,14 +171,17 @@ class CppError(object):
                 , "  return first_error + opcode();"
                 , "}"
                 , ""
-                , "static uint8_t opcode(const xpp::extension::%s & extension)" % ns
+                , "static uint8_t opcode(const xpp::%s::extension & extension)" % ns
                 , "{"
                 , "  return opcode(extension->first_error);"
                 , "}"
                 ]
 
         else:
+            pass
+            '''
             typedef = [ "typedef void extension;" ]
+            '''
 
         if len(opcode_accessor) > 0:
             opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"

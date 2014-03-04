@@ -211,9 +211,14 @@ def c_open(self):
     _h_setlevel(0)
     _c_setlevel(0)
 
+    # sys.stderr.write("#include <vector>\n")
+    # sys.stderr.write("#include \"../request.hpp\"\n")
+    # sys.stderr.write("#include \"../iterator.hpp\"\n")
+    # sys.stderr.write("#include \"../core/value_iterator.hpp\"\n")
+
     # _h('#ifndef EXPORT_%s_MIXINS', get_namespace(_ns).upper())
-    _h('#ifndef XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
-    _h('#define XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
+    _h('#ifndef XPP_%s_HPP', get_namespace(_ns).upper())
+    _h('#define XPP_%s_HPP', get_namespace(_ns).upper())
     _h('')
     _h('#include <string>')
     _h('#include <vector>')
@@ -224,17 +229,20 @@ def c_open(self):
     _h('')
     # _h('#include "../core/core.hpp"')
     _h('#include "../request.hpp"')
+    _h('#include "../factory.hpp"')
     _h('#include "../iterator.hpp"')
     _h('#include "../core/event.hpp"')
     _h('#include "../core/error.hpp"')
     _h('#include "../core/extension.hpp"')
     _h('#include "../core/value_iterator.hpp"')
-    _h('#include "../core/generic/resource.hpp"')
+    # if not _ns.is_ext:
+    #     _h('#include "xproto-stub.hpp"')
+    # _h('#include "../core/generic/resource.hpp"')
     _h('')
-    _h('namespace xpp {')
+    _h('namespace xpp { namespace %s {' % get_namespace(_ns))
     # _h('class window;')
     # _h('namespace %s {', get_namespace(_ns))
-    _h('')
+    # _h('')
 
 def c_close(self):
     '''
@@ -257,23 +265,26 @@ def c_close(self):
     _h('')
 
     for name in _cpp_request_names:
-        _h("%s\n", _cpp_request_objects[name].make_class())
+        _h("%s", _cpp_request_objects[name].make_class())
 
     _h('')
 
     for key in _object_classes:
         _h(_object_classes[key].make_inline())
+        # sys.stderr.write(_object_classes[key].make_inline())
 
 
 
     _h('')
     _h(_protocol_class.make_proto())
+    # sys.stderr.write(_protocol_class.make_proto())
 
     _h('')
-    _h('}; // namespace xpp')
+    # _h('}; // namespace xpp')
+    _h("}; }; // namespace xpp::%s" % get_namespace(_ns))
 
     _h('')
-    _h('#endif // XPP_%s_PROTOCOL_HPP', get_namespace(_ns).upper())
+    _h('#endif // XPP_%s_HPP', get_namespace(_ns).upper())
 
     # Write header file
     hfile = sys.stdout

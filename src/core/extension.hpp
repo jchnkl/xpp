@@ -1,7 +1,7 @@
 #ifndef XPP_EXTENSION_HPP
 #define XPP_EXTENSION_HPP
 
-#include <iostream>
+// #include <iostream>
 #include <xcb/xcb.h>
 #include "type.hpp"
 

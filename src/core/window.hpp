@@ -2,10 +2,14 @@
 #define XPP_WINDOW_HPP
 
 #include <map>
-// #include <iostream>
+#include <vector>
 
-#include "../iterator.hpp"
-#include "../gen/protos.hpp"
+// #include "../iterator.hpp"
+// #include "../request.hpp"
+// #include "../iterable.hpp"
+// #include "../gen/xproto-stub.hpp"
+// #include "../gen/protos.hpp"
+#include "../gen/xproto.hpp"
 
 namespace xpp {
 
@@ -25,11 +29,25 @@ namespace xpp {
 // class output {};
 // class provider {};
 
-class window : virtual public xpp::x::window
-             , virtual public xpp::x::drawable
+template<typename Connection>
+class window : virtual public xpp::x::window<Connection>
+             , virtual public xpp::x::drawable<Connection>
              , virtual public xpp::iterable<void>
              , virtual public xpp::iterable<xcb_window_t>
+             , virtual protected xpp::generic::connection<Connection>
 {
+  protected:
+
+    // virtual const Connection get(void) const
+    // {
+    //   return m_c;
+    // }
+
+    virtual Connection get(void)
+    {
+      return m_c;
+    }
+
   public:
 
     // window(void)
@@ -39,29 +57,35 @@ class window : virtual public xpp::x::window
       return sizeof(xcb_window_t);
     }
 
-    window(xcb_connection_t * c)
-      : m_c(c)
+    window(Connection && c)
+      : m_c(std::forward<Connection>(c))
     {}
 
-    window(xcb_connection_t * c, const xcb_window_t & window)
-      : m_c(c)
+    window(Connection && c, const xcb_window_t & window)
+      : m_c(std::forward<Connection>(c))
       , m_window(std::make_shared<xcb_window_t>(window))
     {}
 
-    window(xcb_connection_t * c,
+    window(const xcb_window_t & window, Connection && c)
+      : xpp::window<Connection>(c, window)
+      // : m_c(std::forward<Connection>(c))
+      // , m_window(std::make_shared<xcb_window_t>(window))
+    {}
+
+    window(Connection && c,
            uint8_t depth, xcb_window_t parent, int16_t x, int16_t y,
            uint16_t width, uint16_t height, uint16_t border_width,
            uint16_t _class, xcb_visualid_t visual,
            uint32_t value_mask, const uint32_t * value_list)
-      : m_c(c)
+      : m_c(std::forward<Connection>(c))
       , m_window(new xcb_window_t(xcb_generate_id(c)),
                                                 [&](xcb_window_t * window)
                                                 {
-                                                  destroy();
+                                                  xpp::x::destroy_window(m_c, *window);
                                                   delete window;
                                                 })
     {
-      xpp::request::x::create_window()(
+      xpp::x::create_window(
           m_c, depth, *m_window, parent, x, y,
           width, height, border_width, _class, visual, value_mask, value_list);
     }
@@ -101,12 +125,12 @@ class window : virtual public xpp::x::window
       m_window = std::make_shared<xcb_window_t>(window);
     }
 
-    virtual
-    void
-    operator=(xcb_connection_t * const c)
-    {
-      m_c = c;
-    }
+    // virtual
+    // void
+    // operator=(Connection && c)
+    // {
+    //   m_c = std::forward<Connection>(c);
+    // }
 
     // xpp::xcb::type<const xcb_window_t &>
     virtual
@@ -117,7 +141,7 @@ class window : virtual public xpp::x::window
 
     // xpp::xcb::type<xcb_connection_t * const>
     virtual
-    operator xcb_connection_t * const(void) const
+    operator Connection(void) const
     {
       return m_c;
     }
@@ -193,12 +217,13 @@ class window : virtual public xpp::x::window
       for (auto & item : m_values) {
         values.push_back(item.second);
       }
-      xpp::x::window::configure(m_mask, values.data());
+      xpp::x::window<Connection>::configure(m_mask, values.data());
+      // xpp::x::configure_window(m_c, *m_window, m_mask, values.data());
       return *this;
     }
 
   private:
-    xcb_connection_t * m_c;
+    Connection m_c;
     // reference counting for xcb_window_t object
     std::shared_ptr<xcb_window_t> m_window;
 
@@ -207,11 +232,11 @@ class window : virtual public xpp::x::window
 
 }; // class window
 
-std::ostream &
-operator<<(std::ostream & os, const xpp::window & window)
-{
-  return os << std::hex << "0x" << *window << std::dec;
-}
+// std::ostream &
+// operator<<(std::ostream & os, const xpp::window<Connection> & window)
+// {
+//   return os << std::hex << "0x" << *window << std::dec;
+// }
 
 // template<typename Reply,
 //          typename Accessor,

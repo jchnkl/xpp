@@ -1,100 +1,190 @@
-#ifndef X_REQUEST_HPP
-#define X_REQUEST_HPP
+#ifndef X_REQUEST_HPP_NG
+#define X_REQUEST_HPP_NG
 
+#include <iostream> // std::ostream
+#include <array>
 #include <memory>
+#include <cstdlib>
 #include <xcb/xcb.h>
-#include "core/type.hpp"
-#include "core/extension.hpp"
+#include "signature.hpp"
+#include "core/generic/connection.hpp"
+// #include "core/type.hpp"
+// #include "gen/xproto-stub.hpp"
 
-namespace xpp { namespace extension {
-  class x;
-};};
+/*
+#define COOKIE_TEMPLATE \
+  typename Cookie, \
+  typename ... CookieParameter, \
+  Cookie(&CookieFunction)(CookieParameter ...)
+
+#define COOKIE_SIGNATURE \
+  xpp::generic::signature<Cookie(CookieParameter ...), CookieFunction>
+
+#define VOID_COOKIE_TEMPLATE \
+  typename ... CookieParameter, \
+  xcb_void_cookie_t(&CookieFunction)(CookieParameter ...)
+
+#define VOID_COOKIE_SIGNATURE \
+  xpp::generic::signature<xcb_void_cookie_t(CookieParameter ...), \
+                          CookieFunction>
+  */
+
+#define REPLY_TEMPLATE \
+  typename Reply, \
+  typename Cookie, \
+  Reply *(&ReplyFunction)(xcb_connection_t *, Cookie, xcb_generic_error_t **)
+
+#define REPLY_SIGNATURE \
+  xpp::generic::signature<Reply *(xcb_connection_t *, \
+                                  Cookie, \
+                                  xcb_generic_error_t **), \
+                          ReplyFunction>
+
+#define REPLY_COOKIE_TEMPLATE \
+  typename ... CookieParameter, \
+  Cookie(&CookieFunction)(CookieParameter ...)
+
+#define REPLY_COOKIE_SIGNATURE \
+  xpp::generic::signature<Cookie(CookieParameter ...), CookieFunction>
+
+// template<typename T>
+// struct is_callable {
+// private:
+//     typedef char(&yes)[1];
+//     typedef char(&no)[2];
+// 
+//     struct Dummy {};
+//     struct Fallback { void operator()(); };
+//     struct Derived : std::conditional<! std::is_fundamental<T>::value,
+//                                       T,
+//                                       Dummy>::type,
+//                      Fallback { };
+// 
+//     template<typename U, U> struct Check;
+// 
+//     template<typename>
+//     static yes test(...);
+// 
+//     template<typename C>
+//     static no test(Check<void (Fallback::*)(), &C::operator()>*);
+// 
+// public:
+//     static const bool value = sizeof(test<Derived>(0)) == sizeof(yes);
+// };
 
 namespace xpp { namespace generic {
 
-template<typename Extension>
-typename std::enable_if<! std::is_same<Extension, xpp::extension::x>::value, void>::type
-// check(const Extension & ext, const std::shared_ptr<xcb_generic_error_t> & e)
-check(const Extension & ext, xcb_generic_error_t * e)
+void
+check(xcb_connection_t * const c, const xcb_void_cookie_t & cookie)
 {
-  typedef typename Extension::error_dispatcher dispatcher;
-  dispatcher(ext->first_error)(e);
+  xcb_generic_error_t * error = xcb_request_check(c, cookie);
+  if (error) {
+    throw std::shared_ptr<xcb_generic_error_t>(error, std::free);
+  }
 }
 
-template<typename Extension>
-typename std::enable_if<std::is_same<Extension, xpp::extension::x>::value, void>::type
-// check(const Extension & ext, const std::shared_ptr<xcb_generic_error_t> & e)
-check(const Extension & ext, xcb_generic_error_t * e)
+template<typename ... Types>
+struct error_handler;
+
+template<typename Dispatcher>
+class error_handler<Dispatcher>
 {
-  typedef typename Extension::error_dispatcher dispatcher;
-  dispatcher()(e);
-}
+  public:
+    template<typename Connection>
+    error_handler(Connection && c)
+      : m_dispatcher(static_cast<const Dispatcher &>(std::forward<Connection>(c)))
+    {}
 
-  // namespace request { class generic { ...
-  // namespace x { namespace request { class map_window
-  // namespace x { class map_window
+    void
+    handle(const std::shared_ptr<xcb_generic_error_t> & error)
+    {
+      std::cerr << "ERROR_HANDLER handling error" << std::endl;
+      m_dispatcher(error);
+    }
 
-// template<typename Reply>
-// class reply {
-//   private:
-//     std::shared_ptr<Reply> m_reply;
+  protected:
+    Dispatcher m_dispatcher;
+};
+
+template<>
+class error_handler<void>
+{
+  public:
+    template<typename Connection>
+    error_handler(Connection && c)
+    {}
+
+    void
+    handle(const std::shared_ptr<xcb_generic_error_t> & error)
+    {
+      throw error;
+    }
+};
+
+template<typename Connection, typename Dispatcher>
+class error_handler<Connection, Dispatcher>
+  : public std::conditional<std::is_convertible<Connection, Dispatcher>::value,
+                            error_handler<Dispatcher>,
+                            error_handler<void>>::type
+{
+  public:
+    typedef typename std::conditional<
+                              std::is_convertible<Connection, Dispatcher>::value,
+                              error_handler<Dispatcher>,
+                              error_handler<void>>::type
+                                base;
+    using base::base;
+};
+
+// class error_handler {
+//   public:
+//     virtual void handle(std::shared_ptr<xcb_generic_error_t> & error) = 0;
 // };
 
-namespace generic {
+struct checked_tag {};
+struct unchecked_tag {};
 
-template<typename Connection,
-         typename ReplySignature, ReplySignature & RS,
-         typename CookieSignature, CookieSignature & CS>
-class wrapper;
+template<typename ... Types>
+class reply;
 
-template<typename Connection,
-         typename Reply,
-         typename ... ReplyParameter,
-         Reply(&ReplyFunction)(ReplyParameter ...),
-         typename Cookie,
-         typename ... CookieParameter,
-         Cookie(&CookieFunction)(CookieParameter ...)>
-class wrapper<Connection,
-              Reply(ReplyParameter ...), ReplyFunction,
-              Cookie(CookieParameter ...), CookieFunction>
+template<typename Connection, REPLY_TEMPLATE, REPLY_COOKIE_TEMPLATE, typename Derived, typename Check>
+class reply<Connection, REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE, Derived, Check>
 {
   public:
     template<typename ... Parameter>
-    wrapper(Connection c, Parameter ... parameter)
-      : m_c(c)
+    reply(Connection && c, Parameter && ... parameter)
+      : m_c(std::forward<Connection>(c))
+      , m_cookie(Derived::cookie(std::forward<Connection>(c),
+                 std::forward<Parameter>(parameter) ...))
+    {}
+
+    operator bool(void)
     {
-      prepare(parameter ...);
+      return m_reply.operator bool();
     }
 
-    virtual
-    const Reply &
-    operator*(void)
-    {
-      return *this->get();
-    }
-
-    virtual
-    const Reply * const
-    operator->(void)
-    {
-      return this->get().get();
-    }
-
-    virtual
-    std::shared_ptr<Reply>
+    const std::shared_ptr<Reply> &
     get(void)
     {
       if (! m_reply) {
-        m_reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, nullptr));
+        m_reply = get(Check());
       }
       return m_reply;
     }
 
+    template<typename ... Parameter>
+    static
+    Cookie
+    cookie(Parameter && ... parameter)
+    {
+      return CookieFunction(std::forward<Parameter>(parameter) ...);
+    }
+
     virtual
     void
-    reset(void)
+    handle(const std::shared_ptr<xcb_generic_error_t> & error)
     {
-      m_reply.reset();
+      throw error;
     }
 
   protected:
@@ -102,226 +192,127 @@ class wrapper<Connection,
     Cookie m_cookie;
     std::shared_ptr<Reply> m_reply;
 
-    wrapper(Connection c)
-      : m_c(c)
-    {}
-
-    virtual
-    operator Connection(void) const
+    std::shared_ptr<Reply>
+    get(checked_tag)
     {
-      return m_c;
+      xcb_generic_error_t * error = nullptr;
+      auto reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, &error),
+                                          std::free);
+      if (error) {
+        handle(std::shared_ptr<xcb_generic_error_t>(error, std::free));
+      }
+      return reply;
     }
+
+    std::shared_ptr<Reply>
+    get(unchecked_tag)
+    {
+      return std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, nullptr),
+                                    std::free);
+    }
+};
+
+// template<REPLY_TEMPLATE, REPLY_COOKIE_TEMPLATE, typename Check>
+// class reply<REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE, Check>
+//   : public reply<REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE,
+//                  reply<REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE, Check>,
+//                  Check>
+// {
+//   public:
+//     typedef reply<REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE, Check> self;
+//     typedef reply<REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE, self, Check> base;
+//     using base::base;
+// };
+
+}; }; // namespace xpp::generic
+
+/*
+namespace test {
+
+namespace reply {
+
+template<typename Connection, typename Check>
+class get_window_attributes
+  : public xpp::generic::reply<SIGNATURE(xcb_get_window_attributes_reply),
+                               SIGNATURE(xcb_get_window_attributes),
+                               get_window_attributes<Connection, Check>,
+                               Check>
+  , public xpp::generic::error_handler<Connection, xpp::x::error::dispatcher>
+{
+  public:
+    typedef xpp::generic::reply<SIGNATURE(xcb_get_window_attributes_reply),
+                                SIGNATURE(xcb_get_window_attributes),
+                                get_window_attributes<Connection, Check>,
+                                Check>
+                                  base;
+
+    typedef xpp::generic::error_handler<Connection, xpp::x::error::dispatcher>
+      error_handler;
 
     template<typename ... Parameter>
-    void
-    prepare(Parameter ... parameter)
-    {
-      m_cookie = CookieFunction(m_c, parameter ...);
-    }
-};
-
-};
-
-template<typename Connection,
-         typename ReplySignature, ReplySignature & RS,
-         typename CookieSignature, CookieSignature & CS>
-class wrapper;
-
-template<typename Reply,
-         typename ... ReplyParameter,
-         Reply(&ReplyFunction)(ReplyParameter ...),
-         typename Cookie,
-         typename ... CookieParameter,
-         Cookie(&CookieFunction)(CookieParameter ...)>
-class wrapper<xcb_connection_t,
-              Reply(ReplyParameter ...), ReplyFunction,
-              Cookie(CookieParameter ...), CookieFunction>
-  : public generic::wrapper<xcb_connection_t * const,
-                            Reply(ReplyParameter ...), ReplyFunction,
-                            Cookie(CookieParameter ...), CookieFunction>
-{
-  public:
-    typedef generic::wrapper<xcb_connection_t * const,
-                             Reply(ReplyParameter ...), ReplyFunction,
-                             Cookie(CookieParameter ...), CookieFunction>
-                               base;
-    using base::base;
-};
-
-template<typename Connection,
-         typename Reply,
-         typename ... ReplyParameter,
-         Reply(&ReplyFunction)(ReplyParameter ...),
-         typename Cookie,
-         typename ... CookieParameter,
-         Cookie(&CookieFunction)(CookieParameter ...)>
-class wrapper<Connection,
-              Reply(ReplyParameter ...), ReplyFunction,
-              Cookie(CookieParameter ...), CookieFunction>
-  : public generic::wrapper<const Connection &,
-                            Reply(ReplyParameter ...), ReplyFunction,
-                            Cookie(CookieParameter ...), CookieFunction>
-{
-  public:
-    typedef generic::wrapper<const Connection &,
-                             Reply(ReplyParameter ...), ReplyFunction,
-                             Cookie(CookieParameter ...), CookieFunction>
-                               base;
-    using base::base;
-
-    virtual
-    std::shared_ptr<Reply>
-    get(void)
-    {
-      if (! base::m_reply) {
-        // base::m_reply = std::shared_ptr<Reply>(
-            // ReplyFunction(base::m_c, base::m_cookie, nullptr));
-            Reply r = ReplyFunction(base::m_c, base::m_cookie, nullptr);
-      }
-      return base::m_reply;
-    }
-
-};
-
-struct xpp_connection {
-  typedef int extension;
-  operator xcb_connection_t *(void) const { return nullptr; }
-};
-
-class query_tree
-  : public wrapper<xcb_connection_t,
-                   decltype(xcb_query_tree_reply), xcb_query_tree_reply,
-                   decltype(xcb_query_tree), xcb_query_tree>
-{
-  public:
-    using wrapper::wrapper;
-};
-
-template<typename Connection>
-class query_tree_2
-  : public wrapper<Connection,
-                   decltype(xcb_query_tree_reply), xcb_query_tree_reply,
-                   decltype(xcb_query_tree), xcb_query_tree>
-{
-  typedef wrapper<Connection,
-                  decltype(xcb_query_tree_reply), xcb_query_tree_reply,
-                  decltype(xcb_query_tree), xcb_query_tree>
-                    base;
-  public:
-    using base::base;
-};
-
-void foo()
-{
-  xpp_connection c;
-  query_tree_2<xpp_connection> q(c, 0);
-}
-
-template<typename Cookie,
-         typename Reply,
-         Reply * (*ReplyFunction)(xcb_connection_t *, Cookie, xcb_generic_error_t **)>
-class request
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
-{
-  public:
-    template<typename ... CookieParameter>
-    request(xcb_connection_t * const c,
-            Cookie (*cookie_function)(xcb_connection_t *, CookieParameter ...),
-            CookieParameter ... cookie_parameter)
-      : m_c(c)
-    {
-      prepare(cookie_function, cookie_parameter ...);
-    }
-
-    virtual
-    operator xcb_connection_t * const(void) const
-    {
-      return m_c;
-    }
-
-    const Reply & operator*(void)
-    {
-      return *this->get();
-    }
-
-    const Reply * const operator->(void)
-    {
-      return this->get().get();
-    }
-
-    std::shared_ptr<Reply>
-    get(void)
-    {
-      if (! m_reply) {
-        m_reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, nullptr));
-        // xcb_generic_error_t * error ; // = m_error.get();
-        // m_reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, &error));
-        // m_error.reset(error);
-      }
-      return m_reply;
-    }
-
-    void reset(void)
-    {
-      m_reply.reset();
-    }
-
-    template<typename Extension>
-    void
-    check(const Extension & extension)
-    {
-      if (m_error) {
-        // xcb_generic_error_t * error = m_error.get();
-        // m_error.reset(static_cast<xcb_generic_error_t *>(nullptr));
-        // xpp::generic::check(extension, error);
-        xpp::generic::check(extension, m_error.get());
-        m_error.reset(static_cast<xcb_generic_error_t *>(nullptr));
-        std::cerr << "after check" << std::endl;
-        // m_error.reset(error);
-      }
-    }
-
-  protected:
-    xcb_connection_t * m_c;
-    Cookie m_cookie;
-    std::shared_ptr<Reply> m_reply;
-    std::shared_ptr<xcb_generic_error_t> m_error;
-
-    request(xcb_connection_t * const c)
-      : m_c(c)
+    get_window_attributes(Connection && c, Parameter && ... parameter)
+      : base(std::forward<Connection>(c), std::forward<Parameter>(parameter) ...)
+      , error_handler(std::forward<Connection>(c))
     {}
 
-    template<typename ... CookieParameter>
-    void
-    prepare(Cookie (*cookie_function)(xcb_connection_t *, CookieParameter ...),
-            CookieParameter ... cookie_parameter)
+    template<typename ... Parameter>
+    static
+    xcb_get_window_attributes_cookie_t
+    cookie(Parameter && ... parameter)
     {
-      m_cookie = cookie_function(m_c, cookie_parameter ...);
+      std::cerr << "get_window_attributes_2 cookie" << std::endl;
+      return base::cookie(std::forward<Parameter>(parameter) ...);
     }
 
-    xcb_connection_t * const
-    connection(void)
+    void
+    handle(const std::shared_ptr<xcb_generic_error_t> & error)
     {
-      return m_c;
+      error_handler::handle(error);
     }
 };
 
-// template<>
-// template<typename Cookie,
-//          typename Reply,
-//          Reply * (*ReplyFunction)(xcb_connection_t *, Cookie, xcb_generic_error_t **)>
-// void
-// // check(const xpp::generic::extension<Id> & extension)
-// request<Cookie, Reply, ReplyFunction>::check(const xpp::extension::x & extension)
+}; // namespace reply
+
+template<typename ... Parameter>
+void
+map_window_checked(xcb_connection_t * const c, Parameter && ... parameter)
+{
+  xpp::generic::check(
+      c, xcb_map_window_checked(c, std::forward<Parameter>(parameter) ...));
+}
+
+template<typename ... Parameter>
+void
+map_window(Parameter ... parameter)
+{
+  xcb_map_window(parameter ...);
+}
+
+template<typename Connection, typename ... Parameter>
+reply::get_window_attributes<Connection, xpp::generic::checked_tag>
+get_window_attributes(Connection && c, Parameter && ... parameter)
+{
+  return reply::get_window_attributes<Connection, xpp::generic::checked_tag>(
+      std::forward<Connection>(c), std::forward<Parameter>(parameter) ...);
+}
+
+template<typename Connection, typename ... Parameter>
+reply::get_window_attributes<Connection, xpp::generic::unchecked_tag>
+get_window_attributes_unchecked(Connection && c, Parameter && ... parameter)
+{
+  return reply::get_window_attributes<Connection, xpp::generic::unchecked_tag>(
+      std::forward<Connection>(c), std::forward<Parameter>(parameter) ...);
+}
+
+// template<typename ... Parameter>
+// reply::get_window_attributes<xpp::generic::unchecked_tag>
+// get_window_attributes_unchecked(Parameter && ... parameter)
 // {
-//   typedef typename Extension::error_dispatcher dispatcher;
-//   dispatcher(/* e->first_error */)(
-//       xcb_request_check(m_c, NULL);
-//   // check(extension->first_error);
+//   return reply::get_window_attributes<xpp::generic::unchecked_tag>(
+//       std::forward<Parameter>(parameter) ...);
 // }
 
-}; // namespace generic
-
-}; // namespace xpp
+}; // namespace test
+*/
 
 #endif // X_REQUEST_HPP

@@ -6,15 +6,23 @@ from utils import \
         _n_item, \
         _ext
 
+from cppevent import event_dispatcher_class
+from cpperror import error_dispatcher_class
+
 _templates = {}
 
 _templates['protocol_class'] = \
 """\
-namespace %s {
+// namespace %s {
 
+template<typename Connection>
 class protocol
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+  // : virtual protected xpp::xcb::type<xcb_connection_t * const>
+  : virtual protected xpp::generic::connection<Connection>
 {
+  protected:
+    using connection = xpp::generic::connection<Connection>;
+
   public:
 %s\
     virtual ~protocol(void) {}
@@ -22,54 +30,8 @@ class protocol
 %s\
 }; // class protocol
 
-}; // namespace %s
+// }; // namespace %s
 """
-
-_templates['event_dispatcher_class'] = \
-'''\
-namespace %s { namespace event {
-
-class dispatcher
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
-{
-  public:
-%s\
-%s\
-
-    template<typename Handler>
-    bool
-    operator()(const Handler & handler, xcb_generic_event_t * const event) const
-    {
-%s
-      return false;
-    }
-%s\
-}; // class dispatcher
-
-}; }; // namespace %s::event
-'''
-
-_templates['error_dispatcher_class'] = \
-'''\
-namespace %s { namespace error {
-
-class dispatcher {
-  public:
-%s\
-%s\
-
-    void
-    operator()(xcb_generic_error_t * const error) const
-    {
-%s
-    }
-
-%s\
-}; // class dispatcher
-
-}; }; // namespace %s::error
-'''
-
 
 _ignore_events = \
         { "XCB_PRESENT_GENERIC" }
@@ -103,7 +65,7 @@ class ProtocolClass(object):
 
         typedef = []
         if self.namespace.is_ext:
-            typedef = [ "typedef xpp::extension::%s extension;" % ns ]
+            typedef = [ "typedef xpp::%s::extension extension;" % ns ]
 
         if len(typedef) > 0:
             typedef = "".join(map(lambda s: "    " + s, typedef)) + "\n\n"
@@ -114,172 +76,10 @@ class ProtocolClass(object):
             % (ns, # namespace %s {
                typedef,
                methods,
-               ns) \
-            + "\n\n" \
-            + self.event_dispatcher_class() \
-            + "\n\n" \
-            + self.error_dispatcher_class()
-
-    ### event_dispatcher_class
-
-    def event_dispatcher_class(self):
-        ns = get_namespace(self.namespace)
-
-        typedef = []
-        ctors = []
-        members = []
-
-        opcode_switch = "event->response_type & ~0x80"
-
-        # >>> if begin <<<
-        if self.namespace.is_ext:
-            opcode_switch = "(event->response_type & ~0x80) - m_first_event"
-            typedef = [ "typedef xpp::extension::%s extension;\n" % ns ]
-
-            members += \
-                [ "private:"
-                , "  const uint8_t m_first_event;"
-                ]
-
-            ctor = "dispatcher"
-            ctors += \
-                [ "%s(uint8_t first_event)" % ctor
-                , "  : m_first_event(first_event)"
-                , "{}"
-                , ""
-                , "%s(const xpp::extension::%s & extension)" % (ctor, ns)
-                , "  : %s(extension->first_event)" % ctor
-                , "{}"
-                ]
-
-        # >>> if end <<<
-
-        if len(typedef) > 0:
-            typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n"
-        else:
-            typedef = ""
-
-        if len(ctors) > 0:
-            ctors = "\n".join(map(lambda s: "    " + s, ctors)) + "\n"
-        else:
-            ctors = ""
-
-        if len(members) > 0:
-            members = "\n".join(map(lambda s: "  " + s, members)) + "\n"
-        else:
-            members = ""
-
-        return _templates['event_dispatcher_class'] \
-            % (ns, # class %s {
-               typedef,
-               ctors,
-               self.event_switch_cases(opcode_switch, "handler", "event"),
-               members,
-               ns) # }; // class %s
-
-    def event_switch_cases(self, arg_switch, arg_handler, arg_event):
-        cases = ""
-        templ = [ "        case %s:"
-                , "          %s(" % arg_handler + "%s" + "(*this, %s));" % arg_event
-                , "          return true;"
-                , ""
-                , ""
-                ]
-
-        distinct_events = [[]]
-        for e in self.events:
-            done = False
-            for l in distinct_events:
-                if e in l:
-                    continue
-                else:
-                    l.append(e)
-                    done = True
-                    break
-
-            if not done:
-                distinct_events.append([e])
-            else:
-                continue
-
-        for l in distinct_events:
-            cases += "\n      switch (%s) {\n\n" % arg_switch
-            for e in l:
-                cases += "\n".join(templ) % (e.opcode_name, e.scoped_name())
-            cases += "      };\n"
-
-        return cases
-
-    ### error_dispatcher_class
-
-    def error_dispatcher_class(self):
-        ns = get_namespace(self.namespace)
-
-        typedef = []
-        ctors = []
-        members = []
-
-        # >>> if begin <<<
-        if self.namespace.is_ext:
-            typedef = [ "typedef xpp::extension::%s extension;\n" % ns ]
-
-            members += \
-                [ "private:"
-                , "  const uint8_t m_first_error;"
-                ]
-
-            ctor = "dispatcher"
-            ctors += \
-                [ "%s(uint8_t first_error)" % ctor
-                , "  : m_first_error(first_error)"
-                , "{}"
-                , ""
-                , "%s(const xpp::extension::%s & extension)" % (ctor, ns)
-                , "  : %s(extension->first_error)" % ctor
-                , "{}"
-                ]
-
-        # >>> if end <<<
-
-        if len(typedef) > 0:
-            typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n"
-        else:
-            typedef = ""
-
-        if len(ctors) > 0:
-            ctors = "\n".join(map(lambda s: "    " + s, ctors)) + "\n"
-        else:
-            ctors = ""
-
-        if len(members) > 0:
-            members = "\n".join(map(lambda s: "  " + s, members)) + "\n"
-        else:
-            members = ""
-
-        return _templates['error_dispatcher_class'] \
-            % (ns, # class %s {
-               typedef,
-               ctors,
-               self.error_switch_cases("error->error_code", "error"),
-               members,
-               ns) # }; // class %s
-
-    def error_switch_cases(self, arg_switch, arg_error):
-        cases = ""
-        errors = self.errors
-        templ = [ "        case %s: // %s"
-                , "          throw %s" + "(%s);" % arg_error
-                , ""
-                , ""
-                ]
-
-        cases += "\n      switch (%s) {\n\n" % arg_switch
-        for e in errors:
-            cases += "\n".join(templ) % (e.opcode_name, e.opcode, e.scoped_name())
-            # cases += "\n".join(templ) % (e.opcode_name, e.get_name())
-        cases += "      };\n"
-
-        return cases
-
+               ns) # \
+            # + "\n\n" \
+            # + event_dispatcher_class(self.namespace, self.events) \
+            # + "\n\n" \
+            # + error_dispatcher_class(self.namespace, self.errors)
 
 ########## PROTOCOLCLASS ##########

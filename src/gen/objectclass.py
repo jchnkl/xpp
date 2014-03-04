@@ -1,5 +1,6 @@
 # vim: set ts=4 sws=4 sw=4:
 
+import sys # stderr
 import copy # deepcopy
 
 from utils import \
@@ -7,6 +8,8 @@ from utils import \
         get_ext_name, \
         _n_item, \
         _ext
+
+# _ctor_dtor_kws = { "Create", "Destroy", "Open", "Close", "Free" }
 
 class ObjectClass(object):
     def __init__(self, name, use_ns=True):
@@ -32,7 +35,14 @@ class ObjectClass(object):
         name = self.name.lower()
         c_name = self.c_name
         methods = ""
+
+        # sys.stderr.write("ObjectClass %s\n\n" % self.name)
         for request in self.requests:
+            # for kw in _ctor_dtor_kws:
+            #     if request.request.name[-1].startswith(kw):
+            #       sys.stderr.write("request: %s, opcode: %s\n\n" \
+            #           % (request.request.name, request.request.opcode))
+
             methods += request.make_object_class_inline(False, self.name.lower()) + "\n\n"
 
         if methods == "":
@@ -40,19 +50,24 @@ class ObjectClass(object):
         else:
             return \
 """\
-namespace %s {
+// namespace %s {
 
+template<typename Connection>
 class %s
   : virtual public xpp::xcb::type<const %s &>
-  , virtual protected xpp::xcb::type<xcb_connection_t * const>
+  // , virtual protected xpp::xcb::type<xcb_connection_t * const>
+  , virtual protected xpp::generic::connection<Connection>
 {
+  protected:
+    using connection = xpp::generic::connection<Connection>;
+
   public:
     virtual ~%s(void) {}
 
 %s
 }; // class %s
 
-}; // namespace %s
+// }; // namespace %s
 """ % (ns, # namespace %s {
        name,   # class %s
        c_name, # public xpp::xcb::type<const %s &>

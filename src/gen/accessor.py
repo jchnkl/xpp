@@ -4,7 +4,8 @@ _templates = {}
 
 _templates['iter_fixed'] = \
 """\
-                     xpp::iterator<%s,
+                     xpp::iterator<Connection,
+                                   %s,
                                    %s,
                                    %s_reply_t,
                                    CALLABLE(%s_%s),
@@ -13,7 +14,8 @@ _templates['iter_fixed'] = \
 
 _templates['iter_variable'] = \
 """\
-                        xpp::iterator<%s,
+                        xpp::iterator<Connection,
+                                      %s,
                                       %s,
                                       %s_reply_t,
                                       %s_iterator_t,
@@ -24,12 +26,14 @@ _templates['iter_variable'] = \
 
 _templates['list'] = \
 """\
-    xpp::generic::list<%s_reply_t,
+    xpp::generic::list<Connection,
+                       %s_reply_t,
                        %s
                       >
     %s(void)
     {
-      return xpp::generic::list<%s_reply_t,
+      return xpp::generic::list<Connection,
+                                %s_reply_t,
                                 %s
                                >(%s);
     }\
@@ -120,7 +124,7 @@ class Accessor(object):
 
         template += ">\n" if template != "" else ""
 
-        c_tor_params = "m_c, this->get()"
+        c_tor_params = "this->m_c, this->get()"
 
         return template + _templates['list'] \
                 % (self.c_name,

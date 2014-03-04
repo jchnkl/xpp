@@ -1,3 +1,5 @@
+import sys # stderr
+
 from utils import \
         get_namespace, \
         get_ext_name, \
@@ -26,6 +28,144 @@ template<>
   return %s;
 }\
 '''
+
+_templates = {}
+
+_templates['event_dispatcher_class'] = \
+'''\
+namespace xpp { namespace %s { namespace event {
+
+class dispatcher
+  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+{
+  public:
+%s\
+%s\
+
+    template<typename Handler>
+    bool
+    operator()(const Handler & handler, xcb_generic_event_t * const event) const
+    {
+%s
+      return false;
+    }
+%s\
+}; // class dispatcher
+
+}; }; // namespace xpp::%s::event
+'''
+
+_templates['event_dispatcher_class_impl'] = \
+'''\
+namespace xpp { namespace %s { namespace event {
+
+template<typename Handler>
+bool
+dispatcher::operator()(const Handler & handler, xcb_generic_event_t * const event) const
+{
+%s
+    return false;
+}
+
+}; }; // namespace xpp::%s::event
+'''
+
+def event_dispatcher_class(namespace, cppevents):
+    ns = get_namespace(namespace)
+
+    typedef = []
+    ctors = []
+    members = []
+
+    opcode_switch = "event->response_type & ~0x80"
+
+    # >>> if begin <<<
+    if namespace.is_ext:
+        opcode_switch = "(event->response_type & ~0x80) - m_first_event"
+        '''
+        typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
+        '''
+
+        members += \
+            [ "private:"
+            , "  const uint8_t m_first_event;"
+            ]
+
+        ctor = "dispatcher"
+        ctors += \
+            [ "%s(uint8_t first_event)" % ctor
+            , "  : m_first_event(first_event)"
+            , "{}"
+            , ""
+            , "%s(const xpp::%s::extension & extension)" % (ctor, ns)
+            , "  : %s(extension->first_event)" % ctor
+            , "{}"
+            ]
+
+    # >>> if end <<<
+
+    if len(typedef) > 0:
+        typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n"
+    else:
+        typedef = ""
+
+    if len(ctors) > 0:
+        ctors = "\n".join(map(lambda s: "    " + s, ctors)) + "\n"
+    else:
+        ctors = ""
+
+    if len(members) > 0:
+        members = "\n".join(map(lambda s: "  " + s, members)) + "\n"
+    else:
+        members = ""
+
+    if namespace.is_ext:
+        return _templates['event_dispatcher_class'] \
+            % (ns, # class %s {
+               typedef,
+               ctors,
+               event_switch_cases(ocppevents, pcode_switch, "handler", "event"),
+               members,
+               ns) # }; // class %s
+
+    else:
+        return _templates['event_dispatcher_class_impl'] \
+            % (ns, # namespace %s {
+               event_switch_cases(cppevents, opcode_switch, "handler", "event"),
+               ns) # }; // class %s
+
+def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
+    cases = ""
+    templ = [ "        case %s:"
+            , "          %s(" % arg_handler + "%s" + "(*this, %s));" % arg_event
+            , "          return true;"
+            , ""
+            , ""
+            ]
+
+    distinct_events = [[]]
+    for e in cppevents:
+        done = False
+        for l in distinct_events:
+            if e in l:
+                continue
+            else:
+                l.append(e)
+                done = True
+                break
+
+        if not done:
+            distinct_events.append([e])
+        else:
+            continue
+
+    for l in distinct_events:
+        cases += "\n      switch (%s) {\n\n" % arg_switch
+        for e in l:
+            cases += "\n".join(templ) % (e.opcode_name, e.scoped_name())
+        cases += "      };\n"
+
+    return cases
 
 ########## EVENT ##########
 
@@ -102,7 +242,9 @@ class CppEvent(object):
             ]
 
         if self.namespace.is_ext:
-            typedef = [ "typedef xpp::extension::%s extension;" % ns ]
+            '''
+            typedef = [ "typedef xpp::%s::extension extension;" % ns ]
+            '''
             opcode_accessor += \
                 [ ""
                 , "static uint8_t opcode(uint8_t first_event)"
@@ -110,14 +252,17 @@ class CppEvent(object):
                 , "  return first_event + opcode();"
                 , "}"
                 , ""
-                , "static uint8_t opcode(const xpp::extension::%s & extension)" % ns
+                , "static uint8_t opcode(const xpp::%s::extension & extension)" % ns
                 , "{"
                 , "  return opcode(extension->first_event);"
                 , "}"
                 ]
 
         else:
+            pass
+            '''
             typedef = [ "typedef void extension;" ]
+            '''
 
         if len(opcode_accessor) > 0:
             opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"

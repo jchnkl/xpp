@@ -6,6 +6,7 @@
 #include <stack>
 #include <xcb/xcb.h> // xcb_str_*
 #include "core/type.hpp"
+#include "iterable.hpp"
 
 #define CALLABLE(FUNCTION) xpp::generic::callable<decltype(FUNCTION), FUNCTION>
 
@@ -31,20 +32,20 @@ struct callable<Return(Args ...), Function> {
 
 // interface for object types to be used with an itertor
 
-template<typename Type>
-class iterable {
-  public:
-    virtual ~iterable(void) {}
-    virtual void operator=(Type) = 0;
-}; // class iterable
+// template<typename Type>
+// class iterable {
+//   public:
+//     virtual ~iterable(void) {}
+//     virtual void operator=(Type) = 0;
+// }; // class iterable
 
-template<>
-class iterable<void> {
-  public:
-    virtual ~iterable(void) {}
-    static std::size_t size_of(void);
-    virtual void operator=(void * const) = 0;
-};
+// template<>
+// class iterable<void> {
+//   public:
+//     virtual ~iterable(void) {}
+//     static std::size_t size_of(void);
+//     virtual void operator=(void * const) = 0;
+// };
 
 template<typename ... Arguments>
 class iterator;
@@ -53,6 +54,7 @@ class iterator;
 // IteratorType: derived iterator class for CRTP
 
 template<typename IteratorType,
+         typename Connection,
          typename Data,
          typename ReturnData,
          typename Reply,
@@ -61,6 +63,7 @@ template<typename IteratorType,
          typename SizeOf,
          typename GetIterator>
 class iterator<IteratorType,
+               Connection,
                Data,
                ReturnData,
                Reply,
@@ -72,8 +75,10 @@ class iterator<IteratorType,
   public:
     iterator(void) {}
 
-    iterator(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
-      : m_c(c), m_reply(reply), m_iterator(GetIterator()(reply.get()))
+    iterator(Connection && c, const std::shared_ptr<Reply> & reply)
+      : m_c(std::forward<Connection>(c))
+      , m_reply(reply)
+      , m_iterator(GetIterator()(reply.get()))
     {}
 
     virtual
@@ -91,7 +96,8 @@ class iterator<IteratorType,
     }
 
     virtual
-    const ReturnData &
+    // const ReturnData &
+    ReturnData
     operator*(void) = 0;
 
     // prefix
@@ -159,7 +165,7 @@ class iterator<IteratorType,
     }
 
   protected:
-    xcb_connection_t * m_c;
+    Connection m_c;
     std::shared_ptr<Reply> m_reply;
     std::stack<std::size_t> m_lengths;
     XCBIterator m_iterator;
@@ -167,22 +173,24 @@ class iterator<IteratorType,
 
 // general iterator for variable sized data fields
 
-template<typename Data,
+template<typename Connection,
+         typename Data,
          typename ReturnData,
          typename Reply,
          typename XCBIterator,
          typename Next,
          typename SizeOf,
          typename GetIterator>
-class iterator<Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
+class iterator<Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
   : public iterator<
       // self
-      iterator<Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>,
+      iterator<Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>,
       // other args
-      Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
+      Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
 {
   public:
-    typedef iterator<Data,
+    typedef iterator<Connection,
+                     Data,
                      ReturnData,
                      Reply,
                      XCBIterator,
@@ -191,6 +199,7 @@ class iterator<Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
                      GetIterator> self;
 
     typedef iterator<self,
+                     Connection,
                      Data,
                      ReturnData,
                      Reply,
@@ -202,7 +211,8 @@ class iterator<Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
     using base::base;
 
     virtual
-    const ReturnData &
+    // const ReturnData &
+    ReturnData
     operator*(void)
     {
       return *(static_cast<ReturnData *>(base::m_iterator.data));
@@ -285,19 +295,23 @@ class iterator<xcb_str_t, xcb_str_t, Reply, xcb_str_iterator_t,
 // IteratorType: derived iterator class for CRTP
 
 template<typename IteratorType,
+         typename Connection,
          typename Data,
          typename ReturnData,
          typename Reply,
          typename Accessor,
          typename Length>
-class iterator<IteratorType, Data, ReturnData, Reply, Accessor, Length> {
+class iterator<IteratorType, Connection, Data, ReturnData, Reply, Accessor, Length>
+{
 public:
   iterator(void) {}
 
-  iterator(xcb_connection_t * const c,
+  iterator(Connection && c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-    : m_c(c), m_index(index), m_reply(reply)
+    : m_c(std::forward<Connection>(c))
+    , m_index(index)
+    , m_reply(reply)
   {}
 
   virtual
@@ -313,7 +327,8 @@ public:
   }
 
   virtual
-  const ReturnData & operator*(void) = 0;
+  // const ReturnData & operator*(void) = 0;
+  ReturnData operator*(void) = 0;
 
   // prefix
   virtual
@@ -351,20 +366,20 @@ public:
 
   static
   IteratorType
-  begin(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
+  begin(Connection && c, const std::shared_ptr<Reply> & reply)
   {
-    return IteratorType(c, reply, 0);
+    return IteratorType(std::forward<Connection>(c), reply, 0);
   }
 
   static
   IteratorType
-  end(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
+  end(Connection && c, const std::shared_ptr<Reply> & reply)
   {
-    return IteratorType(c, reply, Length()(reply.get()));
+    return IteratorType(std::forward<Connection>(c), reply, Length()(reply.get()));
   }
 
 protected:
-  xcb_connection_t * m_c = NULL;
+  Connection m_c;
   std::size_t m_index = 0;
   std::shared_ptr<Reply> m_reply;
 
@@ -374,7 +389,7 @@ namespace fixed {
 
 // traits to set a data value on an object type
 // requires the object to implement xpp::iterable<...>
-// can not be in an if-else clause because arithmetic on void is not allow and
+// can not be in an if-else clause because arithmetic on void is not allowed and
 // the compiler will generate an error, even though this code path is never
 // taken
 
@@ -405,26 +420,27 @@ struct data_traits<void>
 
 namespace iterator {
 
-// handles all iterators for object type (e.g. xcb_window_t)
+// handles all iterators for simple types (e.g. xcb_window_t)
 
-template<typename Data,
+template<typename Connection,
+         typename Data,
          typename ReturnData,
          typename Reply,
          typename Accessor,
          typename Length>
 class simple
   : public xpp::iterator<
-                    xpp::iterator<Data, ReturnData, Reply, Accessor, Length>,
-                    Data, ReturnData, Reply, Accessor, Length>
+                    xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length>,
+                    Connection, Data, ReturnData, Reply, Accessor, Length>
 {
   public:
-    typedef xpp::iterator<Data, ReturnData, Reply, Accessor, Length> self;
-    typedef xpp::iterator<self, Data, ReturnData, Reply, Accessor, Length> base;
+    typedef xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length> self;
+    typedef xpp::iterator<self, Connection, Data, ReturnData, Reply, Accessor, Length> base;
 
-    simple(xcb_connection_t * const c,
+    simple(Connection && c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-      : base(c, reply, index)
+      : base(std::forward<Connection>(c), reply, index)
     {
       if (std::is_void<Data>::value) {
         this->m_index /= sizeof(ReturnData);
@@ -432,7 +448,8 @@ class simple
     }
 
     virtual
-    const ReturnData &
+    // const ReturnData &
+    ReturnData
     operator*(void)
     {
       return static_cast<ReturnData *>(
@@ -440,26 +457,29 @@ class simple
     }
 };
 
-// handles all iterators for object type (e.g. xpp::window)
+// handles all iterators for object types (e.g. xpp::window)
 
-template<typename Data,
+template<typename Connection,
+         typename Data,
          typename ReturnData,
          typename Reply,
          typename Accessor,
          typename Length>
 class object
   : public xpp::iterator<
-                    xpp::iterator<Data, ReturnData, Reply, Accessor, Length>,
-                    Data, ReturnData, Reply, Accessor, Length>
+                    xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length>,
+                    Connection, Data, ReturnData, Reply, Accessor, Length>
 {
   public:
-    typedef xpp::iterator<Data, ReturnData, Reply, Accessor, Length> self;
-    typedef xpp::iterator<self, Data, ReturnData, Reply, Accessor, Length> base;
+    typedef xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length> self;
+    typedef xpp::iterator<self, Connection, Data, ReturnData, Reply, Accessor, Length> base;
 
-    object(xcb_connection_t * const c,
+    object(Connection && c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-      : base(c, reply, index), m_return(c)
+      : base(std::forward<Connection>(c), reply, index)
+      // , m_return(std::forward<Connection>(c))
+      // , m_c(std::forward<Connection>(c))
     {
       if (std::is_void<Data>::value) {
         this->m_index /= ReturnData::size_of();
@@ -467,40 +487,48 @@ class object
     }
 
     virtual
-    const ReturnData &
+    // const ReturnData &
+    ReturnData
     operator*(void)
     {
-      data_traits<Data>::set(m_return,
+      ReturnData rd(base::m_c);
+      data_traits<Data>::set(rd,
                              Accessor()(this->m_reply.get()),
                              this->m_index);
-      return m_return;
+      return rd;
+      // data_traits<Data>::set(m_return,
+      //                        Accessor()(this->m_reply.get()),
+      //                        this->m_index);
+      // return m_return;
     }
 
-  private:
-    ReturnData m_return;
+  // private:
+  //   Connection m_c;
+    // ReturnData m_return;
 };
 
 }; }; // fixed::iterator
 
 // dispatcher to decide which implementation is necessary
 
-template<typename Data,
+template<typename Connection,
+         typename Data,
          typename ReturnData,
          typename Reply,
          typename Accessor,
          typename Length>
-class iterator<Data, ReturnData, Reply, Accessor, Length>
+class iterator<Connection, Data, ReturnData, Reply, Accessor, Length>
   : public std::conditional<
         ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Data, ReturnData, Reply, Accessor, Length>,
-          fixed::iterator::object<Data, ReturnData, Reply, Accessor, Length>
+          fixed::iterator::simple<Connection, Data, ReturnData, Reply, Accessor, Length>,
+          fixed::iterator::object<Connection, Data, ReturnData, Reply, Accessor, Length>
       >::type
 {
   public:
     typedef typename std::conditional<
         ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Data, ReturnData, Reply, Accessor, Length>,
-          fixed::iterator::object<Data, ReturnData, Reply, Accessor, Length>
+          fixed::iterator::simple<Connection, Data, ReturnData, Reply, Accessor, Length>,
+          fixed::iterator::object<Connection, Data, ReturnData, Reply, Accessor, Length>
       >::type
         base;
 
@@ -510,11 +538,11 @@ class iterator<Data, ReturnData, Reply, Accessor, Length>
 
 namespace generic {
 
-template<typename Reply, typename Iterator>
+template<typename Connection, typename Reply, typename Iterator>
 class list {
   public:
-    list(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
-      : m_c(c), m_reply(reply)
+    list(Connection && c, const std::shared_ptr<Reply> & reply)
+      : m_c(std::forward<Connection>(c)), m_reply(reply)
     {}
 
     Iterator begin(void)
@@ -528,7 +556,7 @@ class list {
     }
 
   private:
-    xcb_connection_t * m_c = NULL;
+    Connection m_c;
     std::shared_ptr<Reply> m_reply;
 }; // class list
 

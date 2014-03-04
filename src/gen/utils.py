@@ -45,3 +45,19 @@ def _ext(str):
         return _n_item(str).lower()
     else:
         return str.lower()
+
+def _n(list, namespace):
+    '''
+    Does C-name conversion on a tuple of strings.
+    Different behavior depending on length of tuple, extension/not extension, etc.
+    Basically C-name converts the individual pieces, then joins with underscores.
+    '''
+    if len(list) == 1:
+        parts = list
+    elif len(list) == 2:
+        parts = [list[0], _n_item(list[1])]
+    elif namespace.is_ext:
+        parts = [list[0], _ext(list[1])] + [_n_item(i) for i in list[2:]]
+    else:
+        parts = [list[0]] + [_n_item(i) for i in list[1:]]
+    return '_'.join(parts).lower()

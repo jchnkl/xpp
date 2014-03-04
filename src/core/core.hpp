@@ -28,7 +28,7 @@ class core
 
     // xcb_connect (const char *displayname, int *screenp)
     explicit
-    core(const std::string & displayname)
+    core(const std::string & displayname = "")
       : core(xcb_connect, displayname.c_str(), &m_screen)
     {}
 
@@ -223,6 +223,19 @@ class core
     generate_id(void) const
     {
       return xcb_generate_id(m_c.get());
+    }
+
+    xcb_screen_t * const
+    screen_of_display(int screen)
+    {
+      xcb_screen_iterator_t iter;
+
+      iter = xcb_setup_roots_iterator(xcb_get_setup(m_c.get()));
+      for (; iter.rem; --screen, xcb_screen_next(&iter))
+        if (screen == 0)
+          return iter.data;
+
+      return NULL;
     }
 
   private:

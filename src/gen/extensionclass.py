@@ -19,29 +19,21 @@ class ExtensionClass(object):
             base = " "
 
         return \
-'''
-namespace %s {
+'''\
+template<typename Connection>
 class protocol;
+
 namespace event { class dispatcher; };
 namespace error { class dispatcher; };
-};
 
-namespace extension {
-
-class %s%s{
+class extension%s{
   public:
-    typedef xpp::%s::protocol protocol;
+    template<typename Connection>
+    using protocol = xpp::%s::protocol<Connection>;
     typedef xpp::%s::event::dispatcher event_dispatcher;
     typedef xpp::%s::error::dispatcher error_dispatcher;
-};
-
-}; // namespace extension
-''' % (ns, # namespace protocol { class %s; };
-       # ns, # namespace event { namespace dispatcher { class %s; }; };
-       # ns, # namespace error { namespace dispatcher { class %s; }; };
-       ns, # class %s
-       base,
-       # ns, # : public xpp::extension::generic<&xcb_%s_id>
+};\
+''' % (base,
        ns, # typedef xpp::protocol::%s protocol;
        ns, # typedef xpp::event::dispatcher::%s dispatcher;
        ns) # typedef xpp::error::dispatcher::%s dispatcher;

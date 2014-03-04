@@ -8,9 +8,9 @@
 
 #include <xcb/xcb.h>
 
-#include "core/event.hpp"
 #include "core/connection.hpp"
-#include "gen/protos.hpp"
+#include "core/event.hpp"
+// #include "gen/protos.hpp"
 
 #define MAX_PRIORITY UINT32_MAX
 
