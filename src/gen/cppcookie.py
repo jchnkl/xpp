@@ -2,57 +2,6 @@ from utils import _n, _ext, _n_item, get_namespace
 
 _templates = {}
 
-_templates['cookie_reply_using'] = \
-'''\
-/*
-namespace checked {
-using %s =
-  xpp::generic::cookie<xcb_%s_cookie_t,
-    xpp::generic::checked::cookie<SIGNATURE(xcb_%s)>>;
-}; // namespace checked
-
-namespace unchecked {
-using %s =
-  xpp::generic::cookie<xcb_%s_cookie_t,
-    xpp::generic::unchecked::cookie<SIGNATURE(xcb_%s_unchecked)>>;
-}; // namespace unchecked
-*/
-'''
-
-def _cookie_reply_using(name):
-    return _templates['cookie_reply_using'] % \
-        ( name
-        , name
-        , name
-        , name
-        , name
-        , name)
-
-_templates['cookie_void_using'] = \
-'''\
-/*
-namespace checked {
-using %s =
-  xpp::generic::cookie<xcb_void_cookie_t,
-    xpp::generic::checked::cookie<SIGNATURE(xcb_%s_checked)>>;
-}; // namespace checked
-
-namespace unchecked {
-using %s =
-  xpp::generic::cookie<xcb_void_cookie_t,
-    xpp::generic::unchecked::cookie<SIGNATURE(xcb_%s)>>;
-}; // namespace checked
-*/
-'''
-
-def _cookie_void_using(name):
-    return _templates['cookie_void_using'] % \
-        ( name
-        , name
-        , name
-        , name
-        )
-
 _templates['reply_cookie_class_derived'] = \
 '''\
 template<typename CookieMethod>
@@ -77,94 +26,6 @@ def _reply_cookie_class_derived(name, ctors):
             , ctors
             )
 
-             # xpp::generic::checked::cookie<SIGNATURE(xcb_%s)>>
-_templates['void_cookie_class_derived'] = \
-'''\
-template<typename CookieMethod>
-class %s
-  : public xpp::generic::cookie<typename CookieMethod::xcb_cookie_t,
-                                %s<CookieMethod>>
-{
-  public:
-    typedef xpp::generic::cookie<typename CookieMethod::xcb_cookie_t,
-                                 %s<CookieMethod>>
-                                   base;
-    using base::base;
-%s\
-};
-'''
-
-def _void_cookie_class_derived(name, ctors):
-    return _templates['void_cookie_class_derived'] % \
-            ( name
-            , name
-            , name
-            , ctors
-            )
-
-_templates['cookie_checked_unchecked_derived'] = \
-'''\
-namespace checked { namespace cookie {
-using %s = generic::cookie::%s<
-  xpp::generic::checked::cookie<SIGNATURE(%s)>>;
-}; }; // namespace checked::cookie
-
-namespace unchecked { namespace cookie {
-using %s = generic::cookie::%s<
-  xpp::generic::unchecked::cookie<SIGNATURE(%s)>>;
-}; }; // namespace unchecked::cookie
-'''
-
-def _cookie_checked_unchecked_derived(name, is_void):
-    if is_void:
-        checked_c_name = "xcb_" + name + "_checked"
-        unchecked_c_name = "xcb_" + name
-    else:
-        checked_c_name = "xcb_" + name
-        unchecked_c_name = "xcb_" + name + "_unchecked"
-
-    return _templates['cookie_checked_unchecked_derived'] % \
-            ( name
-            , name
-            , checked_c_name
-            , name
-            , name
-            , unchecked_c_name
-            )
-
-
-_templates['cookie_checked_unchecked'] = \
-'''\
-namespace checked { namespace cookie {
-using %s = xpp::generic::cookie<%s,
-  xpp::generic::checked::cookie<SIGNATURE(%s)>>;
-}; }; // namespace checked::cookie
-
-namespace unchecked { namespace cookie {
-using %s = xpp::generic::cookie<%s,
-  xpp::generic::unchecked::cookie<SIGNATURE(%s)>>;
-}; }; // namespace unchecked::cookie
-'''
-
-def _cookie_checked_unchecked(name, is_void):
-    if is_void:
-        cookie = "xcb_void_cookie_t"
-        checked_c_name = "xcb_" + name + "_checked"
-        unchecked_c_name = "xcb_" + name
-    else:
-        cookie = "xcb_%s_cookie_t" % name
-        checked_c_name = "xcb_" + name
-        unchecked_c_name = "xcb_" + name + "_unchecked"
-
-    return _templates['cookie_checked_unchecked'] % \
-            ( name
-            , cookie
-            , checked_c_name
-            , name
-            , cookie
-            , unchecked_c_name
-            )
-
 _templates['cookie_class_static_ctor'] = \
 '''
 %s\
@@ -185,7 +46,6 @@ def _cookie_class_static_ctor(template, return_value, protos, calls, initializer
             , calls
             )
 
-# %s_checked(xcb_connection_t * const c%s)
 _templates['void_cookie_function'] = \
 '''\
 %s\
@@ -203,7 +63,6 @@ void
   %s(std::forward<Connection>(c)%s);
 }
 '''
-
 
 def _void_cookie_function(name, c_name, template, return_value, protos, calls, initializer):
     if len(template) == 0: template = "template<typename Connection>\n"
@@ -428,12 +287,6 @@ class CppCookie(object):
             result += "}; // generic\n"
 
             result += _cookie_checked_unchecked_derived(self.request_name, self.is_void)
-
-        # elif self.is_void:
-        #     result += _cookie_void_using(self.request_name)
-
-        # else:
-        #     result += _cookie_reply_using(self.request_name)
 
         else:
             result += _cookie_checked_unchecked(self.request_name, self.is_void)
