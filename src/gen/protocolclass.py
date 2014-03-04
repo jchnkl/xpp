@@ -13,11 +13,8 @@ _templates = {}
 
 _templates['protocol_class'] = \
 """\
-// namespace %s {
-
 template<typename Connection>
 class protocol
-  // : virtual protected xpp::xcb::type<xcb_connection_t * const>
   : virtual protected xpp::generic::connection<Connection>
 {
   protected:
@@ -29,8 +26,6 @@ class protocol
 
 %s\
 }; // class protocol
-
-// }; // namespace %s
 """
 
 _ignore_events = \
