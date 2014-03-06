@@ -46,11 +46,11 @@ class error_handler<Dispatcher>
   public:
     template<typename Connection>
     error_handler(Connection && c)
-      : m_dispatcher(static_cast<const Dispatcher &>(std::forward<Connection>(c)))
+      : m_dispatcher(static_cast<Dispatcher &>(std::forward<Connection>(c)))
     {}
 
     void
-    handle(const std::shared_ptr<xcb_generic_error_t> & error)
+    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
     {
       m_dispatcher(error);
     }
@@ -68,7 +68,7 @@ class error_handler<void>
     {}
 
     void
-    handle(const std::shared_ptr<xcb_generic_error_t> & error)
+    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
     {
       throw error;
     }

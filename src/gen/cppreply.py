@@ -22,20 +22,19 @@ class %s
                                 SIGNATURE(%s)>
                                   base;
 
-    typedef xpp::generic::error_handler<Connection, xpp::%s::error::dispatcher>
-      error_handler;
-
     template<typename ... Parameter>
     %s(Connection && c, Parameter && ... parameter)
       : base(std::forward<Connection>(c), std::forward<Parameter>(parameter) ...)
-      , error_handler(std::forward<Connection>(c))
     {}
 
     void
     handle(const std::shared_ptr<xcb_generic_error_t> & error)
     {
-      error_handler::handle(error);
+      using error_handler =
+        xpp::generic::error_handler<Connection, xpp::%s::error::dispatcher>;
+      (error_handler(base::m_c))(error);
     }
+
 %s\
 %s\
 }; // class %s
@@ -48,12 +47,11 @@ def _reply_class(name, c_name, ns, cookie, accessors):
             , name # base class
             , c_name # base class
             , c_name # base class
-            , ns # base class
             , name # typedef
             , c_name # typedef
-            , ns # typedef error_handler
             , c_name # typedef base
             , name # c'tor
+            , ns
             , cookie.make_static_getter()
             , accessors
             , name
