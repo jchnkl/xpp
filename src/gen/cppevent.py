@@ -273,7 +273,9 @@ class %s
 {
   public:
 %s\
-    using xpp::generic::event<Connection, %s, %s>::event;
+    typedef xpp::generic::event<Connection, %s, %s> base;
+
+    using base::base;
 
     virtual ~%s(void) {}
 
@@ -286,7 +288,7 @@ class %s
        self.c_name, # : public xpp::generic::event<%s,
        self.opcode_name, # %s>
        typedef,
-       self.c_name, self.opcode_name, # using xpp::generic::event<%s, %s>::event;
+       self.c_name, self.opcode_name, # typedef xpp::generic::event<%s, %s>::base;
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
        member_accessors,
