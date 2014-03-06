@@ -15,9 +15,10 @@ template<typename Connection, typename ... Parameter>
 void
 %s_checked(Connection && c, Parameter && ... parameter)
 {
-  xpp::generic::check(std::forward<Connection>(c),
-                      xcb_%s_checked(std::forward<Connection>(c),
-                                     std::forward<Parameter>(parameter) ...));
+  xpp::generic::check<Connection, xpp::%s::error::dispatcher>(
+      std::forward<Connection>(c),
+      xcb_%s_checked(std::forward<Connection>(c),
+                     std::forward<Parameter>(parameter) ...));
 }
 
 template<typename ... Parameter>
@@ -28,9 +29,10 @@ void
 }
 '''
 
-def _void_request_function(name):
+def _void_request_function(ns, name):
     return _templates['void_request_function'] % \
             ( name
+            , ns
             , name
             , name
             , name
@@ -169,7 +171,7 @@ class CppRequest(object):
             if len(void_functions) > 0:
                 return void_functions
             else:
-                return _void_request_function(self.request_name)
+                return _void_request_function(get_namespace(self.namespace), self.request_name)
 
         else:
             cppreply = CppReply(self.namespace, self.request.name, cppcookie, self.reply, self.accessors, self.parameter_list)
