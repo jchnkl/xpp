@@ -58,8 +58,9 @@ class iterator<IteratorType,
   public:
     iterator(void) {}
 
-    iterator(Connection && c, const std::shared_ptr<Reply> & reply)
-      : m_c(std::forward<Connection>(c))
+    template<typename C>
+    iterator(C && c, const std::shared_ptr<Reply> & reply)
+      : m_c(std::forward<C>(c))
       , m_reply(reply)
       , m_iterator(GetIterator()(reply.get()))
     {}
@@ -131,18 +132,20 @@ class iterator<IteratorType,
       return copy;
     }
 
+    template<typename C>
     static
     IteratorType
-    begin(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
+    begin(C && c, const std::shared_ptr<Reply> & reply)
     {
-      return IteratorType(c, reply);
+      return IteratorType(std::forward<C>(c), reply);
     }
 
+    template<typename C>
     static
     IteratorType
-    end(xcb_connection_t * const c, const std::shared_ptr<Reply> & reply)
+    end(C && c, const std::shared_ptr<Reply> & reply)
     {
-      auto it = IteratorType(c, reply);
+      auto it = IteratorType(std::forward<C>(c), reply);
       it.m_iterator.rem = 0;
       return it;
     }
@@ -288,10 +291,11 @@ class iterator<IteratorType, Connection, Data, ReturnData, Reply, Accessor, Leng
 public:
   iterator(void) {}
 
-  iterator(Connection && c,
+  template<typename C>
+  iterator(C && c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-    : m_c(std::forward<Connection>(c))
+    : m_c(std::forward<C>(c))
     , m_index(index)
     , m_reply(reply)
   {}
@@ -346,18 +350,20 @@ public:
     return copy;
   }
 
+  template<typename C>
   static
   IteratorType
-  begin(Connection && c, const std::shared_ptr<Reply> & reply)
+  begin(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return IteratorType(std::forward<Connection>(c), reply, 0);
+    return IteratorType(std::forward<C>(c), reply, 0);
   }
 
+  template<typename C>
   static
   IteratorType
-  end(Connection && c, const std::shared_ptr<Reply> & reply)
+  end(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return IteratorType(std::forward<Connection>(c), reply, Length()(reply.get()));
+    return IteratorType(std::forward<C>(c), reply, Length()(reply.get()));
   }
 
 protected:
@@ -419,10 +425,11 @@ class simple
     typedef xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length> self;
     typedef xpp::iterator<self, Connection, Data, ReturnData, Reply, Accessor, Length> base;
 
-    simple(Connection && c,
+    template<typename C>
+    simple(C && c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-      : base(std::forward<Connection>(c), reply, index)
+      : base(std::forward<C>(c), reply, index)
     {
       if (std::is_void<Data>::value) {
         this->m_index /= sizeof(ReturnData);
@@ -456,10 +463,11 @@ class object
     typedef xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length> self;
     typedef xpp::iterator<self, Connection, Data, ReturnData, Reply, Accessor, Length> base;
 
-    object(Connection && c,
+    template<typename C>
+    object(C & c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-      : base(std::forward<Connection>(c), reply, index)
+      : base(std::forward<C>(c), reply, index)
     {
       if (std::is_void<Data>::value) {
         this->m_index /= ReturnData::size_of();
@@ -512,8 +520,9 @@ namespace generic {
 template<typename Connection, typename Reply, typename Iterator>
 class list {
   public:
-    list(Connection && c, const std::shared_ptr<Reply> & reply)
-      : m_c(std::forward<Connection>(c)), m_reply(reply)
+    template<typename C>
+    list(C && c, const std::shared_ptr<Reply> & reply)
+      : m_c(std::forward<C>(c)), m_reply(reply)
     {}
 
     Iterator begin(void)

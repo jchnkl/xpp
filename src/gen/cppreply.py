@@ -22,9 +22,9 @@ class %s
                                 SIGNATURE(%s)>
                                   base;
 
-    template<typename ... Parameter>
-    %s(Connection && c, Parameter && ... parameter)
-      : base(std::forward<Connection>(c), std::forward<Parameter>(parameter) ...)
+    template<typename C, typename ... Parameter>
+    %s(C && c, Parameter && ... parameter)
+      : base(std::forward<C>(c), std::forward<Parameter>(parameter) ...)
     {}
 
     void

@@ -55,7 +55,7 @@ class error_handler<void>
 {
   public:
     template<typename Connection>
-    error_handler(Connection && c)
+    error_handler(Connection &&)
     {}
 
     void
@@ -84,7 +84,8 @@ template<typename Connection, typename Dispatcher>
 void
 check(Connection && c, const xcb_void_cookie_t & cookie)
 {
-  xcb_generic_error_t * error = xcb_request_check(c, cookie);
+  xcb_generic_error_t * error =
+    xcb_request_check(std::forward<Connection>(c), cookie);
   if (error) {
     error_handler<Connection, Dispatcher>(std::forward<Connection>(c))(
         std::shared_ptr<xcb_generic_error_t>(error, std::free));
@@ -109,11 +110,11 @@ class reply<Derived,
             REPLY_COOKIE_SIGNATURE>
 {
   public:
-    template<typename ... Parameter>
-    reply(Connection && c, Parameter && ... parameter)
-      : m_c(std::forward<Connection>(c))
-      , m_cookie(Derived::cookie(std::forward<Connection>(c),
-                 std::forward<Parameter>(parameter) ...))
+    template<typename C, typename ... Parameter>
+    reply(C && c, Parameter && ... parameter)
+      : m_c(std::forward<C>(c))
+      , m_cookie(Derived::cookie(std::forward<C>(c),
+                                 std::forward<Parameter>(parameter) ...))
     {}
 
     operator bool(void)

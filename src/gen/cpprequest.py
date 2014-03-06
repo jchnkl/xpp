@@ -17,8 +17,9 @@ void
 {
   xpp::generic::check<Connection, xpp::%s::error::dispatcher>(
       std::forward<Connection>(c),
-      xcb_%s_checked(std::forward<Connection>(c),
-                     std::forward<Parameter>(parameter) ...));
+      xcb_%s_checked(
+          std::forward<Connection>(c),
+          std::forward<Parameter>(parameter) ...));
 }
 
 template<typename ... Parameter>

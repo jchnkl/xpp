@@ -11,8 +11,9 @@ class event
 {
 
   public:
-    event(Connection && c, const std::shared_ptr<xcb_generic_event_t> & event)
-      : m_c(std::forward<Connection>(c))
+    template<typename C>
+    event(C && c, const std::shared_ptr<xcb_generic_event_t> & event)
+      : m_c(std::forward<C>(c))
       , m_event(event)
     {}
 
