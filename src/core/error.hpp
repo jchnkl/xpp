@@ -45,7 +45,8 @@ class error : public std::runtime_error {
     std::string
     get_error_description(xcb_generic_error_t * error) const
     {
-      return "Error code " + std::to_string(error->error_code);
+      return std::string(Derived::opcode_literal)
+        + " (" + std::to_string(error->error_code) + ")";
     }
 
     static const int opcode = OpCode;

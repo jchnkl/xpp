@@ -204,6 +204,7 @@ class %s
     virtual ~%s(void) {}
 
 %s\
+    static constexpr const char * opcode_literal = "%s";
 }; // class %s
 }; // namespace error
 ''' % (ns, # namespace %s {
@@ -215,5 +216,6 @@ class %s
        self.get_name(), self.c_name, self.opcode_name, # using xpp::generic::error<%s, %s, %s>::error;
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
+       self.opcode_name, # static constexpr const char * opcode_literal
        self.get_name(), # // class %s
        ns) # }; // namespace %s
