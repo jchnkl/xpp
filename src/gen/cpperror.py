@@ -90,12 +90,10 @@ def error_dispatcher_class(namespace, cpperrors):
         members = ""
 
     return _templates['error_dispatcher_class'] \
-        % (ns, # class %s {
-           typedef,
+        % (typedef,
            ctors,
            error_switch_cases(cpperrors, opcode_switch, "error"),
-           members,
-           ns) # }; // class %s
+           members)
 
 def error_switch_cases(cpperrors, arg_switch, arg_error):
     cases = ""
@@ -207,8 +205,7 @@ class %s
     static constexpr const char * opcode_literal = "%s";
 }; // class %s
 }; // namespace error
-''' % (ns, # namespace %s {
-       self.get_name(), # class %s
+''' % (self.get_name(), # class %s
        self.get_name(), # : public xpp::generic::error<%s,
        self.c_name, # %s,
        self.opcode_name, # : %s>
@@ -217,5 +214,4 @@ class %s
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
        self.opcode_name, # static constexpr const char * opcode_literal
-       self.get_name(), # // class %s
-       ns) # }; // namespace %s
+       self.get_name()) # // class %s

@@ -136,12 +136,10 @@ def event_dispatcher_class(namespace, cppevents):
         members = ""
 
     return _templates['event_dispatcher_class'] \
-        % (ns, # class %s {
-           typedef,
+        % (typedef,
            ctors,
            event_switch_cases(cppevents, opcode_switch, "handler", "event"),
-           members,
-           ns) # }; // class %s
+           members)
 
 def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
     cases = ""
@@ -299,8 +297,7 @@ class %s
 }; // class %s
 %s\
 }; // namespace event
-''' % (ns, # namespace %s {
-       self.get_name(), # class %s
+''' % (self.get_name(), # class %s
        self.c_name, # : public xpp::generic::event<%s,
        self.opcode_name, # %s>
        typedef,
@@ -309,5 +306,4 @@ class %s
        opcode_accessor,
        member_accessors,
        self.get_name(), # // class %s
-       member_accessors_special,
-       ns) # }; // namespace %s
+       member_accessors_special)
