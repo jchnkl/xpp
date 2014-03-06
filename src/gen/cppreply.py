@@ -63,13 +63,15 @@ _templates['reply_member_accessor'] = \
 '''\
     template<typename ReturnType = %s, typename ... Parameter>
     ReturnType
-    %s(Parameter ... parameter)
+    %s(Parameter && ... parameter)
     {
       using make = xpp::generic::factory::make<Connection,
                                                decltype(this->get()->%s),
                                                ReturnType,
                                                Parameter ...>;
-      return make()(this->get()->%s, this->m_c, parameter ...);
+      return make()(this->get()->%s,
+                    this->m_c,
+                    std::forward<Parameter>(parameter) ...);
     }
 '''
 
