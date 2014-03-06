@@ -95,8 +95,16 @@ struct unchecked_tag {};
 template<typename ... Types>
 class reply;
 
-template<typename Connection, REPLY_TEMPLATE, REPLY_COOKIE_TEMPLATE, typename Derived, typename Check>
-class reply<Connection, REPLY_SIGNATURE, REPLY_COOKIE_SIGNATURE, Derived, Check>
+template<typename Derived,
+         typename Connection,
+         typename Check,
+         REPLY_TEMPLATE,
+         REPLY_COOKIE_TEMPLATE>
+class reply<Derived,
+            Connection,
+            Check,
+            REPLY_SIGNATURE,
+            REPLY_COOKIE_SIGNATURE>
 {
   public:
     template<typename ... Parameter>

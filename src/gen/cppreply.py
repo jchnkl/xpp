@@ -8,19 +8,18 @@ _templates['reply_class'] = \
 namespace reply {
 template<typename Connection, typename Check>
 class %s
-  : public xpp::generic::reply<Connection,
+  : public xpp::generic::reply<%s<Connection, Check>,
+                               Connection,
+                               Check,
                                SIGNATURE(%s_reply),
-                               SIGNATURE(%s),
-                               %s<Connection, Check>,
-                               Check>
-  , public xpp::generic::error_handler<Connection, xpp::%s::error::dispatcher>
+                               SIGNATURE(%s)>
 {
   public:
-    typedef xpp::generic::reply<Connection,
+    typedef xpp::generic::reply<%s<Connection, Check>,
+                                Connection,
+                                Check,
                                 SIGNATURE(%s_reply),
-                                SIGNATURE(%s),
-                                %s<Connection, Check>,
-                                Check>
+                                SIGNATURE(%s)>
                                   base;
 
     typedef xpp::generic::error_handler<Connection, xpp::%s::error::dispatcher>
@@ -46,14 +45,14 @@ class %s
 def _reply_class(name, c_name, ns, cookie, accessors):
     return _templates['reply_class'] % \
             ( name
-            , c_name # base class
-            , c_name # base class
             , name # base class
+            , c_name # base class
+            , c_name # base class
             , ns # base class
+            , name # typedef
             , c_name # typedef
-            , c_name # typedef
-            , name # typedef base
             , ns # typedef error_handler
+            , c_name # typedef base
             , name # c'tor
             , cookie.make_static_getter()
             , accessors
