@@ -32,11 +32,13 @@ _templates['field_accessor_template'] = \
                                                decltype((*this)->%s),
                                                ReturnType,
                                                Parameter ...>;
-      return make()((*this)->%s, this->m_c, std::forward<Parameter>(parameter) ...);
+      return make()((*this)->%s,
+                    this->m_c,
+                    std::forward<Parameter>(parameter) ...);
     }\
 '''
 
-def _field_accessor_template(template_name, c_type, method_name, member):
+def _field_accessor_template(c_type, method_name, member):
     return _templates['field_accessor_template'] % \
         ( c_type
         , method_name
@@ -225,7 +227,7 @@ class CppEvent(object):
                     method_name += "_"
                 member = field.c_field_name
 
-
+                member_accessors.append(_field_accessor_template(c_type, method_name, member))
 
         ns = get_namespace(self.namespace)
 
