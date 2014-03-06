@@ -183,11 +183,12 @@ class window : virtual public xpp::x::window<Connection>
 
 }; // class window
 
-// std::ostream &
-// operator<<(std::ostream & os, const xpp::window<Connection> & window)
-// {
-//   return os << std::hex << "0x" << *window << std::dec;
-// }
+template<typename Connection>
+std::ostream &
+operator<<(std::ostream & os, const xpp::window<Connection> & window)
+{
+  return os << std::hex << "0x" << *window << std::dec;
+}
 
 }; // namespace xpp
 
