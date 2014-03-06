@@ -52,8 +52,9 @@ _templates['void_cookie_function'] = \
 void
 %s_checked(Connection && c%s)
 {%s\
-  xpp::generic::check(std::forward<Connection>(c),
-                      %s_checked(std::forward<Connection>(c)%s));
+  xpp::generic::check<Connection, xpp::%s::error::dispatcher>(
+      std::forward<Connection>(c),
+      %s_checked(std::forward<Connection>(c)%s));
 }
 
 %s\
@@ -64,13 +65,14 @@ void
 }
 '''
 
-def _void_cookie_function(name, c_name, template, return_value, protos, calls, initializer):
+def _void_cookie_function(ns, name, c_name, template, return_value, protos, calls, initializer):
     if len(template) == 0: template = "template<typename Connection>\n"
     return _templates['void_cookie_function'] % \
             ( template
             , name
             , protos
             , initializer
+            , ns
             , c_name
             , calls
             , template
@@ -149,7 +151,8 @@ class CppCookie(object):
 
         return_value = "xcb_void_cookie_t"
 
-        return _void_cookie_function(self.request_name,
+        return _void_cookie_function(get_namespace(self.namespace),
+                                     self.request_name,
                                      self.c_name,
                                      template,
                                      return_value,

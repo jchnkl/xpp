@@ -28,15 +28,6 @@
 
 namespace xpp { namespace generic {
 
-void
-check(xcb_connection_t * const c, const xcb_void_cookie_t & cookie)
-{
-  xcb_generic_error_t * error = xcb_request_check(c, cookie);
-  if (error) {
-    throw std::shared_ptr<xcb_generic_error_t>(error, std::free);
-  }
-}
-
 template<typename ... Types>
 struct error_handler;
 
@@ -88,6 +79,17 @@ class error_handler<Connection, Dispatcher>
                                 base;
     using base::base;
 };
+
+template<typename Connection, typename Dispatcher>
+void
+check(Connection && c, const xcb_void_cookie_t & cookie)
+{
+  xcb_generic_error_t * error = xcb_request_check(c, cookie);
+  if (error) {
+    error_handler<Connection, Dispatcher>(std::forward<Connection>(c))(
+        std::shared_ptr<xcb_generic_error_t>(error, std::free));
+  }
+}
 
 struct checked_tag {};
 struct unchecked_tag {};
