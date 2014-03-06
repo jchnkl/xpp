@@ -13,8 +13,10 @@ template<typename ... Extensions>
 class connection
   : virtual public xpp::core
   , virtual public xpp::x::extension
+  , virtual public xpp::x::extension::error_dispatcher
   , virtual public xpp::x::extension::protocol<connection<Extensions ...> &>
   , virtual public Extensions ...
+  , virtual public Extensions::error_dispatcher ...
   , virtual public Extensions::template protocol<connection<Extensions ...> &> ...
   , virtual protected xpp::generic::connection<connection<Extensions ...> &>
 {
