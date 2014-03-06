@@ -26,26 +26,6 @@ def _reply_cookie_class_derived(name, ctors):
             , ctors
             )
 
-_templates['cookie_class_static_ctor'] = \
-'''
-%s\
-    static
-    %s
-    get(xcb_connection_t * const c%s)
-    {%s\
-      return CookieMethod::get(c%s);
-    }
-'''
-
-def _cookie_class_static_ctor(template, return_value, protos, calls, initializer):
-    return _templates['cookie_class_static_ctor'] % \
-            ( template
-            , return_value
-            , protos
-            , initializer
-            , calls
-            )
-
 _templates['void_cookie_function'] = \
 '''\
 %s\
