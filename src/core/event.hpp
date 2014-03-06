@@ -3,21 +3,12 @@
 
 #include <memory> // shared_ptr
 #include <xcb/xcb.h> // xcb_generic_event_t
-#include "generic/connection.hpp"
 
 namespace xpp { namespace generic {
 
 template<typename Connection, typename Event, int OpCode>
 class event
-  : virtual protected xpp::generic::connection<Connection>
 {
-  protected:
-    virtual
-    Connection
-    get(void)
-    {
-      return m_c;
-    }
 
   public:
     event(Connection && c, const std::shared_ptr<xcb_generic_event_t> & event)
