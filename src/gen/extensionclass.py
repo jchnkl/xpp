@@ -23,15 +23,16 @@ class ExtensionClass(object):
 template<typename Connection>
 class protocol;
 
-namespace event { class dispatcher; };
+namespace event { template<typename Connection> class dispatcher; };
 namespace error { class dispatcher; };
 
 class extension%s{
   public:
     template<typename Connection>
     using protocol = xpp::%s::protocol<Connection>;
-    typedef xpp::%s::event::dispatcher event_dispatcher;
-    typedef xpp::%s::error::dispatcher error_dispatcher;
+    template<typename Connection>
+    using event_dispatcher = xpp::%s::event::dispatcher<Connection>;
+    using error_dispatcher = xpp::%s::error::dispatcher;
 };\
 ''' % (base,
        ns, # typedef xpp::protocol::%s protocol;
