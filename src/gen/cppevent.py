@@ -71,21 +71,6 @@ class dispatcher
 }; // namespace event
 '''
 
-_templates['event_dispatcher_class_impl'] = \
-'''\
-namespace xpp { namespace %s { namespace event {
-
-template<typename Handler>
-bool
-dispatcher::operator()(const Handler & handler, xcb_generic_event_t * const event) const
-{
-%s
-    return false;
-}
-
-}; }; // namespace xpp::%s::event
-'''
-
 def event_dispatcher_class(namespace, cppevents):
     ns = get_namespace(namespace)
 
