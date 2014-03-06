@@ -9,21 +9,12 @@ from utils import \
 
 from resource_classes import _resource_classes
 
-_field_accessor_template = \
-'''\
-    template<typename %s = %s>
-    %s
-    %s(void) const
-    {
-      return %s(*this, %s);
-    }\
-'''
-
 _field_accessor_template_specialization = \
 '''\
+template<typename Connection>
 template<>
 %s
-%s::%s<%s>(void) const
+%s<Connection>::%s<%s>(void) const
 {
   return %s;
 }\
@@ -31,12 +22,35 @@ template<>
 
 _templates = {}
 
+_templates['field_accessor_template'] = \
+'''\
+    template<typename ReturnType = %s, typename ... Parameter>
+    ReturnType
+    %s(Parameter && ... parameter) const
+    {
+      using make = xpp::generic::factory::make<Connection,
+                                               decltype((*this)->%s),
+                                               ReturnType,
+                                               Parameter ...>;
+      return make()((*this)->%s, this->m_c, std::forward<Parameter>(parameter) ...);
+    }\
+'''
+
+def _field_accessor_template(template_name, c_type, method_name, member):
+    return _templates['field_accessor_template'] % \
+        ( c_type
+        , method_name
+        , member
+        , member
+        )
+
 _templates['event_dispatcher_class'] = \
 '''\
-namespace xpp { namespace %s { namespace event {
+namespace event {
 
+template<typename Connection>
 class dispatcher
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+  : virtual protected xpp::generic::connection<Connection>
 {
   public:
 %s\
@@ -52,7 +66,7 @@ class dispatcher
 %s\
 }; // class dispatcher
 
-}; }; // namespace xpp::%s::event
+}; // namespace event
 '''
 
 _templates['event_dispatcher_class_impl'] = \
@@ -119,25 +133,18 @@ def event_dispatcher_class(namespace, cppevents):
     else:
         members = ""
 
-    if namespace.is_ext:
-        return _templates['event_dispatcher_class'] \
-            % (ns, # class %s {
-               typedef,
-               ctors,
-               event_switch_cases(ocppevents, pcode_switch, "handler", "event"),
-               members,
-               ns) # }; // class %s
-
-    else:
-        return _templates['event_dispatcher_class_impl'] \
-            % (ns, # namespace %s {
-               event_switch_cases(cppevents, opcode_switch, "handler", "event"),
-               ns) # }; // class %s
+    return _templates['event_dispatcher_class'] \
+        % (ns, # class %s {
+           typedef,
+           ctors,
+           event_switch_cases(cppevents, opcode_switch, "handler", "event"),
+           members,
+           ns) # }; // class %s
 
 def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
     cases = ""
     templ = [ "        case %s:"
-            , "          %s(" % arg_handler + "%s" + "(*this, %s));" % arg_event
+            , "          %s(" % arg_handler + "%s<Connection>" + "(static_cast<xpp::generic::connection<Connection &>>(*this).get(), %s));" % arg_event
             , "          return true;"
             , ""
             , ""
@@ -211,25 +218,14 @@ class CppEvent(object):
         for field in self.fields:
             if field.field_type[-1] in _resource_classes:
                 template_name = field.field_name.capitalize()
-                c_name = field.c_field_type
+                c_type = field.c_field_type
                 method_name = field.field_name.lower()
                 if (method_name == self.get_name()
                     or method_name in _reserved_keywords):
                     method_name += "_"
-                member = "(*this)->" + field.c_field_name
+                member = field.c_field_name
 
-                member_accessors.append(_field_accessor_template % \
-                    ( template_name, c_name # template<typename %s = %s>
-                    , template_name # return type
-                    , method_name
-                    , template_name, member # return %s(m_c, %s);
-                    ))
 
-                member_accessors_special.append(_field_accessor_template_specialization % \
-                    ( c_name
-                    , self.get_name(), method_name, c_name
-                    , member
-                    ))
 
         ns = get_namespace(self.namespace)
 
@@ -283,14 +279,16 @@ class CppEvent(object):
 
         return \
 '''
-namespace %s { namespace event {
+namespace event {
+template<typename Connection>
 class %s
-  : public xpp::generic::event<%s,
+  : public xpp::generic::event<Connection,
+                               %s,
                                %s>
 {
   public:
 %s\
-    using xpp::generic::event<%s, %s>::event;
+    using xpp::generic::event<Connection, %s, %s>::event;
 
     virtual ~%s(void) {}
 
@@ -298,13 +296,13 @@ class %s
 %s\
 }; // class %s
 %s\
-}; }; // namespace %s::event
+}; // namespace event
 ''' % (ns, # namespace %s {
        self.get_name(), # class %s
-       self.opcode_name, # : public xpp::generic::event<%s,
-       self.c_name, # %s>
+       self.c_name, # : public xpp::generic::event<%s,
+       self.opcode_name, # %s>
        typedef,
-       self.opcode_name, self.c_name, # using xpp::generic::event<%s, %s>::event;
+       self.c_name, self.opcode_name, # using xpp::generic::event<%s, %s>::event;
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
        member_accessors,

@@ -7,43 +7,37 @@
 
 namespace xpp { namespace generic {
 
-template<int OpCode, typename Error>
+template<typename Derived, typename Error, int OpCode>
 class error : public std::runtime_error {
   public:
-    error(xcb_generic_error_t * error)
-      : runtime_error(get_error_description(error))
-      , m_error(reinterpret_cast<Error *>(error))
-    {}
 
-    error(std::shared_ptr<xcb_generic_error_t> error)
+    error(const std::shared_ptr<xcb_generic_error_t> & error)
       : runtime_error(get_error_description(error.get()))
       , m_error(error)
     {}
 
     virtual
     ~error(void)
-    {
-      std::cerr << __PRETTY_FUNCTION__ << " " << m_error.use_count() << std::endl;
-    }
+    {}
 
     virtual
-    operator Error &(void) const
+    operator const Error &(void) const
     {
-      return *m_error;
+      return reinterpret_cast<const Error &>(*m_error);
     }
 
     virtual
     const Error &
     operator*(void) const
     {
-      return *m_error;
+      return reinterpret_cast<const Error &>(*m_error);
     }
 
     virtual
     Error * const
     operator->(void) const
     {
-      return m_error.get();
+      return reinterpret_cast<Error * const>(m_error.get());
     }
 
   protected:
@@ -56,7 +50,7 @@ class error : public std::runtime_error {
 
     static const int opcode = OpCode;
 
-    std::shared_ptr<Error> m_error;
+    std::shared_ptr<xcb_generic_error_t> m_error;
 }; // class error
 
 }; }; // xpp::generic

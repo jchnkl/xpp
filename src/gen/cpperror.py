@@ -9,7 +9,7 @@ _templates = {}
 
 _templates['error_dispatcher_class'] = \
 '''\
-namespace xpp { namespace %s { namespace error {
+namespace error {
 
 class dispatcher {
   public:
@@ -17,7 +17,7 @@ class dispatcher {
 %s\
 
     void
-    operator()(xcb_generic_error_t * error) const
+    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
     {
 %s
     }
@@ -25,7 +25,7 @@ class dispatcher {
 %s\
 }; // class dispatcher
 
-}; }; // namespace xpp::%s::error
+}; // namespace error
 '''
 
 _templates['error_dispatcher_class_impl'] = \
@@ -89,20 +89,13 @@ def error_dispatcher_class(namespace, cpperrors):
     else:
         members = ""
 
-    if namespace.is_ext:
-        return _templates['error_dispatcher_class'] \
-            % (ns, # class %s {
-               typedef,
-               ctors,
-               error_switch_cases(cpperrors, opcode_switch, "error"),
-               members,
-               ns) # }; // class %s
-
-    else:
-        return _templates['error_dispatcher_class_impl'] \
-            % (ns, # namespace %s {
-               error_switch_cases(cpperrors, opcode_switch, "error"),
-               ns) # }; // class %s
+    return _templates['error_dispatcher_class'] \
+        % (ns, # class %s {
+           typedef,
+           ctors,
+           error_switch_cases(cpperrors, opcode_switch, "error"),
+           members,
+           ns) # }; // class %s
 
 def error_switch_cases(cpperrors, arg_switch, arg_error):
     cases = ""
@@ -198,26 +191,28 @@ class CppError(object):
 
         return \
 '''
-namespace %s { namespace error {
+namespace error {
 class %s
   : public xpp::generic::error<%s,
+                               %s,
                                %s>
 {
   public:
 %s\
-    using xpp::generic::error<%s, %s>::error;
+    using xpp::generic::error<%s, %s, %s>::error;
 
     virtual ~%s(void) {}
 
 %s\
 }; // class %s
-}; }; // namespace %s::error
+}; // namespace error
 ''' % (ns, # namespace %s {
        self.get_name(), # class %s
-       self.opcode_name, # : public xpp::generic::error<%s,
-       self.c_name, # %s>
+       self.get_name(), # : public xpp::generic::error<%s,
+       self.c_name, # %s,
+       self.opcode_name, # : %s>
        typedef,
-       self.opcode_name, self.c_name, # using xpp::generic::error<%s, %s>::error;
+       self.get_name(), self.c_name, self.opcode_name, # using xpp::generic::error<%s, %s, %s>::error;
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
        self.get_name(), # // class %s
