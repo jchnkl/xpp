@@ -138,13 +138,6 @@ class reply<Derived,
       return CookieFunction(std::forward<Parameter>(parameter) ...);
     }
 
-    virtual
-    void
-    handle(const std::shared_ptr<xcb_generic_error_t> & error)
-    {
-      throw error;
-    }
-
   protected:
     Connection m_c;
     Cookie m_cookie;
@@ -157,7 +150,8 @@ class reply<Derived,
       auto reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, &error),
                                           std::free);
       if (error) {
-        handle(std::shared_ptr<xcb_generic_error_t>(error, std::free));
+        static_cast<Derived &>(*this).handle(
+            std::shared_ptr<xcb_generic_error_t>(error, std::free));
       }
       return reply;
     }
