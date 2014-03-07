@@ -34,9 +34,9 @@ template<typename ... Arguments>
 class iterator;
 
 // abstract iterator for variable size data fields
-// IteratorType: derived iterator class for CRTP
+// Derived: derived iterator class for CRTP
 
-template<typename IteratorType,
+template<typename Derived,
          typename Connection,
          typename Data,
          typename ReturnData,
@@ -45,7 +45,7 @@ template<typename IteratorType,
          typename Next,
          typename SizeOf,
          typename GetIterator>
-class iterator<IteratorType,
+class iterator<Derived,
                Connection,
                Data,
                ReturnData,
@@ -86,27 +86,27 @@ class iterator<IteratorType,
 
     // prefix
     virtual
-    IteratorType &
+    Derived &
     operator++(void)
     {
       m_lengths.push(SizeOf()(m_iterator.data));
       Next()(&m_iterator);
-      return static_cast<IteratorType &>(*this);
+      return static_cast<Derived &>(*this);
     }
 
     // postfix
     virtual
-    IteratorType
+    Derived
     operator++(int)
     {
-      auto copy = static_cast<IteratorType &>(*this);
+      auto copy = static_cast<Derived &>(*this);
       ++(*this);
       return copy;
     }
 
     // prefix
     virtual
-    IteratorType &
+    Derived &
     operator--(void)
     {
       if (m_lengths.empty()) {
@@ -119,33 +119,33 @@ class iterator<IteratorType,
         ++m_iterator.rem;
       }
 
-      return static_cast<IteratorType &>(*this);
+      return static_cast<Derived &>(*this);
     }
 
     // postfix
     virtual
-    IteratorType
+    Derived
     operator--(int)
     {
-      auto copy = static_cast<IteratorType &>(*this);
+      auto copy = static_cast<Derived &>(*this);
       --(*this);
       return copy;
     }
 
     template<typename C>
     static
-    IteratorType
+    Derived
     begin(C && c, const std::shared_ptr<Reply> & reply)
     {
-      return IteratorType(std::forward<C>(c), reply);
+      return Derived(std::forward<C>(c), reply);
     }
 
     template<typename C>
     static
-    IteratorType
+    Derived
     end(C && c, const std::shared_ptr<Reply> & reply)
     {
-      auto it = IteratorType(std::forward<C>(c), reply);
+      auto it = Derived(std::forward<C>(c), reply);
       it.m_iterator.rem = 0;
       return it;
     }
@@ -277,16 +277,16 @@ class iterator<xcb_str_t, xcb_str_t, Reply, xcb_str_iterator_t,
 }; // class iterator
 
 // abstract iterator for fixed size data fields
-// IteratorType: derived iterator class for CRTP
+// Derived: derived iterator class for CRTP
 
-template<typename IteratorType,
+template<typename Derived,
          typename Connection,
          typename Data,
          typename ReturnData,
          typename Reply,
          typename Accessor,
          typename Length>
-class iterator<IteratorType, Connection, Data, ReturnData, Reply, Accessor, Length>
+class iterator<Derived, Connection, Data, ReturnData, Reply, Accessor, Length>
 {
 public:
   iterator(void) {}
@@ -318,52 +318,52 @@ public:
 
   // prefix
   virtual
-  IteratorType & operator++(void)
+  Derived & operator++(void)
   {
     ++m_index;
-    return static_cast<IteratorType &>(*this);
+    return static_cast<Derived &>(*this);
   }
 
   // postfix
   virtual
-  IteratorType operator++(int)
+  Derived operator++(int)
   {
-    auto copy = static_cast<IteratorType &>(*this);
+    auto copy = static_cast<Derived &>(*this);
     ++(*this);
     return copy;
   }
 
   // prefix
   virtual
-  IteratorType & operator--(void)
+  Derived & operator--(void)
   {
     --m_index;
-    return static_cast<IteratorType &>(*this);
+    return static_cast<Derived &>(*this);
   }
 
   // postfix
   virtual
-  IteratorType operator--(int)
+  Derived operator--(int)
   {
-    auto copy = static_cast<IteratorType &>(*this);
+    auto copy = static_cast<Derived &>(*this);
     --(*this);
     return copy;
   }
 
   template<typename C>
   static
-  IteratorType
+  Derived
   begin(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return IteratorType(std::forward<C>(c), reply, 0);
+    return Derived(std::forward<C>(c), reply, 0);
   }
 
   template<typename C>
   static
-  IteratorType
+  Derived
   end(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return IteratorType(std::forward<C>(c), reply, Length()(reply.get()));
+    return Derived(std::forward<C>(c), reply, Length(reply.get()));
   }
 
 protected:
