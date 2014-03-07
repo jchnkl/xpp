@@ -48,7 +48,7 @@ ${HPPPROTOS}:
 	-${CXX} ${CXXFLAGS} ${LDFLAGS} -c $@
 
 ${XMLPROTOS}:
-	-${PYTHON} ${CLIENT} -p ${XCBGEN} ${PROTODIR}/$@ > $(@:%.xml=%.hpp)
+	-${PYTHON} ${CLIENT} -p ${XCBGEN} ${PROTODIR}/$@ > $(if $(filter $@,xproto.xml),x.hpp,$(@:%.xml=%.hpp))
 
 find:
 	@ find ${PROTODIR} -iname '*.xml' -exec basename {} .xml \;
