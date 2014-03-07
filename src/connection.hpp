@@ -5,7 +5,7 @@
 #include "generic/factory.hpp"
 #include "generic/connection.hpp"
 
-#include "gen/xproto.hpp"
+#include "proto/xproto.hpp"
 
 namespace xpp {
 
