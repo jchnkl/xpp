@@ -10,7 +10,6 @@
 
 #include "core/connection.hpp"
 #include "core/event.hpp"
-// #include "gen/protos.hpp"
 
 #define MAX_PRIORITY UINT32_MAX
 
