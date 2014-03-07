@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 #include <xcb/xcb.h>
-#include "type.hpp"
+#include "generic/type.hpp"
 
 namespace xpp {
 

@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include "../gen/xproto.hpp"
+#include "gen/xproto.hpp"
 
 namespace xpp {
 

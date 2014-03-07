@@ -227,14 +227,9 @@ def c_open(self):
     _h('#include <xcb/' + _get_xcb_include(_ns.header.lower()) + '>')
 
     _h('')
-    # _h('#include "../core/core.hpp"')
-    _h('#include "../request.hpp"')
-    _h('#include "../factory.hpp"')
-    _h('#include "../iterator.hpp"')
-    _h('#include "../core/event.hpp"')
-    _h('#include "../core/error.hpp"')
-    _h('#include "../core/extension.hpp"')
-    _h('#include "../core/value_iterator.hpp"')
+
+    _h('#include "../xpp.hpp"')
+
     # if not _ns.is_ext:
     #     _h('#include "xproto-stub.hpp"')
     # _h('#include "../core/generic/resource.hpp"')

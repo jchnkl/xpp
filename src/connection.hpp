@@ -2,10 +2,10 @@
 #define XPP_CONNECTION_HPP
 
 #include "core.hpp"
-#include "../factory.hpp"
+#include "generic/factory.hpp"
 #include "generic/connection.hpp"
 
-#include "../gen/xproto.hpp"
+#include "gen/xproto.hpp"
 
 namespace xpp {
 

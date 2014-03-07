@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <xcb/xcb.h>
 #include "signature.hpp"
-#include "core/generic/connection.hpp"
 
 #define REPLY_TEMPLATE \
   typename Reply, \

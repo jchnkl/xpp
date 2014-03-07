@@ -5,7 +5,7 @@
 #include <memory>
 #include <stack>
 #include <xcb/xcb.h> // xcb_str_*
-#include "core/type.hpp"
+#include "type.hpp"
 #include "iterable.hpp"
 
 #define CALLABLE(FUNCTION) xpp::generic::callable<decltype(FUNCTION), FUNCTION>
