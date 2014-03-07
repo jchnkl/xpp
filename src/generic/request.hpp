@@ -1,5 +1,5 @@
-#ifndef X_REQUEST_HPP_NG
-#define X_REQUEST_HPP_NG
+#ifndef XPP_GENERIC_REQUEST_HPP
+#define XPP_GENERIC_REQUEST_HPP
 
 #include <array>
 #include <memory>
@@ -166,4 +166,4 @@ class reply<Derived,
 
 }; }; // namespace xpp::generic
 
-#endif // X_REQUEST_HPP
+#endif // XPP_GENERIC_REQUEST_HPP

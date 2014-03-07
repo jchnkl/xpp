@@ -1,5 +1,5 @@
-#ifndef X_REQUEST_ITERATOR_HPP
-#define X_REQUEST_ITERATOR_HPP
+#ifndef XPP_GENERIC_REPLY_ITERATOR_HPP
+#define XPP_GENERIC_REPLY_ITERATOR_HPP
 
 #include <cstdlib> // size_t
 #include <memory>
@@ -576,4 +576,4 @@ operator<<(std::ostream & os, const string<Reply, Accessor, Length> & string)
 
 }; // namespace xpp
 
-#endif // X_REQUEST_ITERATOR_HPP
+#endif // XPP_GENERIC_REPLY_ITERATOR_HPP

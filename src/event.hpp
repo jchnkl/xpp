@@ -1,5 +1,5 @@
-#ifndef X_EVENT_HPP
-#define X_EVENT_HPP
+#ifndef XPP_EVENT_HPP
+#define XPP_EVENT_HPP
 
 #include <climits>
 #include <map>
@@ -186,4 +186,4 @@ class registry
 
 }; // namespace xpp
 
-#endif // X_EVENT_HPP
+#endif // XPP_EVENT_HPP
