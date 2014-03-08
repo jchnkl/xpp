@@ -571,25 +571,29 @@ namespace generic {
 
 template<typename Connection, typename Reply, typename Iterator>
 class list {
+  private:
+    // before public part, to make decltype in begin() & end() work!
+    Connection m_c;
+    std::shared_ptr<Reply> m_reply;
+
   public:
     template<typename C>
     list(C && c, const std::shared_ptr<Reply> & reply)
       : m_c(std::forward<C>(c)), m_reply(reply)
     {}
 
-    Iterator begin(void)
+    auto
+    begin(void) -> decltype(Iterator::begin(this->m_c, this->m_reply))
     {
       return Iterator::begin(m_c, m_reply);
     }
 
-    Iterator end(void)
+    auto
+    end(void) -> decltype(Iterator::end(this->m_c, this->m_reply))
     {
       return Iterator::end(m_c, m_reply);
     }
 
-  private:
-    Connection m_c;
-    std::shared_ptr<Reply> m_reply;
 }; // class list
 
 template<typename Reply,
