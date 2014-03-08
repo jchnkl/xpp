@@ -7,8 +7,23 @@
 #include <xcb/xcb.h> // xcb_str_*
 #include "type.hpp"
 #include "iterable.hpp"
+#include "signature.hpp"
 
 #define CALLABLE(FUNCTION) xpp::generic::callable<decltype(FUNCTION), FUNCTION>
+
+#define ACCESSOR_TEMPLATE \
+  typename Data, \
+  typename Reply, \
+  Data *(&Accessor)(const Reply *)
+
+#define ACCESSOR_SIGNATURE \
+  xpp::generic::signature<Data *(const Reply *), Accessor>
+
+#define LENGTH_TEMPLATE \
+  int (&Length)(const Reply *)
+
+#define LENGTH_SIGNATURE \
+  xpp::generic::signature<int(const Reply *), Length>
 
 namespace xpp {
 
@@ -281,12 +296,11 @@ class iterator<xcb_str_t, xcb_str_t, Reply, xcb_str_iterator_t,
 
 template<typename Derived,
          typename Connection,
-         typename Data,
          typename ReturnData,
-         typename Reply,
-         typename Accessor,
-         typename Length>
-class iterator<Derived, Connection, Data, ReturnData, Reply, Accessor, Length>
+         ACCESSOR_TEMPLATE,
+         LENGTH_TEMPLATE>
+class iterator<Derived, Connection, ReturnData,
+               ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
 {
 public:
   iterator(void) {}
@@ -410,20 +424,39 @@ namespace iterator {
 
 // handles all iterators for simple types (e.g. xcb_window_t)
 
+template<typename ... Types>
+class simple;
+
 template<typename Connection,
-         typename Data,
          typename ReturnData,
-         typename Reply,
-         typename Accessor,
-         typename Length>
-class simple
-  : public xpp::iterator<
-                    xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length>,
-                    Connection, Data, ReturnData, Reply, Accessor, Length>
+         ACCESSOR_TEMPLATE,
+         LENGTH_TEMPLATE>
+class simple<Connection,
+             ReturnData,
+             ACCESSOR_SIGNATURE,
+             LENGTH_SIGNATURE>
+  : public xpp::iterator<simple<Connection,
+                                ReturnData,
+                                ACCESSOR_SIGNATURE,
+                                LENGTH_SIGNATURE>,
+                         Connection,
+                         ReturnData,
+                         ACCESSOR_SIGNATURE,
+                         LENGTH_SIGNATURE>
 {
   public:
-    typedef xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length> self;
-    typedef xpp::iterator<self, Connection, Data, ReturnData, Reply, Accessor, Length> base;
+    typedef simple<Connection,
+                   ReturnData,
+                   ACCESSOR_SIGNATURE,
+                   LENGTH_SIGNATURE>
+                     self;
+
+    typedef xpp::iterator<self,
+                          Connection,
+                          ReturnData,
+                          ACCESSOR_SIGNATURE,
+                          LENGTH_SIGNATURE>
+                            base;
 
     template<typename C>
     simple(C && c,
@@ -442,26 +475,45 @@ class simple
     operator*(void)
     {
       return static_cast<ReturnData *>(
-          Accessor()(this->m_reply.get()))[this->m_index];
+          Accessor(this->m_reply.get()))[this->m_index];
     }
 };
 
 // handles all iterators for object types (e.g. xpp::window)
 
+template<typename ... Types>
+class object;
+
 template<typename Connection,
-         typename Data,
          typename ReturnData,
-         typename Reply,
-         typename Accessor,
-         typename Length>
-class object
-  : public xpp::iterator<
-                    xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length>,
-                    Connection, Data, ReturnData, Reply, Accessor, Length>
+         ACCESSOR_TEMPLATE,
+         LENGTH_TEMPLATE>
+class object<Connection,
+             ReturnData,
+             ACCESSOR_SIGNATURE,
+             LENGTH_SIGNATURE>
+  : public xpp::iterator<object<Connection,
+                                ReturnData,
+                                ACCESSOR_SIGNATURE,
+                                LENGTH_SIGNATURE>,
+                         Connection,
+                         ReturnData,
+                         ACCESSOR_SIGNATURE,
+                         LENGTH_SIGNATURE>
 {
   public:
-    typedef xpp::iterator<Connection, Data, ReturnData, Reply, Accessor, Length> self;
-    typedef xpp::iterator<self, Connection, Data, ReturnData, Reply, Accessor, Length> base;
+    typedef object<Connection,
+                   ReturnData,
+                   ACCESSOR_SIGNATURE,
+                   LENGTH_SIGNATURE>
+                     self;
+
+    typedef xpp::iterator<self,
+                          Connection,
+                          ReturnData,
+                          ACCESSOR_SIGNATURE,
+                          LENGTH_SIGNATURE>
+                            base;
 
     template<typename C>
     object(C & c,
@@ -480,7 +532,7 @@ class object
     {
       ReturnData rd(base::m_c);
       data_traits<Data>::set(rd,
-                             Accessor()(this->m_reply.get()),
+                             Accessor(this->m_reply.get()),
                              this->m_index);
       return rd;
     }
@@ -491,23 +543,21 @@ class object
 // dispatcher to decide which implementation is necessary
 
 template<typename Connection,
-         typename Data,
          typename ReturnData,
-         typename Reply,
-         typename Accessor,
-         typename Length>
-class iterator<Connection, Data, ReturnData, Reply, Accessor, Length>
+         ACCESSOR_TEMPLATE,
+         LENGTH_TEMPLATE>
+class iterator<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
   : public std::conditional<
         ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Connection, Data, ReturnData, Reply, Accessor, Length>,
-          fixed::iterator::object<Connection, Data, ReturnData, Reply, Accessor, Length>
+          fixed::iterator::simple<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>,
+          fixed::iterator::object<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
       >::type
 {
   public:
     typedef typename std::conditional<
         ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Connection, Data, ReturnData, Reply, Accessor, Length>,
-          fixed::iterator::object<Connection, Data, ReturnData, Reply, Accessor, Length>
+          fixed::iterator::simple<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>,
+          fixed::iterator::object<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
       >::type
         base;
 
