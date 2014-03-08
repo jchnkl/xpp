@@ -326,9 +326,11 @@ public:
     return ! (*this == other);
   }
 
-  virtual
   // const ReturnData & operator*(void) = 0;
-  ReturnData operator*(void) = 0;
+  ReturnData operator*(void)
+  {
+    return *(static_cast<Derived &>(*this));
+  }
 
   // prefix
   virtual
