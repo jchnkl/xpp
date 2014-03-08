@@ -371,7 +371,7 @@ public:
   Derived
   begin(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return Derived(std::forward<C>(c), reply, 0);
+    return Derived { std::forward<C>(c), reply, 0 };
   }
 
   template<typename C>
@@ -379,7 +379,7 @@ public:
   Derived
   end(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return Derived(std::forward<C>(c), reply, Length(reply.get()));
+    return Derived { std::forward<C>(c), reply, static_cast<std::size_t>(Length(reply.get())) };
   }
 
 protected:
