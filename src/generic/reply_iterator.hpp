@@ -135,9 +135,10 @@ class iterator<Derived,
     Derived &
     operator--(void)
     {
+      typedef typename std::remove_pointer<decltype(m_iterator.data)>::type data_t;
       if (m_lengths.empty()) {
-        Data * data = m_iterator.data;
-        Data * prev = data - m_lengths.top();
+        data_t * data = m_iterator.data;
+        data_t * prev = data - m_lengths.top();
         m_lengths.pop();
 
         m_iterator.index = (char *)m_iterator.data - (char *)prev;
