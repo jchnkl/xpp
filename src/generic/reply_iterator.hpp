@@ -164,7 +164,7 @@ class iterator<Derived,
     Derived
     begin(C && c, const std::shared_ptr<Reply> & reply)
     {
-      return Derived(std::forward<C>(c), reply);
+      return Derived { std::forward<C>(c), reply };
     }
 
     template<typename C>
@@ -172,7 +172,7 @@ class iterator<Derived,
     Derived
     end(C && c, const std::shared_ptr<Reply> & reply)
     {
-      auto it = Derived(std::forward<C>(c), reply);
+      auto it = Derived { std::forward<C>(c), reply };
       it.m_iterator.rem = 0;
       return it;
     }
