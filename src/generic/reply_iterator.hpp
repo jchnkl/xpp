@@ -40,6 +40,12 @@
 #define LENGTH_SIGNATURE \
   xpp::generic::signature<int (const Reply *), Length>
 
+#define STRING_ACCESSOR_TEMPLATE \
+  char * (&Accessor)(const Reply *)
+
+#define STRING_ACCESSOR_SIGNATURE \
+  xpp::generic::signature<char * (const Reply *), Accessor>
+
 namespace xpp {
 
 namespace generic {
@@ -604,10 +610,12 @@ class list {
 
 }; // class list
 
-template<typename Reply,
-         char * (*Accessor)(const Reply *),
-         int (*Length)(const Reply *)>
-class string {
+template<typename ... Types>
+class string;
+
+template<typename Reply, STRING_ACCESSOR_TEMPLATE, LENGTH_TEMPLATE>
+class string<Reply, STRING_ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
+{
   public:
     string(const std::shared_ptr<Reply> & reply)
       : m_string(std::string(Accessor(reply.get()), Length(reply.get())))
@@ -627,13 +635,12 @@ class string {
     std::string m_string;
 }; // class string
 
-template<typename Reply,
-         char * (*Accessor)(const Reply *),
-         int (*Length)(const Reply *)>
+template<typename Reply, STRING_ACCESSOR_TEMPLATE, LENGTH_TEMPLATE>
 std::ostream &
-operator<<(std::ostream & os, const string<Reply, Accessor, Length> & string)
+operator<<(std::ostream & os,
+           const string<Reply, STRING_ACCESSOR_SIGNATURE, LENGTH_SIGNATURE> & s)
 {
-  return os << *string;
+  return os << *s;
 }
 
 }; // namespace generic
