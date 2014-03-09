@@ -389,7 +389,9 @@ public:
   Derived
   end(C && c, const std::shared_ptr<Reply> & reply)
   {
-    return Derived { std::forward<C>(c), reply, static_cast<std::size_t>(Length(reply.get())) };
+    return Derived { std::forward<C>(c),
+                     reply,
+                     static_cast<std::size_t>(Length(reply.get())) };
   }
 
 protected:
