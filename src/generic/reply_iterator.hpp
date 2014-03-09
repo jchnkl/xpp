@@ -29,18 +29,16 @@
   xpp::generic::signature<XcbIterator (const Reply *), GetIterator>
 
 #define ACCESSOR_TEMPLATE \
-  typename Data, \
-  typename Reply, \
-  Data *(&Accessor)(const Reply *)
+  Data * (&Accessor)(const Reply *)
 
 #define ACCESSOR_SIGNATURE \
-  xpp::generic::signature<Data *(const Reply *), Accessor>
+  xpp::generic::signature<Data * (const Reply *), Accessor>
 
 #define LENGTH_TEMPLATE \
   int (&Length)(const Reply *)
 
 #define LENGTH_SIGNATURE \
-  xpp::generic::signature<int(const Reply *), Length>
+  xpp::generic::signature<int (const Reply *), Length>
 
 namespace xpp {
 
@@ -298,10 +296,15 @@ class iterator<Connection,
 template<typename Derived,
          typename Connection,
          typename ReturnData,
+         typename Data,
+         typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
-class iterator<Derived, Connection, ReturnData,
-               ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
+class iterator<Derived,
+               Connection,
+               ReturnData,
+               ACCESSOR_SIGNATURE,
+               LENGTH_SIGNATURE>
 {
 public:
   iterator(void) {}
@@ -432,6 +435,8 @@ class simple;
 
 template<typename Connection,
          typename ReturnData,
+         typename Data,
+         typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
 class simple<Connection,
@@ -489,6 +494,8 @@ class object;
 
 template<typename Connection,
          typename ReturnData,
+         typename Data,
+         typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
 class object<Connection,
