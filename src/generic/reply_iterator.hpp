@@ -104,9 +104,11 @@ class iterator<Derived,
     }
 
     virtual
-    // const ReturnData &
     ReturnData
-    operator*(void) = 0;
+    operator*(void)
+    {
+      return *(static_cast<Derived &>(*this));
+    }
 
     // prefix
     virtual
