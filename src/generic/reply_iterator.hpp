@@ -9,7 +9,24 @@
 #include "iterable.hpp"
 #include "signature.hpp"
 
-#define CALLABLE(FUNCTION) xpp::generic::callable<decltype(FUNCTION), FUNCTION>
+
+#define NEXT_TEMPLATE \
+  void (&Next)(XcbIterator *)
+
+#define NEXT_SIGNATURE \
+  xpp::generic::signature<void (XcbIterator *), Next>
+
+#define SIZEOF_TEMPLATE \
+  int (&SizeOf)(const void *)
+
+#define SIZEOF_SIGNATURE \
+  xpp::generic::signature<int (const void *), SizeOf>
+
+#define GETITERATOR_TEMPLATE \
+  XcbIterator (&GetIterator)(const Reply *)
+
+#define GETITERATOR_SIGNATURE \
+  xpp::generic::signature<XcbIterator (const Reply *), GetIterator>
 
 #define ACCESSOR_TEMPLATE \
   typename Data, \
@@ -29,19 +46,9 @@ namespace xpp {
 
 namespace generic {
 
-template<typename Signature, Signature & S>
-struct callable;
 
 // http://bytes.com/topic/c/answers/692802-performance-static-member-function-versus-functor#post2754209
 // functors are faster than static methods
-template<typename Return,
-         typename ... Args, Return (&Function)(Args ...)>
-struct callable<Return(Args ...), Function> {
-  Return operator()(Args ... args)
-  {
-    return Function(args ...);
-  }
-}; // struct callable
 
 }; // namespace generic
 
@@ -53,22 +60,20 @@ class iterator;
 
 template<typename Derived,
          typename Connection,
-         typename Data,
+         typename Data, // remove -> decltype
          typename ReturnData,
          typename Reply,
-         typename XCBIterator,
-         typename Next,
-         typename SizeOf,
-         typename GetIterator>
+         typename XcbIterator,
+         NEXT_TEMPLATE,
+         SIZEOF_TEMPLATE,
+         GETITERATOR_TEMPLATE>
 class iterator<Derived,
                Connection,
                Data,
                ReturnData,
-               Reply,
-               XCBIterator,
-               Next,
-               SizeOf,
-               GetIterator>
+               NEXT_SIGNATURE,
+               SIZEOF_SIGNATURE,
+               GETITERATOR_SIGNATURE>
 {
   public:
     iterator(void) {}
@@ -77,7 +82,7 @@ class iterator<Derived,
     iterator(C && c, const std::shared_ptr<Reply> & reply)
       : m_c(std::forward<C>(c))
       , m_reply(reply)
-      , m_iterator(GetIterator()(reply.get()))
+      , m_iterator(GetIterator(reply.get()))
     {}
 
     virtual
@@ -104,8 +109,8 @@ class iterator<Derived,
     Derived &
     operator++(void)
     {
-      m_lengths.push(SizeOf()(m_iterator.data));
-      Next()(&m_iterator);
+      m_lengths.push(SizeOf(m_iterator.data));
+      Next(&m_iterator);
       return static_cast<Derived &>(*this);
     }
 
@@ -169,7 +174,7 @@ class iterator<Derived,
     Connection m_c;
     std::shared_ptr<Reply> m_reply;
     std::stack<std::size_t> m_lengths;
-    XCBIterator m_iterator;
+    XcbIterator m_iterator;
 }; // class iterator
 
 // general iterator for variable sized data fields
@@ -178,36 +183,49 @@ template<typename Connection,
          typename Data,
          typename ReturnData,
          typename Reply,
-         typename XCBIterator,
-         typename Next,
-         typename SizeOf,
-         typename GetIterator>
-class iterator<Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
-  : public iterator<
+         typename XcbIterator,
+         NEXT_TEMPLATE,
+         SIZEOF_TEMPLATE,
+         GETITERATOR_TEMPLATE>
+class iterator<Connection,
+               Data,
+               ReturnData,
+               NEXT_SIGNATURE,
+               SIZEOF_SIGNATURE,
+               GETITERATOR_SIGNATURE>
+  : public xpp::iterator<
       // self
-      iterator<Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>,
+      iterator<Connection,
+               Data,
+               ReturnData,
+               NEXT_SIGNATURE,
+               SIZEOF_SIGNATURE,
+               GETITERATOR_SIGNATURE>,
       // other args
-      Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, GetIterator>
+      Connection,
+      Data,
+      ReturnData,
+      NEXT_SIGNATURE,
+      SIZEOF_SIGNATURE,
+      GETITERATOR_SIGNATURE>
 {
   public:
     typedef iterator<Connection,
                      Data,
                      ReturnData,
-                     Reply,
-                     XCBIterator,
-                     Next,
-                     SizeOf,
-                     GetIterator> self;
+                     NEXT_SIGNATURE,
+                     SIZEOF_SIGNATURE,
+                     GETITERATOR_SIGNATURE>
+                       self;
 
-    typedef iterator<self,
-                     Connection,
-                     Data,
-                     ReturnData,
-                     Reply,
-                     XCBIterator,
-                     Next,
-                     SizeOf,
-                     GetIterator> base;
+    typedef xpp::iterator<self,
+                          Connection,
+                          Data,
+                          ReturnData,
+                          NEXT_SIGNATURE,
+                          SIZEOF_SIGNATURE,
+                          GETITERATOR_SIGNATURE>
+                            base;
 
     using base::base;
 
@@ -221,74 +239,57 @@ class iterator<Connection, Data, ReturnData, Reply, XCBIterator, Next, SizeOf, G
 
 // specialized iterator for variable sized data fields which are strings
 
-template<typename Reply, typename GetIterator>
-class iterator<xcb_str_t, xcb_str_t, Reply, xcb_str_iterator_t,
-               CALLABLE(xcb_str_next), CALLABLE(xcb_str_sizeof), GetIterator>
+template<typename Connection,
+         typename Reply,
+         xcb_str_iterator_t (&GetIterator)(const Reply *)>
+class iterator<Connection,
+               xcb_str_t,
+               xcb_str_t,
+               SIGNATURE(xcb_str_next),
+               SIGNATURE(xcb_str_sizeof),
+               xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
   : public iterator<
       // self
-      iterator<xcb_str_t, xcb_str_t, Reply, xcb_str_iterator_t,
-               CALLABLE(xcb_str_next), CALLABLE(xcb_str_sizeof), GetIterator>,
+      iterator<Connection,
+               xcb_str_t,
+               xcb_str_t,
+               SIGNATURE(xcb_str_next),
+               SIGNATURE(xcb_str_sizeof),
+               xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>,
       // other args
-      xcb_str_t, std::string, Reply, xcb_str_iterator_t,
-      CALLABLE(xcb_str_next),
-      CALLABLE(xcb_str_sizeof),
-      GetIterator>
+      Connection,
+      xcb_str_t,
+      std::string,
+      SIGNATURE(xcb_str_next),
+      SIGNATURE(xcb_str_sizeof),
+      xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
 {
   public:
-    typedef iterator<xcb_str_t, xcb_str_t, Reply, xcb_str_iterator_t,
-                     CALLABLE(xcb_str_next),
-                     CALLABLE(xcb_str_sizeof),
-                     GetIterator>
+    typedef iterator<Connection,
+                     xcb_str_t,
+                     xcb_str_t,
+                     SIGNATURE(xcb_str_next),
+                     SIGNATURE(xcb_str_sizeof),
+                     xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
                        self;
 
     typedef iterator<self,
-                     xcb_str_t, std::string, Reply, xcb_str_iterator_t,
-                     CALLABLE(xcb_str_next),
-                     CALLABLE(xcb_str_sizeof),
-                     GetIterator>
+                     Connection,
+                     xcb_str_t,
+                     std::string,
+                     SIGNATURE(xcb_str_next),
+                     SIGNATURE(xcb_str_sizeof),
+                     xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
                        base;
 
     using base::base;
 
-    const std::string & operator*(void)
+    std::string operator*(void)
     {
-      if (m_string.empty()) {
-        m_string = std::string((char *)xcb_str_name(base::m_iterator.data),
-                               xcb_str_name_length(base::m_iterator.data));
-      }
-      return m_string;
+      return std::string((char *)xcb_str_name(base::m_iterator.data),
+                         xcb_str_name_length(base::m_iterator.data));
     }
 
-    const std::string * operator->(void)
-    {
-      if (m_string.empty()) {
-        m_string = std::string((char *)xcb_str_name(base::m_iterator.data),
-                               xcb_str_name_length(base::m_iterator.data));
-      }
-      return &m_string;
-    }
-
-    // prefix
-    iterator & operator++(void)
-    {
-      base::operator++();
-      m_string.clear();
-      return *this;
-    }
-
-    // prefix
-    iterator & operator--(void)
-    {
-      base::operator--();
-      if (base::m_lengths.empty()) {
-        m_string.clear();
-      }
-
-      return *this;
-    }
-
-  protected:
-    std::string m_string;
 }; // class iterator
 
 // abstract iterator for fixed size data fields
