@@ -560,20 +560,37 @@ class object<Connection,
 
 template<typename Connection,
          typename ReturnData,
+         typename Data,
+         typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
-class iterator<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
+class iterator<Connection,
+               ReturnData,
+               ACCESSOR_SIGNATURE,
+               LENGTH_SIGNATURE>
   : public std::conditional<
         ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>,
-          fixed::iterator::object<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
+          fixed::iterator::simple<Connection,
+                                  ReturnData,
+                                  ACCESSOR_SIGNATURE,
+                                  LENGTH_SIGNATURE>,
+          fixed::iterator::object<Connection,
+                                  ReturnData,
+                                  ACCESSOR_SIGNATURE,
+                                  LENGTH_SIGNATURE>
       >::type
 {
   public:
     typedef typename std::conditional<
         ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>,
-          fixed::iterator::object<Connection, ReturnData, ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
+          fixed::iterator::simple<Connection,
+                                  ReturnData,
+                                  ACCESSOR_SIGNATURE,
+                                  LENGTH_SIGNATURE>,
+          fixed::iterator::object<Connection,
+                                  ReturnData,
+                                  ACCESSOR_SIGNATURE,
+                                  LENGTH_SIGNATURE>
       >::type
         base;
 
