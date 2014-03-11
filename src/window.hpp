@@ -11,8 +11,6 @@ namespace xpp {
 template<typename Connection>
 class window : virtual public xpp::x::window<Connection>
              , virtual public xpp::x::drawable<Connection>
-             , virtual public xpp::iterable<void>
-             , virtual public xpp::iterable<xcb_window_t>
              , virtual protected xpp::generic::connection<Connection>
 {
   protected:
@@ -23,11 +21,6 @@ class window : virtual public xpp::x::window<Connection>
     }
 
   public:
-
-    static std::size_t size_of(void)
-    {
-      return sizeof(xcb_window_t);
-    }
 
     window(const Connection & c)
       : m_c(c)
@@ -60,15 +53,6 @@ class window : virtual public xpp::x::window<Connection>
           width, height, border_width, _class, visual, value_mask, value_list);
     }
 
-    // xpp::iterable<void * const>
-    virtual
-    void
-    operator=(void * const data)
-    {
-      m_window =
-        std::make_shared<xcb_window_t>(*static_cast<xcb_window_t *>(data));
-    }
-
     virtual
     const xcb_window_t &
     operator*(void) const
@@ -76,12 +60,8 @@ class window : virtual public xpp::x::window<Connection>
       return *m_window;
     }
 
-    // xpp::iterable<const xcb_window_t &>
     virtual
-    void
-    operator=(xcb_window_t window)
     {
-      m_window = std::make_shared<xcb_window_t>(window);
     }
 
     // xpp::xcb::type<const xcb_window_t &>
