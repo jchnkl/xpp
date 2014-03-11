@@ -67,8 +67,8 @@ _templates['reply_member_accessor'] = \
                                                decltype(this->get()->%s),
                                                ReturnType,
                                                Parameter ...>;
-      return make()(this->get()->%s,
-                    this->m_c,
+      return make()(this->m_c,
+                    this->get()->%s,
                     std::forward<Parameter>(parameter) ...);
     }
 '''

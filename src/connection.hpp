@@ -59,7 +59,7 @@ class connection
     root(void)
     {
       using make = xpp::generic::factory::make<self, xcb_window_t, Window>;
-      return make()(m_root_window, *this);
+      return make()(*this, m_root_window);
     }
 
   private:

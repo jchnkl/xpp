@@ -8,27 +8,24 @@ namespace xpp { namespace generic {
 namespace factory {
 
 template<typename ReturnType>
-class make_object {
+class make_object
+{
   public:
-    template<typename Member, typename Connection, typename ... Parameter>
+    template<typename Connection, typename ... Parameter>
     ReturnType
-    operator()(Member && member,
-               Connection &&,
-               Parameter && ... parameter)
+    operator()(Connection &&, Parameter && ... parameter)
     {
-      return ReturnType { std::forward<Member>(member)
-                        , std::forward<Parameter>(parameter) ... };
+      return ReturnType { std::forward<Parameter>(parameter) ... };
     }
 };
 
 template<typename ReturnType>
-class make_object_with_connection {
+class make_object_with_member
+{
   public:
     template<typename Member, typename Connection, typename ... Parameter>
     ReturnType
-    operator()(Member && member,
-               Connection && c,
-               Parameter && ... parameter)
+    operator()(Connection && c, Member && member, Parameter && ... parameter)
     {
       return ReturnType { std::forward<Member>(member)
                         , std::forward<Connection>(c)
@@ -38,11 +35,25 @@ class make_object_with_connection {
 };
 
 template<typename ReturnType>
+class make_object_with_connection
+{
+  public:
+    template<typename Connection, typename ... Parameter>
+    ReturnType
+    operator()(Connection && c, Parameter && ... parameter)
+    {
+      return ReturnType { std::forward<Connection>(c)
+                        , std::forward<Parameter>(parameter) ...
+                        };
+    }
+};
+
+template<typename ReturnType>
 class make_fundamental {
   public:
-    template<typename Member, typename Connection, typename ... Parameter>
+    template<typename Connection, typename Member, typename ... Parameter>
     ReturnType
-    operator()(Member && member, Connection &&)
+    operator()(Connection &&, Member && member)
     {
       return std::forward<Member>(member);
     }
@@ -54,17 +65,24 @@ template<typename Connection,
          typename ... Parameter>
 class make
   : public std::conditional<
-               std::is_constructible<ReturnType, MemberType>::value,
-               make_fundamental<ReturnType>,
-               typename std::conditional<
-                            std::is_constructible<ReturnType,
-                                                  MemberType,
-                                                  Connection,
-                                                  Parameter ...>::value,
-                            make_object_with_connection<ReturnType>,
-                            make_object<ReturnType>
-                        >::type
-           >::type
+      std::is_constructible<ReturnType, MemberType>::value,
+      make_fundamental<ReturnType>,
+      typename std::conditional<
+        std::is_constructible<ReturnType,
+                              MemberType,
+                              Connection,
+                              Parameter ...>::value,
+        make_object_with_member<ReturnType>,
+        typename std::conditional<
+          std::is_constructible<ReturnType,
+                                Connection,
+                                MemberType,
+                                Parameter ...>::value,
+          make_object_with_connection<ReturnType>,
+          make_object<ReturnType>
+        >::type
+      >::type
+    >::type
 {};
 
 }; // namespace factory
