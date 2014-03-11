@@ -292,113 +292,7 @@ class iterator<Connection,
 
 }; // class iterator
 
-// abstract iterator for fixed size data fields
-// Derived: derived iterator class for CRTP
-
-template<typename Derived,
-         typename Connection,
-         typename ReturnData,
-         typename Data,
-         typename Reply,
-         ACCESSOR_TEMPLATE,
-         LENGTH_TEMPLATE>
-class iterator<Derived,
-               Connection,
-               ReturnData,
-               ACCESSOR_SIGNATURE,
-               LENGTH_SIGNATURE>
-{
-public:
-  iterator(void) {}
-
-  template<typename C>
-  iterator(C && c,
-           const std::shared_ptr<Reply> & reply,
-           std::size_t index)
-    : m_c(c)
-    , m_index(index)
-    , m_reply(reply)
-  {}
-
-  virtual
-  bool operator==(const iterator & other)
-  {
-    return m_index == other.m_index;
-  }
-
-  virtual
-  bool operator!=(const iterator & other)
-  {
-    return ! (*this == other);
-  }
-
-  // const ReturnData & operator*(void) = 0;
-  ReturnData operator*(void)
-  {
-    return *(static_cast<Derived &>(*this));
-  }
-
-  // prefix
-  virtual
-  Derived & operator++(void)
-  {
-    ++m_index;
-    return static_cast<Derived &>(*this);
-  }
-
-  // postfix
-  virtual
-  Derived operator++(int)
-  {
-    auto copy = static_cast<Derived &>(*this);
-    ++(*this);
-    return copy;
-  }
-
-  // prefix
-  virtual
-  Derived & operator--(void)
-  {
-    --m_index;
-    return static_cast<Derived &>(*this);
-  }
-
-  // postfix
-  virtual
-  Derived operator--(int)
-  {
-    auto copy = static_cast<Derived &>(*this);
-    --(*this);
-    return copy;
-  }
-
-  template<typename C>
-  static
-  Derived
-  begin(C && c, const std::shared_ptr<Reply> & reply)
-  {
-    return Derived { std::forward<C>(c), reply, 0 };
-  }
-
-  template<typename C>
-  static
-  Derived
-  end(C && c, const std::shared_ptr<Reply> & reply)
-  {
-    return Derived { std::forward<C>(c),
-                     reply,
-                     static_cast<std::size_t>(Length(reply.get())) };
-  }
-
-protected:
-  Connection m_c;
-  std::size_t m_index = 0;
-  std::shared_ptr<Reply> m_reply;
-
-}; // class iterator
-
-template<typename ... Types>
-class fixed;
+// iterator for fixed size data fields
 
 template<typename Connection,
          typename ReturnData,
@@ -406,55 +300,110 @@ template<typename Connection,
          typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
-class fixed<Connection,
-             ReturnData,
-             ACCESSOR_SIGNATURE,
-             LENGTH_SIGNATURE>
-  : public xpp::iterator<fixed<Connection,
-                               ReturnData,
-                               ACCESSOR_SIGNATURE,
-                               LENGTH_SIGNATURE>,
-                         Connection,
-                         ReturnData,
-                         ACCESSOR_SIGNATURE,
-                         LENGTH_SIGNATURE>
+class iterator<Connection,
+               ReturnData,
+               ACCESSOR_SIGNATURE,
+               LENGTH_SIGNATURE>
 {
-  public:
-    typedef fixed<Connection,
-                   ReturnData,
-                   ACCESSOR_SIGNATURE,
-                   LENGTH_SIGNATURE>
-                     self;
-
-    typedef xpp::iterator<self,
-                          Connection,
-                          ReturnData,
-                          ACCESSOR_SIGNATURE,
-                          LENGTH_SIGNATURE>
-                            base;
-
+  protected:
     using data_t = typename xpp::generic::conversion_type<ReturnData>::type;
     using make = xpp::generic::factory::make<Connection, data_t, ReturnData>;
 
+    Connection m_c;
+    std::size_t m_index = 0;
+    std::shared_ptr<Reply> m_reply;
+
+  public:
+    typedef iterator<Connection,
+                     ReturnData,
+                     ACCESSOR_SIGNATURE,
+                     LENGTH_SIGNATURE>
+                       self;
+
+    iterator(void) {}
+
     template<typename C>
-    fixed(C && c,
-          const std::shared_ptr<Reply> & reply,
-          std::size_t index)
-      : base(std::forward<C>(c), reply, index)
+    iterator(C && c,
+             const std::shared_ptr<Reply> & reply,
+             std::size_t index)
+      : m_c(c)
+      , m_index(index)
+      , m_reply(reply)
     {
       if (std::is_void<Data>::value) {
-        base::m_index /= sizeof(data_t);
+        m_index /= sizeof(data_t);
       }
     }
 
     virtual
-    ReturnData
-    operator*(void)
+    bool operator==(const iterator & other)
     {
-      data_t * address = static_cast<data_t *>(Accessor(base::m_reply.get()));
-      return make()(base::m_c, address[base::m_index]);
+      return m_index == other.m_index;
     }
-};
+
+    virtual
+    bool operator!=(const iterator & other)
+    {
+      return ! (*this == other);
+    }
+
+    ReturnData operator*(void)
+    {
+      return make()(m_c, static_cast<data_t *>(Accessor(m_reply.get()))[m_index]);
+    }
+
+    // prefix
+    virtual
+    self & operator++(void)
+    {
+      ++m_index;
+      return static_cast<self &>(*this);
+    }
+
+    // postfix
+    virtual
+    self operator++(int)
+    {
+      auto copy = static_cast<self &>(*this);
+      ++(*this);
+      return copy;
+    }
+
+    // prefix
+    virtual
+    self & operator--(void)
+    {
+      --m_index;
+      return static_cast<self &>(*this);
+    }
+
+    // postfix
+    virtual
+    self operator--(int)
+    {
+      auto copy = static_cast<self &>(*this);
+      --(*this);
+      return copy;
+    }
+
+    template<typename C>
+    static
+    self
+    begin(C && c, const std::shared_ptr<Reply> & reply)
+    {
+      return self { std::forward<C>(c), reply, 0 };
+    }
+
+    template<typename C>
+    static
+    self
+    end(C && c, const std::shared_ptr<Reply> & reply)
+    {
+      return self { std::forward<C>(c),
+                    reply,
+                    static_cast<std::size_t>(Length(reply.get())) };
+    }
+}; // class iterator
 
 namespace generic {
 
