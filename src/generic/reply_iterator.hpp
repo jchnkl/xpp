@@ -70,6 +70,18 @@ class iterator<Derived,
                SIZEOF_SIGNATURE,
                GETITERATOR_SIGNATURE>
 {
+  protected:
+    using self = iterator<Connection,
+                          ReturnData,
+                          NEXT_SIGNATURE,
+                          SIZEOF_SIGNATURE,
+                          GETITERATOR_SIGNATURE>;
+
+    Connection m_c;
+    std::shared_ptr<Reply> m_reply;
+    std::stack<std::size_t> m_lengths;
+    XcbIterator m_iterator;
+
   public:
     iterator(void) {}
 
