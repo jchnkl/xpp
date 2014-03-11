@@ -190,6 +190,16 @@ operator<<(std::ostream & os, const xpp::window<Connection> & window)
   return os << std::hex << "0x" << *window << std::dec;
 }
 
+namespace generic {
+
+template<typename Connection>
+struct traits<xpp::window<Connection>>
+{
+  typedef xcb_window_t type;
+};
+
+}; // namespace generic
+
 }; // namespace xpp
 
 #endif // XPP_WINDOW_HPP
