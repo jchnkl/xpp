@@ -4,23 +4,19 @@ _templates = {}
 
 _templates['iter_fixed'] = \
 """\
-                     xpp::iterator<Connection,
-                                   %s,
-                                   %s,
-                                   %s_reply_t,
-                                   CALLABLE(%s_%s),
-                                   CALLABLE(%s_%s_length)>\
+                    xpp::iterator<Connection,
+                                         %s,
+                                         SIGNATURE(%s_%s),
+                                         SIGNATURE(%s_%s_length)>\
 """
 
 _templates['iter_variable'] = \
 """\
                         xpp::iterator<Connection,
                                       %s,
-                                      %s_reply_t,
-                                      %s_iterator_t,
-                                      CALLABLE(%s_next),
-                                      CALLABLE(%s_sizeof),
-                                      CALLABLE(%s_%s_iterator)>\
+                                      SIGNATURE(%s_next),
+                                      SIGNATURE(%s_sizeof),
+                                      SIGNATURE(%s_%s_iterator)>\
 """
 
 _templates['list'] = \
@@ -90,9 +86,7 @@ class Accessor(object):
         return_type = self.return_type
 
         return _templates['iter_fixed'] \
-                % (self.c_type,
-                   return_type,
-                   self.c_name,
+                % (return_type,
                    self.c_name, self.member,
                    self.c_name, self.member)
 
@@ -100,8 +94,6 @@ class Accessor(object):
     def iter_variable(self):
         return _templates['iter_variable'] \
                 % (self.c_type,
-                   self.c_name,
-                   self.iter_name,
                    self.iter_name,
                    self.iter_name,
                    self.c_name, self.member)
