@@ -49,22 +49,19 @@
 
 namespace xpp {
 
-template<typename ... Arguments>
+// iterator for variable size data fields
+
+template<typename ... Types>
 class iterator;
 
-// abstract iterator for variable size data fields
-// Derived: derived iterator class for CRTP
-
-template<typename Derived,
-         typename Connection,
+template<typename Connection,
          typename ReturnData,
          typename Reply,
          typename XcbIterator,
          NEXT_TEMPLATE,
          SIZEOF_TEMPLATE,
          GETITERATOR_TEMPLATE>
-class iterator<Derived,
-               Connection,
+class iterator<Connection,
                ReturnData,
                NEXT_SIGNATURE,
                SIZEOF_SIGNATURE,
@@ -116,50 +113,44 @@ class iterator<Derived,
       , m_iterator(GetIterator(reply.get()))
     {}
 
-    virtual
     bool
     operator==(const iterator & other)
     {
       return m_iterator.rem == other.m_iterator.rem;
     }
 
-    virtual
     bool
     operator!=(const iterator & other)
     {
       return ! (*this == other);
     }
 
-    virtual
-    ReturnData
-    operator*(void)
+    auto
+    operator*(void) -> decltype(get<ReturnData>()(this->m_iterator.data))
     {
-      return *(static_cast<Derived &>(*this));
+      return get<ReturnData>()(m_iterator.data);
     }
 
     // prefix
-    virtual
-    Derived &
+    self &
     operator++(void)
     {
       m_lengths.push(SizeOf(m_iterator.data));
       Next(&m_iterator);
-      return static_cast<Derived &>(*this);
+      return *this;
     }
 
     // postfix
-    virtual
-    Derived
+    self
     operator++(int)
     {
-      auto copy = static_cast<Derived &>(*this);
+      auto copy = *this;
       ++(*this);
       return copy;
     }
 
     // prefix
-    virtual
-    Derived &
+    self &
     operator--(void)
     {
       typedef typename std::remove_pointer<decltype(m_iterator.data)>::type data_t;
@@ -171,156 +162,34 @@ class iterator<Derived,
         m_iterator.data = prev;
         ++m_iterator.rem;
       }
-
-      return static_cast<Derived &>(*this);
+      return *this;
     }
 
     // postfix
-    virtual
-    Derived
+    self
     operator--(int)
     {
-      auto copy = static_cast<Derived &>(*this);
+      auto copy = *this;
       --(*this);
       return copy;
     }
 
     template<typename C>
     static
-    Derived
+    self
     begin(C && c, const std::shared_ptr<Reply> & reply)
     {
-      return Derived { std::forward<C>(c), reply };
+      return self { std::forward<C>(c), reply };
     }
 
     template<typename C>
     static
-    Derived
+    self
     end(C && c, const std::shared_ptr<Reply> & reply)
     {
-      auto it = Derived { std::forward<C>(c), reply };
+      auto it = self { std::forward<C>(c), reply };
       it.m_iterator.rem = 0;
       return it;
-    }
-
-  protected:
-    Connection m_c;
-    std::shared_ptr<Reply> m_reply;
-    std::stack<std::size_t> m_lengths;
-    XcbIterator m_iterator;
-}; // class iterator
-
-// general iterator for variable sized data fields
-
-template<typename Connection,
-         typename Data,
-         typename ReturnData,
-         typename Reply,
-         typename XcbIterator,
-         NEXT_TEMPLATE,
-         SIZEOF_TEMPLATE,
-         GETITERATOR_TEMPLATE>
-class iterator<Connection,
-               Data,
-               ReturnData,
-               NEXT_SIGNATURE,
-               SIZEOF_SIGNATURE,
-               GETITERATOR_SIGNATURE>
-  : public xpp::iterator<
-      // self
-      iterator<Connection,
-               Data,
-               ReturnData,
-               NEXT_SIGNATURE,
-               SIZEOF_SIGNATURE,
-               GETITERATOR_SIGNATURE>,
-      // other args
-      Connection,
-      Data,
-      ReturnData,
-      NEXT_SIGNATURE,
-      SIZEOF_SIGNATURE,
-      GETITERATOR_SIGNATURE>
-{
-  public:
-    typedef iterator<Connection,
-                     Data,
-                     ReturnData,
-                     NEXT_SIGNATURE,
-                     SIZEOF_SIGNATURE,
-                     GETITERATOR_SIGNATURE>
-                       self;
-
-    typedef xpp::iterator<self,
-                          Connection,
-                          Data,
-                          ReturnData,
-                          NEXT_SIGNATURE,
-                          SIZEOF_SIGNATURE,
-                          GETITERATOR_SIGNATURE>
-                            base;
-
-    using base::base;
-
-    virtual
-    ReturnData
-    operator*(void)
-    {
-      return *(static_cast<ReturnData *>(base::m_iterator.data));
-    }
-}; // class iterator
-
-// specialized iterator for variable sized data fields which are strings
-
-template<typename Connection,
-         typename Reply,
-         xcb_str_iterator_t (&GetIterator)(const Reply *)>
-class iterator<Connection,
-               xcb_str_t,
-               xcb_str_t,
-               SIGNATURE(xcb_str_next),
-               SIGNATURE(xcb_str_sizeof),
-               xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
-  : public iterator<
-      // self
-      iterator<Connection,
-               xcb_str_t,
-               xcb_str_t,
-               SIGNATURE(xcb_str_next),
-               SIGNATURE(xcb_str_sizeof),
-               xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>,
-      // other args
-      Connection,
-      xcb_str_t,
-      std::string,
-      SIGNATURE(xcb_str_next),
-      SIGNATURE(xcb_str_sizeof),
-      xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
-{
-  public:
-    typedef iterator<Connection,
-                     xcb_str_t,
-                     xcb_str_t,
-                     SIGNATURE(xcb_str_next),
-                     SIGNATURE(xcb_str_sizeof),
-                     xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
-                       self;
-
-    typedef iterator<self,
-                     Connection,
-                     xcb_str_t,
-                     std::string,
-                     SIGNATURE(xcb_str_next),
-                     SIGNATURE(xcb_str_sizeof),
-                     xpp::generic::signature<xcb_str_iterator_t (const Reply *), GetIterator>>
-                       base;
-
-    using base::base;
-
-    std::string operator*(void)
-    {
-      return std::string((char *)xcb_str_name(base::m_iterator.data),
-                         xcb_str_name_length(base::m_iterator.data));
     }
 }; // class iterator
 
@@ -463,7 +332,6 @@ class list {
     {
       return Iterator::end(m_c, m_reply);
     }
-
 }; // class list
 
 }; // namespace generic
