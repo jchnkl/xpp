@@ -16,7 +16,6 @@ _templates['iter_variable'] = \
 """\
                         xpp::iterator<Connection,
                                       %s,
-                                      %s,
                                       %s_reply_t,
                                       %s_iterator_t,
                                       CALLABLE(%s_next),
@@ -101,7 +100,6 @@ class Accessor(object):
     def iter_variable(self):
         return _templates['iter_variable'] \
                 % (self.c_type,
-                   self.return_type,
                    self.c_name,
                    self.iter_name,
                    self.iter_name,

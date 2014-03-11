@@ -57,7 +57,6 @@ class iterator;
 
 template<typename Derived,
          typename Connection,
-         typename Data, // remove -> decltype
          typename ReturnData,
          typename Reply,
          typename XcbIterator,
@@ -66,7 +65,6 @@ template<typename Derived,
          GETITERATOR_TEMPLATE>
 class iterator<Derived,
                Connection,
-               Data,
                ReturnData,
                NEXT_SIGNATURE,
                SIZEOF_SIGNATURE,
@@ -133,7 +131,6 @@ class iterator<Derived,
         data_t * data = m_iterator.data;
         data_t * prev = data - m_lengths.top();
         m_lengths.pop();
-
         m_iterator.index = (char *)m_iterator.data - (char *)prev;
         m_iterator.data = prev;
         ++m_iterator.rem;
