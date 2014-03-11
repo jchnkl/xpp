@@ -63,8 +63,11 @@ class window : virtual public xpp::x::window<Connection>
       return *m_window;
     }
 
+    // xpp::xcb::type<const xcb_window_t &>
     virtual
+    operator xcb_window_t &(void) const
     {
+      return *m_window;
     }
 
     // xpp::xcb::type<const xcb_window_t &>
