@@ -22,26 +22,29 @@ class window : virtual public xpp::x::window<Connection>
 
   public:
 
-    window(const Connection & c)
+    window(const Connection c)
       : m_c(c)
     {}
 
-    window(const Connection & c, const xcb_window_t & window)
-      : m_c(c)
+    template<typename C>
+    window(C && c, const xcb_window_t & window)
+      : m_c(std::forward<C>(c))
       , m_window(std::make_shared<xcb_window_t>(window))
     {}
 
-    window(const xcb_window_t & window, const Connection & c)
-      : xpp::window<Connection>(c, window)
+    template<typename C>
+    window(const xcb_window_t & window, C && c)
+      : xpp::window<Connection>(std::forward<C>(c), window)
     {}
 
-    window(const Connection & c,
+    template<typename C>
+    window(C && c,
            uint8_t depth, xcb_window_t parent, int16_t x, int16_t y,
            uint16_t width, uint16_t height, uint16_t border_width,
            uint16_t _class, xcb_visualid_t visual,
            uint32_t value_mask, const uint32_t * value_list)
-      : m_c(c)
-      , m_window(new xcb_window_t(xcb_generate_id(c)),
+      : m_c(std::forward<C>(c))
+      , m_window(new xcb_window_t(xcb_generate_id(m_c)),
                                                 [&](xcb_window_t * window)
                                                 {
                                                   xpp::x::destroy_window(m_c, *window);
