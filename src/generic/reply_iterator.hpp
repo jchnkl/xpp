@@ -49,14 +49,6 @@
 
 namespace xpp {
 
-namespace generic {
-
-
-// http://bytes.com/topic/c/answers/692802-performance-static-member-function-versus-functor#post2754209
-// functors are faster than static methods
-
-}; // namespace generic
-
 template<typename ... Arguments>
 class iterator;
 
@@ -405,16 +397,6 @@ protected:
 
 }; // class iterator
 
-
-// traits to set a data value on an object type
-// requires the object to implement xpp::iterable<...>
-// can not be in an if-else clause because arithmetic on void is not allowed and
-// the compiler will generate an error, even though this code path is never
-// taken
-
-
-// handles all iterators for simple types (e.g. xcb_window_t)
-
 template<typename ... Types>
 class fixed;
 
@@ -473,11 +455,6 @@ class fixed<Connection,
       return make()(base::m_c, address[base::m_index]);
     }
 };
-
-
-// dispatcher to decide which implementation is necessary
-
-
 
 namespace generic {
 
