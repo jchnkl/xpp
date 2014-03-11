@@ -230,13 +230,11 @@ class iterator<Connection,
       }
     }
 
-    virtual
     bool operator==(const iterator & other)
     {
       return m_index == other.m_index;
     }
 
-    virtual
     bool operator!=(const iterator & other)
     {
       return ! (*this == other);
@@ -248,35 +246,31 @@ class iterator<Connection,
     }
 
     // prefix
-    virtual
     self & operator++(void)
     {
       ++m_index;
-      return static_cast<self &>(*this);
+      return *this;
     }
 
     // postfix
-    virtual
     self operator++(int)
     {
-      auto copy = static_cast<self &>(*this);
+      auto copy = *this;
       ++(*this);
       return copy;
     }
 
     // prefix
-    virtual
     self & operator--(void)
     {
       --m_index;
-      return static_cast<self &>(*this);
+      return *this;
     }
 
     // postfix
-    virtual
     self operator--(int)
     {
-      auto copy = static_cast<self &>(*this);
+      auto copy = *this;
       --(*this);
       return copy;
     }
