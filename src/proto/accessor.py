@@ -5,18 +5,18 @@ _templates = {}
 _templates['iter_fixed'] = \
 """\
 xpp::generic::iterator<Connection,
-                                         %s,
-                                         SIGNATURE(%s_%s),
-                                         SIGNATURE(%s_%s_length)>\
+                       %s,
+                       SIGNATURE(%s_%s),
+                       SIGNATURE(%s_%s_length)>\
 """
 
 _templates['iter_variable'] = \
 """\
 xpp::generic::iterator<Connection,
-                                      %s,
-                                      SIGNATURE(%s_next),
-                                      SIGNATURE(%s_sizeof),
-                                      SIGNATURE(%s_%s_iterator)>\
+                       %s,
+                       SIGNATURE(%s_next),
+                       SIGNATURE(%s_sizeof),
+                       SIGNATURE(%s_%s_iterator)>\
 """
 
 _templates['list'] = \
@@ -100,7 +100,6 @@ class Accessor(object):
 
 
     def list(self, iterator):
-
         template = "    template<typename Type" if self.c_type == "void" else ""
 
         # template<typename Children = xcb_window_t>
@@ -112,12 +111,15 @@ class Accessor(object):
 
         c_tor_params = "this->m_c, this->get()"
 
+        fst_iterator = "\n                       ".join(iterator.split('\n'))
+        snd_iterator = "\n                                ".join(iterator.split('\n'))
+
         return template + _templates['list'] \
                 % (self.c_name,
-                   iterator,
+                   fst_iterator,
                    self.member,
                    self.c_name,
-                   iterator,
+                   snd_iterator,
                    c_tor_params)
 
     def string(self):
