@@ -1,5 +1,5 @@
-#ifndef XPP_ITERABLE_HPP
-#define XPP_ITERABLE_HPP
+#ifndef XPP_GENERIC_ITERATOR_TRAITS_HPP
+#define XPP_GENERIC_ITERATOR_TRAITS_HPP
 
 #include <cstdlib> // size_t
 
@@ -40,4 +40,4 @@ class iterable<void> {
 
 };
 
-#endif // XPP_ITERABLE_HPP
+#endif // XPP_GENERIC_ITERATOR_TRAITS_HPP

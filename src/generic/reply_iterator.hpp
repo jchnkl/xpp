@@ -7,8 +7,8 @@
 #include <xcb/xcb.h> // xcb_str_*
 #include "type.hpp"
 #include "factory.hpp"
-#include "iterable.hpp"
 #include "signature.hpp"
+#include "iterator_traits.hpp"
 
 
 #define NEXT_TEMPLATE \
