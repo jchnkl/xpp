@@ -4,7 +4,7 @@ _templates = {}
 
 _templates['iter_fixed'] = \
 """\
-                    xpp::iterator<Connection,
+xpp::generic::iterator<Connection,
                                          %s,
                                          SIGNATURE(%s_%s),
                                          SIGNATURE(%s_%s_length)>\
@@ -12,7 +12,7 @@ _templates['iter_fixed'] = \
 
 _templates['iter_variable'] = \
 """\
-                        xpp::iterator<Connection,
+xpp::generic::iterator<Connection,
                                       %s,
                                       SIGNATURE(%s_next),
                                       SIGNATURE(%s_sizeof),

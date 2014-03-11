@@ -43,6 +43,8 @@
 
 namespace xpp {
 
+namespace generic {
+
 // iterator for variable size data fields
 
 template<typename ... Types>
@@ -293,8 +295,6 @@ class iterator<Connection,
                     static_cast<std::size_t>(Length(reply.get())) };
     }
 }; // class iterator
-
-namespace generic {
 
 template<typename Connection, typename Reply, typename Iterator>
 class list {
