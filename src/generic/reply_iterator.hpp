@@ -289,7 +289,6 @@ class iterator<Connection,
       return std::string((char *)xcb_str_name(base::m_iterator.data),
                          xcb_str_name_length(base::m_iterator.data));
     }
-
 }; // class iterator
 
 // iterator for fixed size data fields
@@ -433,39 +432,6 @@ class list {
     }
 
 }; // class list
-
-template<typename ... Types>
-class string;
-
-template<typename Reply, STRING_ACCESSOR_TEMPLATE, LENGTH_TEMPLATE>
-class string<Reply, STRING_ACCESSOR_SIGNATURE, LENGTH_SIGNATURE>
-{
-  public:
-    string(const std::shared_ptr<Reply> & reply)
-      : m_string(std::string(Accessor(reply.get()), Length(reply.get())))
-    {}
-
-    const std::string & operator*(void) const
-    {
-      return m_string;
-    }
-
-    const std::string * operator->(void) const
-    {
-      return &m_string;
-    }
-
-  private:
-    std::string m_string;
-}; // class string
-
-template<typename Reply, STRING_ACCESSOR_TEMPLATE, LENGTH_TEMPLATE>
-std::ostream &
-operator<<(std::ostream & os,
-           const string<Reply, STRING_ACCESSOR_SIGNATURE, LENGTH_SIGNATURE> & s)
-{
-  return os << *s;
-}
 
 }; // namespace generic
 

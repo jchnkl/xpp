@@ -39,23 +39,19 @@ _templates['list'] = \
     }\
 """
 
-_templates['iter_string'] = \
-"""\
-xpp::generic::string<
-                     %s_reply_t,
-                     &%s_%s,
-                     &%s_%s_length>\
-"""
-
-_templates['string'] = \
-"""\
-    %s
+_templates['string_accessor'] = \
+'''\
+    std::string
     %s(void)
     {
-      return %s
-               (this->get());
-    }\
-"""
+      return std::string(%s_%s(this->get().get()),
+                         %s_%s_length(this->get().get()));
+    }
+'''
+
+def _string_accessor(member, c_name):
+    return _templates['string_accessor'] % \
+            (member, c_name, member, c_name, member)
 
 class Accessor(object):
     def __init__(self, is_fixed=False, is_string=False, is_variable=False, \
@@ -135,9 +131,4 @@ class Accessor(object):
                    c_tor_params)
 
     def string(self):
-        string = _templates['iter_string'] \
-                % (self.c_name,
-                   self.c_name, self.member,
-                   self.c_name, self.member)
-
-        return _templates['string'] % (string, self.member, string)
+        return _string_accessor(self.member, self.c_name)
