@@ -1,8 +1,6 @@
 #ifndef XPP_GENERIC_ITERATOR_TRAITS_HPP
 #define XPP_GENERIC_ITERATOR_TRAITS_HPP
 
-#include <cstdlib> // size_t
-
 namespace xpp {
 
 namespace generic {
@@ -20,23 +18,6 @@ struct conversion_type
 };
 
 }; // namespace generic
-
-// interface for object types to be used with an itertor
-
-template<typename Type>
-class iterable {
-  public:
-    virtual ~iterable(void) {}
-    virtual void operator=(Type) = 0;
-}; // class iterable
-
-template<>
-class iterable<void> {
-  public:
-    virtual ~iterable(void) {}
-    static std::size_t size_of(void);
-    virtual void operator=(void * const) = 0;
-};
 
 };
 
