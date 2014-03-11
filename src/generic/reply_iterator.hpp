@@ -6,6 +6,7 @@
 #include <stack>
 #include <xcb/xcb.h> // xcb_str_*
 #include "type.hpp"
+#include "factory.hpp"
 #include "iterable.hpp"
 #include "signature.hpp"
 
@@ -404,7 +405,6 @@ protected:
 
 }; // class iterator
 
-namespace fixed {
 
 // traits to set a data value on an object type
 // requires the object to implement xpp::iterable<...>
@@ -412,37 +412,11 @@ namespace fixed {
 // the compiler will generate an error, even though this code path is never
 // taken
 
-template<typename Data>
-struct data_traits
-{
-  template<typename RealData = Data>
-  static
-  void
-  set(RealData & iterable, Data * const data, std::size_t index)
-  {
-    iterable = static_cast<Data>(data[index]);
-  }
-};
-
-template<>
-struct data_traits<void>
-{
-  template<typename RealData>
-  static
-  void
-  set(RealData & iterable, void * const data, std::size_t index)
-  {
-    char * ptr = (char *)data + index * RealData::size_of();
-    iterable = (void * const)ptr;
-  }
-};
-
-namespace iterator {
 
 // handles all iterators for simple types (e.g. xcb_window_t)
 
 template<typename ... Types>
-class simple;
+class fixed;
 
 template<typename Connection,
          typename ReturnData,
@@ -450,21 +424,21 @@ template<typename Connection,
          typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
-class simple<Connection,
+class fixed<Connection,
              ReturnData,
              ACCESSOR_SIGNATURE,
              LENGTH_SIGNATURE>
-  : public xpp::iterator<simple<Connection,
-                                ReturnData,
-                                ACCESSOR_SIGNATURE,
-                                LENGTH_SIGNATURE>,
+  : public xpp::iterator<fixed<Connection,
+                               ReturnData,
+                               ACCESSOR_SIGNATURE,
+                               LENGTH_SIGNATURE>,
                          Connection,
                          ReturnData,
                          ACCESSOR_SIGNATURE,
                          LENGTH_SIGNATURE>
 {
   public:
-    typedef simple<Connection,
+    typedef fixed<Connection,
                    ReturnData,
                    ACCESSOR_SIGNATURE,
                    LENGTH_SIGNATURE>
@@ -481,9 +455,9 @@ class simple<Connection,
     using make = xpp::generic::factory::make<Connection, data_t, ReturnData>;
 
     template<typename C>
-    simple(C && c,
-           const std::shared_ptr<Reply> & reply,
-           std::size_t index)
+    fixed(C && c,
+          const std::shared_ptr<Reply> & reply,
+          std::size_t index)
       : base(std::forward<C>(c), reply, index)
     {
       if (std::is_void<Data>::value) {
@@ -500,109 +474,9 @@ class simple<Connection,
     }
 };
 
-// handles all iterators for object types (e.g. xpp::window)
-
-template<typename ... Types>
-class object;
-
-template<typename Connection,
-         typename ReturnData,
-         typename Data,
-         typename Reply,
-         ACCESSOR_TEMPLATE,
-         LENGTH_TEMPLATE>
-class object<Connection,
-             ReturnData,
-             ACCESSOR_SIGNATURE,
-             LENGTH_SIGNATURE>
-  : public xpp::iterator<object<Connection,
-                                ReturnData,
-                                ACCESSOR_SIGNATURE,
-                                LENGTH_SIGNATURE>,
-                         Connection,
-                         ReturnData,
-                         ACCESSOR_SIGNATURE,
-                         LENGTH_SIGNATURE>
-{
-  public:
-    typedef object<Connection,
-                   ReturnData,
-                   ACCESSOR_SIGNATURE,
-                   LENGTH_SIGNATURE>
-                     self;
-
-    typedef xpp::iterator<self,
-                          Connection,
-                          ReturnData,
-                          ACCESSOR_SIGNATURE,
-                          LENGTH_SIGNATURE>
-                            base;
-
-    template<typename C>
-    object(C & c,
-           const std::shared_ptr<Reply> & reply,
-           std::size_t index)
-      : base(std::forward<C>(c), reply, index)
-    {
-      if (std::is_void<Data>::value) {
-        this->m_index /= ReturnData::size_of();
-      }
-    }
-
-    virtual
-    ReturnData
-    operator*(void)
-    {
-      ReturnData rd(base::m_c);
-      data_traits<Data>::set(rd,
-                             Accessor(this->m_reply.get()),
-                             this->m_index);
-      return rd;
-    }
-}; // class object
-
-}; }; // fixed::iterator
 
 // dispatcher to decide which implementation is necessary
 
-template<typename Connection,
-         typename ReturnData,
-         typename Data,
-         typename Reply,
-         ACCESSOR_TEMPLATE,
-         LENGTH_TEMPLATE>
-class iterator<Connection,
-               ReturnData,
-               ACCESSOR_SIGNATURE,
-               LENGTH_SIGNATURE>
-  : public std::conditional<
-        ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Connection,
-                                  ReturnData,
-                                  ACCESSOR_SIGNATURE,
-                                  LENGTH_SIGNATURE>,
-          fixed::iterator::object<Connection,
-                                  ReturnData,
-                                  ACCESSOR_SIGNATURE,
-                                  LENGTH_SIGNATURE>
-      >::type
-{
-  public:
-    typedef typename std::conditional<
-        ! std::is_base_of<xpp::iterable<Data>, ReturnData>::value,
-          fixed::iterator::simple<Connection,
-                                  ReturnData,
-                                  ACCESSOR_SIGNATURE,
-                                  LENGTH_SIGNATURE>,
-          fixed::iterator::object<Connection,
-                                  ReturnData,
-                                  ACCESSOR_SIGNATURE,
-                                  LENGTH_SIGNATURE>
-      >::type
-        base;
-
-    using base::base;
-}; // class iterator
 
 
 namespace generic {
