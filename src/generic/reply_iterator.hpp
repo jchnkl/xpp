@@ -10,7 +10,6 @@
 #include "signature.hpp"
 #include "iterator_traits.hpp"
 
-
 #define NEXT_TEMPLATE \
   void (&Next)(XcbIterator *)
 
@@ -51,21 +50,21 @@ template<typename ... Types>
 class iterator;
 
 template<typename Connection,
-         typename ReturnData,
+         typename Object,
          typename Reply,
          typename XcbIterator,
          NEXT_TEMPLATE,
          SIZEOF_TEMPLATE,
          GETITERATOR_TEMPLATE>
 class iterator<Connection,
-               ReturnData,
+               Object,
                NEXT_SIGNATURE,
                SIZEOF_SIGNATURE,
                GETITERATOR_SIGNATURE>
 {
   protected:
     using self = iterator<Connection,
-                          ReturnData,
+                          Object,
                           NEXT_SIGNATURE,
                           SIZEOF_SIGNATURE,
                           GETITERATOR_SIGNATURE>;
@@ -122,9 +121,9 @@ class iterator<Connection,
     }
 
     auto
-    operator*(void) -> decltype(get<ReturnData>()(this->m_iterator.data))
+    operator*(void) -> decltype(get<Object>()(this->m_iterator.data))
     {
-      return get<ReturnData>()(m_iterator.data);
+      return get<Object>()(m_iterator.data);
     }
 
     // prefix
@@ -192,19 +191,19 @@ class iterator<Connection,
 // iterator for fixed size data fields
 
 template<typename Connection,
-         typename ReturnData,
+         typename Object,
          typename Data,
          typename Reply,
          ACCESSOR_TEMPLATE,
          LENGTH_TEMPLATE>
 class iterator<Connection,
-               ReturnData,
+               Object,
                ACCESSOR_SIGNATURE,
                LENGTH_SIGNATURE>
 {
   protected:
-    using data_t = typename xpp::generic::conversion_type<ReturnData>::type;
-    using make = xpp::generic::factory::make<Connection, data_t, ReturnData>;
+    using data_t = typename xpp::generic::conversion_type<Object>::type;
+    using make = xpp::generic::factory::make<Connection, data_t, Object>;
 
     Connection m_c;
     std::size_t m_index = 0;
@@ -212,7 +211,7 @@ class iterator<Connection,
 
   public:
     typedef iterator<Connection,
-                     ReturnData,
+                     Object,
                      ACCESSOR_SIGNATURE,
                      LENGTH_SIGNATURE>
                        self;
@@ -242,7 +241,7 @@ class iterator<Connection,
       return ! (*this == other);
     }
 
-    ReturnData operator*(void)
+    Object operator*(void)
     {
       return make()(m_c, static_cast<data_t *>(Accessor(m_reply.get()))[m_index]);
     }
