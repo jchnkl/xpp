@@ -477,6 +477,9 @@ class simple<Connection,
                           LENGTH_SIGNATURE>
                             base;
 
+    using data_t = typename xpp::generic::conversion_type<ReturnData>::type;
+    using make = xpp::generic::factory::make<Connection, data_t, ReturnData>;
+
     template<typename C>
     simple(C && c,
            const std::shared_ptr<Reply> & reply,
@@ -484,17 +487,16 @@ class simple<Connection,
       : base(std::forward<C>(c), reply, index)
     {
       if (std::is_void<Data>::value) {
-        this->m_index /= sizeof(ReturnData);
+        base::m_index /= sizeof(data_t);
       }
     }
 
     virtual
-    // const ReturnData &
     ReturnData
     operator*(void)
     {
-      return static_cast<ReturnData *>(
-          Accessor(this->m_reply.get()))[this->m_index];
+      data_t * address = static_cast<data_t *>(Accessor(base::m_reply.get()));
+      return make()(base::m_c, address[base::m_index]);
     }
 };
 
