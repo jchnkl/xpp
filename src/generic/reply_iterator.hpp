@@ -41,12 +41,6 @@
 #define LENGTH_SIGNATURE \
   xpp::generic::signature<int (const Reply *), Length>
 
-#define STRING_ACCESSOR_TEMPLATE \
-  char * (&Accessor)(const Reply *)
-
-#define STRING_ACCESSOR_SIGNATURE \
-  xpp::generic::signature<char * (const Reply *), Accessor>
-
 namespace xpp {
 
 // iterator for variable size data fields
