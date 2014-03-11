@@ -77,6 +77,30 @@ class iterator<Derived,
                           SIZEOF_SIGNATURE,
                           GETITERATOR_SIGNATURE>;
 
+    // typename Dummy to allow specialization in class scope
+    template<typename Data, typename = void>
+    class get
+    {
+      public:
+        Data
+        operator()(Data * const data)
+        {
+          return *data;
+        }
+    };
+
+    template<typename Dummy>
+    class get<xcb_str_t, Dummy>
+    {
+      public:
+        std::string
+        operator()(xcb_str_t * const data)
+        {
+          return std::string(xcb_str_name(data),
+                             xcb_str_name_length(data));
+        }
+    };
+
     Connection m_c;
     std::shared_ptr<Reply> m_reply;
     std::stack<std::size_t> m_lengths;
