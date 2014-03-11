@@ -322,7 +322,7 @@ public:
   iterator(C && c,
            const std::shared_ptr<Reply> & reply,
            std::size_t index)
-    : m_c(std::forward<C>(c))
+    : m_c(c)
     , m_index(index)
     , m_reply(reply)
   {}
