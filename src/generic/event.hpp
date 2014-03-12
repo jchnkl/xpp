@@ -1,5 +1,5 @@
-#ifndef XPP_EVENT_HPP
-#define XPP_EVENT_HPP
+#ifndef XPP_GENERIC_EVENT_HPP
+#define XPP_GENERIC_EVENT_HPP
 
 #include <memory> // shared_ptr
 #include <xcb/xcb.h> // xcb_generic_event_t
@@ -50,4 +50,4 @@ class event
 
 }; }; // namespace xpp::generic
 
-#endif // XPP_EVENT_HPP
+#endif // XPP_GENERIC_EVENT_HPP

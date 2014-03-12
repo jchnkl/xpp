@@ -1,5 +1,5 @@
-#ifndef XPP_CORE_CONNECTION_HPP
-#define XPP_CORE_CONNECTION_HPP
+#ifndef XPP_GENERIC_CONNECTION_HPP
+#define XPP_GENERIC_CONNECTION_HPP
 
 namespace xpp { namespace generic {
 
@@ -11,4 +11,4 @@ class connection {
 
 }; }; // namespace xpp::generic
 
-#endif // XPP_CORE_CONNECTION_HPP
+#endif // XPP_GENERIC_CONNECTION_HPP

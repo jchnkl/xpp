@@ -1,5 +1,5 @@
-#ifndef XPP_EXTENSION_HPP
-#define XPP_EXTENSION_HPP
+#ifndef XPP_GENERIC_EXTENSION_HPP
+#define XPP_GENERIC_EXTENSION_HPP
 
 // #include <iostream>
 #include <xcb/xcb.h>
@@ -55,4 +55,4 @@ class extension
 
 }; }; // namespace xpp::generic
 
-#endif // XPP_EXTENSION_HPP
+#endif // XPP_GENERIC_EXTENSION_HPP

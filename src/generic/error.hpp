@@ -1,5 +1,5 @@
-#ifndef XPP_ERROR_HPP
-#define XPP_ERROR_HPP
+#ifndef XPP_GENERIC_ERROR_HPP
+#define XPP_GENERIC_ERROR_HPP
 
 #include <iostream> // shared_ptr
 #include <memory> // shared_ptr
@@ -56,4 +56,4 @@ class error : public std::runtime_error {
 
 }; }; // xpp::generic
 
-#endif // XPP_ERROR_HPP
+#endif // XPP_GENERIC_ERROR_HPP

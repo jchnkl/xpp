@@ -1,5 +1,5 @@
-#ifndef XPP_REQUEST_ITERATOR_HPP
-#define XPP_REQUEST_ITERATOR_HPP
+#ifndef XPP_GENERIC_INPUT_ITERATOR_ADAPTER_HPP
+#define XPP_GENERIC_INPUT_ITERATOR_ADAPTER_HPP
 
 #include <utility>
 #include <iterator>
@@ -158,4 +158,4 @@ struct value_type<T, false> {
           >::type type;
 };
 
-#endif // XPP_REQUEST_ITERATOR_HPP
+#endif // XPP_GENERIC_INPUT_ITERATOR_ADAPTER_HPP
