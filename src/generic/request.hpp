@@ -121,6 +121,18 @@ class reply<Derived,
       return m_reply.operator bool();
     }
 
+    const Reply &
+    operator*(void)
+    {
+      return *get();
+    }
+
+    Reply * const
+    operator->(void)
+    {
+      return get().get();
+    }
+
     const std::shared_ptr<Reply> &
     get(void)
     {
