@@ -228,7 +228,7 @@ def c_open(self):
 
     _h('')
 
-    _h('#include "../xpp.hpp"')
+    _h('#include "../generic.hpp"')
 
     # if not _ns.is_ext:
     #     _h('#include "xproto-stub.hpp"')
