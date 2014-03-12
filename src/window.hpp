@@ -15,7 +15,7 @@ class window : virtual public xpp::x::window<Connection>
 {
   protected:
 
-    virtual Connection get(void)
+    virtual Connection get(void) const
     {
       return m_c;
     }

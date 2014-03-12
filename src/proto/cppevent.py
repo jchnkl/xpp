@@ -54,6 +54,9 @@ template<typename Connection>
 class dispatcher
   : virtual protected xpp::generic::connection<Connection>
 {
+  protected:
+    using connection = xpp::generic::connection<Connection>;
+
   public:
 %s\
 %s\
@@ -129,7 +132,7 @@ def event_dispatcher_class(namespace, cppevents):
 def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
     cases = ""
     templ = [ "        case %s:"
-            , "          %s(" % arg_handler + "%s<Connection>" + "(static_cast<xpp::generic::connection<Connection &>>(*this).get(), %s));" % arg_event
+            , "          %s(" % arg_handler + "%s<Connection>" + "(static_cast<const connection &>(*this).get(), %s));" % arg_event
             , "          return true;"
             , ""
             , ""

@@ -6,7 +6,7 @@ namespace xpp { namespace generic {
 template<typename Connection>
 class connection {
   public:
-    virtual Connection get(void) = 0;
+    virtual Connection get(void) const = 0;
 };
 
 }; }; // namespace xpp::generic
