@@ -92,38 +92,63 @@ class core
     }
 
     virtual
-    xcb_generic_event_t *
+    std::shared_ptr<xcb_generic_event_t>
     wait_for_event(void) const
     {
-      return xcb_wait_for_event(m_c.get());
+      xcb_generic_event_t * event = xcb_wait_for_event(m_c.get());
+      if (event) {
+        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
+      } else {
+        throw std::runtime_error("xcb_wait_for_event failed");
+      }
     }
 
     virtual
-    xcb_generic_event_t *
+    std::shared_ptr<xcb_generic_event_t>
     poll_for_event(void) const
     {
-      return xcb_poll_for_event(m_c.get());
+      xcb_generic_event_t * event = xcb_poll_for_event(m_c.get());
+      if (event) {
+        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
+      } else {
+        throw std::runtime_error("xcb_poll_for_event failed");
+      }
     }
 
     virtual
-    xcb_generic_event_t *
+    std::shared_ptr<xcb_generic_event_t>
     poll_for_queued_event(void) const
     {
-      return xcb_poll_for_queued_event(m_c.get());
+      xcb_generic_event_t * event = xcb_poll_for_queued_event(m_c.get());
+      if (event) {
+        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
+      } else {
+        throw std::runtime_error("xcb_poll_for_queued_event failed");
+      }
     }
 
     virtual
-    xcb_generic_event_t *
+    std::shared_ptr<xcb_generic_event_t>
     poll_for_special_event(xcb_special_event_t * se) const
     {
-      return xcb_poll_for_special_event(m_c.get(), se);
+      xcb_generic_event_t * event = xcb_poll_for_special_event(m_c.get(), se);
+      if (event) {
+        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
+      } else {
+        throw std::runtime_error("xcb_poll_for_special_event failed");
+      }
     }
 
     virtual
-    xcb_generic_event_t *
+    std::shared_ptr<xcb_generic_event_t>
     wait_for_special_event(xcb_special_event_t * se) const
     {
-      return xcb_wait_for_special_event(m_c.get(), se);
+      xcb_generic_event_t * event = xcb_wait_for_special_event(m_c.get(), se);
+      if (event) {
+        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
+      } else {
+        throw std::runtime_error("xcb_wait_for_event failed");
+      }
     }
 
     virtual
