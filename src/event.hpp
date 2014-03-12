@@ -6,10 +6,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include <xcb/xcb.h>
-
-#include "core/connection.hpp"
-#include "core/event.hpp"
+#include "proto/x.hpp"
 
 #define MAX_PRIORITY UINT32_MAX
 
@@ -18,18 +15,17 @@ namespace xpp {
 namespace event {
 
 class dispatcher {
-
   public:
     virtual ~dispatcher(void) {}
     template<typename Event> void dispatch(const Event & e);
-
 }; // namespace dispatcher
 
 template<typename ... Events>
 class sink;
 
 template<typename Event>
-class sink<Event> : virtual public dispatcher {
+class sink<Event> : virtual public dispatcher
+{
   public:
     virtual ~sink(void) {}
     virtual void handle(const Event &) = 0;
@@ -47,31 +43,34 @@ void dispatcher::dispatch(const Event & e)
   dynamic_cast<xpp::event::sink<Event> *>(this)->handle(e);
 }
 
-template<typename ... Extensions>
+template<typename Connection, typename ... Extensions>
 class registry
-  : virtual public xpp::x::event::dispatcher
-  , virtual public Extensions::event_dispatcher ...
-  , virtual protected xpp::xcb::type<xcb_connection_t * const>
+  : virtual public xpp::x::event::dispatcher<Connection>
+  , virtual public Extensions::template event_dispatcher<Connection> ...
+  , virtual protected xpp::generic::connection<Connection>
 {
-  public:
-    typedef unsigned int priority;
-
-    explicit
-    registry(const xpp::connection<Extensions ...> & c)
-      : Extensions::event_dispatcher(c) ...
-      , m_c(c)
-    {}
-
+  protected:
     virtual
-    operator xcb_connection_t * const(void) const
+    Connection
+    get(void) const
     {
       return m_c;
     }
 
+  public:
+    typedef unsigned int priority;
+
+    template<typename C>
+    explicit
+    registry(C && c)
+      : Extensions::template event_dispatcher<Connection>(std::forward<C>(c)) ...
+      , m_c(std::forward<C>(c))
+    {}
+
     bool
     dispatch(const std::shared_ptr<xcb_generic_event_t> & event) const
     {
-      return dispatch<xpp::extension::x, Extensions ...>(event);
+      return dispatch<xpp::x::extension, Extensions ...>(event);
     }
 
     template<typename Event>
@@ -104,20 +103,20 @@ class registry
   private:
     typedef std::multimap<priority, xpp::event::dispatcher *> priority_map;
 
-    const xpp::connection<Extensions ...> & m_c;
+    Connection m_c;
     std::unordered_map<uint8_t, priority_map> m_dispatchers;
 
-    template<typename Event, typename Extension>
+    template<typename C, typename Event, typename Extension>
     struct opcode_getter {
-      uint8_t operator()(const xpp::connection<Extensions ...> & c)
+      uint8_t operator()(C && c)
       {
-        return Event::opcode(static_cast<const Extension &>(c));
+        return Event::opcode(static_cast<const Extension &>(std::forward<C>(c)));
       }
     };
 
-    template<typename Event>
-    struct opcode_getter<Event, void> {
-      uint8_t operator()(const xpp::connection<Extensions ...> & c)
+    template<typename C, typename Event>
+    struct opcode_getter<C, Event, xpp::x::extension> {
+      uint8_t operator()(C &&)
       {
         return Event::opcode();
       }
@@ -126,14 +125,14 @@ class registry
     template<typename Event>
     uint8_t opcode(void) const
     {
-      return opcode_getter<Event, typename Event::extension>()(m_c);
+      return opcode_getter<Connection, Event, typename Event::extension>()(m_c);
     }
 
     template<typename Extension>
     bool
     dispatch(const std::shared_ptr<xcb_generic_event_t> & event) const
     {
-      typedef const typename Extension::event_dispatcher & dispatcher;
+      typedef const typename Extension::template event_dispatcher<Connection> & dispatcher;
       return static_cast<dispatcher>(*this)(*this, event);
     }
 
