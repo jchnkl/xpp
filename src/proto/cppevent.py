@@ -32,8 +32,8 @@ _templates['field_accessor_template'] = \
                                                decltype((*this)->%s),
                                                ReturnType,
                                                Parameter ...>;
-      return make()((*this)->m_c,
-                    this->%s,
+      return make()(this->m_c,
+                    (*this)->%s,
                     std::forward<Parameter>(parameter) ...);
     }\
 '''
