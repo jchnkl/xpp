@@ -56,16 +56,15 @@ class window : virtual public xpp::x::window<Connection>
           width, height, border_width, _class, visual, value_mask, value_list);
     }
 
+    void
+    operator=(const xcb_window_t & window)
+    {
+      m_window = std::make_shared<xcb_window_t>(window);
+    }
+
     virtual
     const xcb_window_t &
     operator*(void) const
-    {
-      return *m_window;
-    }
-
-    // xpp::xcb::type<const xcb_window_t &>
-    virtual
-    operator xcb_window_t &(void) const
     {
       return *m_window;
     }
@@ -77,12 +76,6 @@ class window : virtual public xpp::x::window<Connection>
       return *m_window;
     }
 
-    // xpp::xcb::type<xcb_connection_t * const>
-    virtual
-    operator Connection(void) const
-    {
-      return m_c;
-    }
 
     virtual
     window &
