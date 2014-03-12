@@ -82,13 +82,12 @@ def event_dispatcher_class(namespace, cppevents):
     members = []
 
     opcode_switch = "event->response_type & ~0x80"
+    typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
+
 
     # >>> if begin <<<
     if namespace.is_ext:
         opcode_switch = "(event->response_type & ~0x80) - m_first_event"
-        '''
-        typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
-        '''
 
         members += \
             [ "private:"
@@ -217,7 +216,8 @@ class CppEvent(object):
 
         ns = get_namespace(self.namespace)
 
-        typedef = []
+        typedef = [ "typedef xpp::%s::extension extension;" % ns ]
+
         opcode_accessor = \
             [ "static uint8_t opcode(void)"
             , "{"
