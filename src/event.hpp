@@ -69,7 +69,7 @@ class registry
     }
 
     bool
-    dispatch(xcb_generic_event_t * event) const
+    dispatch(const std::shared_ptr<xcb_generic_event_t> & event) const
     {
       return dispatch<xpp::extension::x, Extensions ...>(event);
     }
@@ -131,7 +131,7 @@ class registry
 
     template<typename Extension>
     bool
-    dispatch(xcb_generic_event_t * event) const
+    dispatch(const std::shared_ptr<xcb_generic_event_t> & event) const
     {
       typedef const typename Extension::event_dispatcher & dispatcher;
       return static_cast<dispatcher>(*this)(*this, event);
@@ -139,7 +139,7 @@ class registry
 
     template<typename Extension, typename Next, typename ... Rest>
     bool
-    dispatch(xcb_generic_event_t * event) const
+    dispatch(const std::shared_ptr<xcb_generic_event_t> & event) const
     {
       dispatch<Extension>(event);
       return dispatch<Next, Rest ...>(event);

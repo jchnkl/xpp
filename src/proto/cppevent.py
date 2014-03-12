@@ -60,7 +60,7 @@ class dispatcher
 
     template<typename Handler>
     bool
-    operator()(const Handler & handler, xcb_generic_event_t * const event) const
+    operator()(const Handler & handler, const std::shared_ptr<xcb_generic_event_t> & event) const
     {
 %s
       return false;
