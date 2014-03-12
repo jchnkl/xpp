@@ -23,9 +23,11 @@ class connection
   protected:
     typedef connection<Extensions ...> self;
 
-    virtual self & get(void)
+    virtual
+    self &
+    get(void) const
     {
-      return *this;
+      return const_cast<self &>(*this);
     }
 
   public:
