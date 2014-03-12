@@ -2,7 +2,8 @@
 #define XPP_HPP
 
 #include "generic.hpp"
-#include "connection.hpp"
+#include "event.hpp"
 #include "window.hpp"
+#include "connection.hpp"
 
 #endif // XPP_HPP
