@@ -11,14 +11,14 @@ namespace xpp {
 
 template<typename ... Extensions>
 class connection
-  : virtual public xpp::core
-  , virtual public xpp::x::extension
-  , virtual public xpp::x::extension::error_dispatcher
-  , virtual public xpp::x::extension::protocol<connection<Extensions ...> &>
-  , virtual public Extensions ...
-  , virtual public Extensions::error_dispatcher ...
-  , virtual public Extensions::template protocol<connection<Extensions ...> &> ...
-  , virtual protected xpp::generic::connection<connection<Extensions ...> &>
+  : public xpp::core
+  , public xpp::x::extension
+  , public xpp::x::extension::error_dispatcher
+  , public xpp::x::extension::protocol<connection<Extensions ...> &>
+  , public Extensions ...
+  , public Extensions::error_dispatcher ...
+  , public Extensions::template protocol<connection<Extensions ...> &> ...
+  , protected xpp::generic::connection<connection<Extensions ...> &>
 {
   protected:
     typedef connection<Extensions ...> self;

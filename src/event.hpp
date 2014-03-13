@@ -43,9 +43,9 @@ void dispatcher::dispatch(const Event & e)
 
 template<typename Connection, typename ... Extensions>
 class registry
-  : virtual public xpp::x::event::dispatcher<Connection>
-  , virtual public Extensions::template event_dispatcher<Connection> ...
-  , virtual protected xpp::generic::connection<Connection>
+  : public xpp::x::event::dispatcher<Connection>
+  , public Extensions::template event_dispatcher<Connection> ...
+  , protected xpp::generic::connection<Connection>
 {
   protected:
     virtual

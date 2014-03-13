@@ -9,9 +9,9 @@
 namespace xpp {
 
 template<typename Connection>
-class window : virtual public xpp::x::window<Connection>
-             , virtual public xpp::x::drawable<Connection>
-             , virtual protected xpp::generic::connection<Connection>
+class window : public xpp::x::window<Connection>
+             , public xpp::x::drawable<Connection>
+             , protected xpp::generic::connection<Connection>
 {
   protected:
 
