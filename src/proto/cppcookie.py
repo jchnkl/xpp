@@ -2,30 +2,6 @@ from utils import _n, _ext, _n_item, get_namespace
 
 _templates = {}
 
-_templates['reply_cookie_class_derived'] = \
-'''\
-template<typename CookieMethod>
-class %s
-  : public xpp::generic::cookie<typename CookieMethod::xcb_cookie_t,
-                                %s<CookieMethod>>
-{
-  public:
-    typedef xpp::generic::cookie<typename CookieMethod::xcb_cookie_t,
-                                 %s<CookieMethod>>
-                                   base;
-    using base::base;
-%s\
-};
-'''
-
-def _reply_cookie_class_derived(name, ctors):
-    return _templates['reply_cookie_class_derived'] % \
-            ( name
-            , name
-            , name
-            , ctors
-            )
-
 _templates['void_cookie_function'] = \
 '''\
 %s\
