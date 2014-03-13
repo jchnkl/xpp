@@ -177,8 +177,9 @@ class registry
         const auto & prio_sink_pair = prio_map.equal_range(p);
         for (auto it = prio_sink_pair.first; it != prio_sink_pair.second; ) {
           if (d == it->second) {
-            prio_map.erase(it);
-            break;
+            it = prio_map.erase(it);
+          } else {
+            ++it;
           }
         }
       } catch (...) {}
