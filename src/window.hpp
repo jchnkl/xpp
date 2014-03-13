@@ -11,11 +11,9 @@ namespace xpp {
 template<typename Connection>
 class window : public xpp::x::window<Connection>
              , public xpp::x::drawable<Connection>
-             , protected xpp::generic::connection<Connection>
 {
   protected:
-
-    virtual Connection get(void) const
+    operator Connection(void) const
     {
       return m_c;
     }

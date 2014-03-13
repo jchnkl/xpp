@@ -18,14 +18,11 @@ class connection
   , public Extensions ...
   , public Extensions::error_dispatcher ...
   , public Extensions::template protocol<connection<Extensions ...> &> ...
-  , protected xpp::generic::connection<connection<Extensions ...> &>
 {
   protected:
     typedef connection<Extensions ...> self;
 
-    virtual
-    self &
-    get(void) const
+    operator self &(void) const
     {
       return const_cast<self &>(*this);
     }

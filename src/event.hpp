@@ -45,12 +45,9 @@ template<typename Connection, typename ... Extensions>
 class registry
   : public xpp::x::event::dispatcher<Connection>
   , public Extensions::template event_dispatcher<Connection> ...
-  , protected xpp::generic::connection<Connection>
 {
   protected:
-    virtual
-    Connection
-    get(void) const
+    operator Connection(void) const
     {
       return m_c;
     }
