@@ -142,20 +142,28 @@ class CppCookie(object):
 
         wrapped = ""
         if self.parameter_list.want_wrap:
-            wrapped = "\n" + \
+            wrapped = \
                 self.static_reply_methods(self.iterator_protos(True, True),
                         self.iterator_calls(False), self.iterator_template(),
                         self.iterator_initializers())
 
         default_args = ""
         if self.parameter_list.is_reordered():
-            default_args = "\n" + \
+            default_args = \
                 self.static_reply_methods(self.protos(True, True), self.calls(False))
 
-
         result = ""
-        if len(default_args + wrapped) > 0:
-            result += "\n" + default + default_args + wrapped
+
+        if (self.parameter_list.has_defaults
+            or self.parameter_list.is_reordered()
+            or self.parameter_list.want_wrap):
+            result += default
+
+        if self.parameter_list.is_reordered():
+            result += "\n" + default_args
+
+        if self.parameter_list.want_wrap:
+            result += "\n" + wrapped
 
         return result
 
@@ -167,18 +175,28 @@ class CppCookie(object):
 
         wrapped = ""
         if self.parameter_list.want_wrap:
-            wrapped = "\n" + \
+            wrapped = \
                 self.void_functions(self.iterator_protos(True, True),
-                        self.iterator_calls(False), self.iterator_template(),
+                        self.iterator_calls(False),
+                        self.iterator_template(indent=""),
                         self.iterator_initializers())
 
         default_args = ""
         if self.parameter_list.is_reordered():
-            default_args = "\n" + \
+            default_args = \
                 self.void_functions(self.protos(True, True), self.calls(False))
 
         result = ""
-        if len(default_args + wrapped) > 0:
-            result += "\n" + default + default_args + wrapped
+
+        if (self.parameter_list.has_defaults
+            or self.parameter_list.is_reordered()
+            or self.parameter_list.want_wrap):
+            result += default
+
+        if self.parameter_list.is_reordered():
+            result += "\n" + default_args
+
+        if self.parameter_list.want_wrap:
+            result += "\n" + wrapped
 
         return result
