@@ -55,7 +55,7 @@ class connection
 
     template<typename Window = xcb_window_t>
     Window
-    root(void)
+    root(void) const
     {
       using make = xpp::generic::factory::make<self, xcb_window_t, Window>;
       return make()(*this, m_root_window);
@@ -66,7 +66,7 @@ class connection
 
     template<typename Extension, typename Next, typename ... Rest>
     void
-    prefetch_data(void)
+    prefetch_data(void) const
     {
       static_cast<Extension *>(this)->prefetch_data();
       prefetch_data<Next, Rest ...>();
@@ -74,14 +74,14 @@ class connection
 
     template<typename Extension>
     void
-    prefetch_data(void)
+    prefetch_data(void) const
     {
       static_cast<Extension *>(this)->prefetch_data();
     }
 
     template<typename Extension, typename Next, typename ... Rest>
     void
-    get_data(void)
+    get_data(void) const
     {
       static_cast<Extension *>(this)->get_data();
       get_data<Next, Rest ...>();
@@ -89,7 +89,7 @@ class connection
 
     template<typename Extension>
     void
-    get_data(void)
+    get_data(void) const
     {
       static_cast<Extension *>(this)->get_data();
     }

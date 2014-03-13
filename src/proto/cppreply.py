@@ -28,7 +28,7 @@ class %s
     {}
 
     void
-    handle(const std::shared_ptr<xcb_generic_error_t> & error)
+    handle(const std::shared_ptr<xcb_generic_error_t> & error) const
     {
       using error_handler =
         xpp::generic::error_handler<Connection, xpp::%s::error::dispatcher>;

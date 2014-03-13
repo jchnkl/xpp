@@ -71,7 +71,7 @@ _templates['inline_reply_class'] = \
 '''\
     template<typename ... Parameter>
     reply::%s<Connection, xpp::generic::checked_tag>
-    %s(Parameter && ... parameter)
+    %s(Parameter && ... parameter) const
     {
       return xpp::%s::%s(
           static_cast<Connection>(*this),
@@ -81,7 +81,7 @@ _templates['inline_reply_class'] = \
 
     template<typename ... Parameter>
     reply::%s<Connection, xpp::generic::unchecked_tag>
-    %s_unchecked(Parameter && ... parameter)
+    %s_unchecked(Parameter && ... parameter) const
     {
       return xpp::%s::%s_unchecked(
           static_cast<Connection>(*this),
@@ -108,7 +108,7 @@ _templates['inline_void_class'] = \
 '''\
     template<typename ... Parameter>
     void
-    %s_checked(Parameter && ... parameter)
+    %s_checked(Parameter && ... parameter) const
     {
       xpp::%s::%s_checked(static_cast<Connection>(*this),
                           %s\
@@ -117,7 +117,7 @@ _templates['inline_void_class'] = \
 
     template<typename ... Parameter>
     void
-    %s(Parameter && ... parameter)
+    %s(Parameter && ... parameter) const
     {
       xpp::%s::%s(static_cast<Connection>(*this),
                   %s\

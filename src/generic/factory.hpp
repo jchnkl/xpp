@@ -13,7 +13,7 @@ class make_object
   public:
     template<typename Connection, typename ... Parameter>
     ReturnType
-    operator()(Connection &&, Parameter && ... parameter)
+    operator()(Connection &&, Parameter && ... parameter) const
     {
       return ReturnType { std::forward<Parameter>(parameter) ... };
     }
@@ -25,7 +25,7 @@ class make_object_with_member
   public:
     template<typename Member, typename Connection, typename ... Parameter>
     ReturnType
-    operator()(Connection && c, Member && member, Parameter && ... parameter)
+    operator()(Connection && c, Member && member, Parameter && ... parameter) const
     {
       return ReturnType { std::forward<Member>(member)
                         , std::forward<Connection>(c)
@@ -40,7 +40,7 @@ class make_object_with_connection
   public:
     template<typename Connection, typename ... Parameter>
     ReturnType
-    operator()(Connection && c, Parameter && ... parameter)
+    operator()(Connection && c, Parameter && ... parameter) const
     {
       return ReturnType { std::forward<Connection>(c)
                         , std::forward<Parameter>(parameter) ...
@@ -53,7 +53,7 @@ class make_fundamental {
   public:
     template<typename Connection, typename Member, typename ... Parameter>
     ReturnType
-    operator()(Connection &&, Member && member)
+    operator()(Connection &&, Member && member) const
     {
       return std::forward<Member>(member);
     }
