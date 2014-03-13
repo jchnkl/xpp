@@ -47,9 +47,6 @@ class %s
   : virtual public xpp::xcb::type<const %s &>
   , virtual protected xpp::generic::connection<Connection>
 {
-  protected:
-    using connection = xpp::generic::connection<Connection>;
-
   public:
     virtual ~%s(void) {}
 

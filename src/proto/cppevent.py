@@ -54,9 +54,6 @@ template<typename Connection>
 class dispatcher
   : virtual protected xpp::generic::connection<Connection>
 {
-  protected:
-    using connection = xpp::generic::connection<Connection>;
-
   public:
 %s\
 %s\
