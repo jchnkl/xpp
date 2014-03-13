@@ -131,7 +131,7 @@ def event_dispatcher_class(namespace, cppevents):
 def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
     cases = ""
     templ = [ "        case %s:"
-            , "          %s(" % arg_handler + "%s<Connection>" + "(static_cast<const connection &>(*this).get(), %s));" % arg_event
+            , "          %s(" % arg_handler + "%s<Connection>" + "(static_cast<Connection>(*this), %s));" % arg_event
             , "          return true;"
             , ""
             , ""

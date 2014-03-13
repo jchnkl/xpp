@@ -74,7 +74,7 @@ _templates['inline_reply_class'] = \
     %s(Parameter && ... parameter)
     {
       return xpp::%s::%s(
-          static_cast<const connection &>(*this).get(),
+          static_cast<Connection>(*this),
           %s\
           std::forward<Parameter>(parameter) ...);
     }
@@ -84,7 +84,7 @@ _templates['inline_reply_class'] = \
     %s_unchecked(Parameter && ... parameter)
     {
       return xpp::%s::%s_unchecked(
-          static_cast<const connection &>(*this).get(),
+          static_cast<Connection>(*this),
           %s\
           std::forward<Parameter>(parameter) ...);
     }
@@ -110,7 +110,7 @@ _templates['inline_void_class'] = \
     void
     %s_checked(Parameter && ... parameter)
     {
-      xpp::%s::%s_checked(static_cast<const connection &>(*this).get(),
+      xpp::%s::%s_checked(static_cast<Connection>(*this),
                           %s\
                           std::forward<Parameter>(parameter) ...);
     }
@@ -119,7 +119,7 @@ _templates['inline_void_class'] = \
     void
     %s(Parameter && ... parameter)
     {
-      xpp::%s::%s(static_cast<const connection &>(*this).get(),
+      xpp::%s::%s(static_cast<Connection>(*this),
                   %s\
                   std::forward<Parameter>(parameter) ...);
     }
