@@ -20,27 +20,25 @@ class dispatcher {
     template<typename Event> void dispatch(const Event & e);
 }; // namespace dispatcher
 
-template<typename ... Events>
-class sink;
 
 template<typename Event>
-class sink<Event> : virtual public dispatcher
+class handler : virtual public dispatcher
 {
   public:
-    virtual ~sink(void) {}
+    virtual ~handler(void) {}
     virtual void handle(const Event &) = 0;
 };
 
 template<typename Event, typename ... Events>
-class sink<Event, Events ...>
-  : virtual public sink<Event>
-  , virtual public sink<Events> ...
+class sink
+  : public handler<Event>
+  , public handler<Events> ...
 {};
 
 template<typename Event>
 void dispatcher::dispatch(const Event & e)
 {
-  dynamic_cast<xpp::event::sink<Event> *>(this)->handle(e);
+  dynamic_cast<xpp::event::handler<Event> *>(this)->handle(e);
 }
 
 template<typename Connection, typename ... Extensions>
@@ -84,20 +82,18 @@ class registry
       } catch (...) {}
     }
 
-    template<typename Event, typename Next, typename ... Rest>
+    template<typename Event, typename ... Rest>
     void
-    attach(priority p, sink<Event, Next, Rest ...> * s)
+    attach(priority p, sink<Event, Rest ...> * s)
     {
-      attach(p, s, opcode<Event>());
-      attach<Next, Rest ...>(p, reinterpret_cast<sink<Next, Rest ...> *>(s));
+      attach<sink<Event, Rest ...>, Event, Rest ...>(p, s);
     }
 
-    template<typename Event, typename Next, typename ... Rest>
+    template<typename Event, typename ... Rest>
     void
-    detach(priority p, sink<Event, Next, Rest ...> * s)
+    detach(priority p, sink<Event, Rest ...> * s)
     {
-      detach(p, s, opcode<Event>());
-      detach<Next, Rest ...>(p, reinterpret_cast<sink<Next, Rest ...> *>(s));
+      detach<sink<Event, Rest ...>, Event, Rest ...>(p, s);
     }
 
   private:
@@ -144,11 +140,19 @@ class registry
       return dispatch<Next, Rest ...>(event);
     }
 
-    template<typename Event>
+    template<typename Sink, typename Event>
     void
-    attach(priority p, sink<Event> * s)
+    attach(priority p, Sink * s)
     {
       attach(p, s, opcode<Event>());
+    }
+
+    template<typename Sink, typename Event, typename Next, typename ... Rest>
+    void
+    attach(priority p, Sink * s)
+    {
+      attach(p, s, opcode<Event>());
+      attach<Sink, Next, Rest ...>(p, s);
     }
 
     void attach(priority p, xpp::event::dispatcher * d, uint8_t opcode)
@@ -156,11 +160,19 @@ class registry
       m_dispatchers[opcode].emplace(p, d);
     }
 
-    template<typename Event>
+    template<typename Sink, typename Event>
     void
-    detach(priority p, sink<Event> * s)
+    detach(priority p, Sink * s)
     {
       detach(p, s, opcode<Event>());
+    }
+
+    template<typename Sink, typename Event, typename Next, typename ... Rest>
+    void
+    detach(priority p, Sink * s)
+    {
+      detach(p, s, opcode<Event>());
+      detach<Sink, Next, Rest ...>(p, s);
     }
 
     void
