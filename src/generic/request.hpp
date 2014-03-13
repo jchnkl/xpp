@@ -28,7 +28,7 @@
 namespace xpp { namespace generic {
 
 template<typename ... Types>
-struct error_handler;
+class error_handler;
 
 template<typename Dispatcher>
 class error_handler<Dispatcher>
