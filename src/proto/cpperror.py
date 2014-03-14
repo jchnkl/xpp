@@ -47,11 +47,11 @@ def error_dispatcher_class(namespace, cpperrors):
     typedef = []
     ctors = []
     members = []
-    opcode_switch = "error->error_code & ~0x80"
+    opcode_switch = "error->error_code"
 
     # >>> if begin <<<
     if namespace.is_ext:
-        opcode_switch = "(error->error_code & ~0x80) - m_first_error"
+        opcode_switch = "error->error_code - m_first_error"
         '''
         typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
         '''
