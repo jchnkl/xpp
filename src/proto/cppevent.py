@@ -87,19 +87,34 @@ def event_dispatcher_class(namespace, cppevents):
         opcode_switch = "(event->response_type & ~0x80) - m_first_event"
 
         members += \
-            [ "private:"
-            , "  const uint8_t m_first_event;"
+            [ "protected:"
+            , "  uint8_t m_first_event;"
             ]
 
         ctor = "dispatcher"
         ctors += \
-            [ "%s(uint8_t first_event)" % ctor
+            [ "%s(void)" % ctor
+            , "{}"
+            , ""
+            , "%s(uint8_t first_event)" % ctor
             , "  : m_first_event(first_event)"
             , "{}"
             , ""
             , "%s(const xpp::%s::extension & extension)" % (ctor, ns)
             , "  : %s(extension->first_event)" % ctor
             , "{}"
+            , ""
+            , "uint8_t"
+            , "first_event(void)"
+            , "{"
+            , "  return m_first_event;"
+            , "}"
+            , ""
+            , "void"
+            , "first_event(uint8_t first_event)"
+            , "{"
+            , "  m_first_event = first_event;"
+            , "}"
             ]
 
     # >>> if end <<<
@@ -110,7 +125,7 @@ def event_dispatcher_class(namespace, cppevents):
         typedef = ""
 
     if len(ctors) > 0:
-        ctors = "\n".join(map(lambda s: "    " + s, ctors)) + "\n"
+        ctors = "\n".join(map(lambda s: ("    " if len(s) > 0 else "") + s, ctors)) + "\n"
     else:
         ctors = ""
 

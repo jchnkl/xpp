@@ -57,19 +57,34 @@ def error_dispatcher_class(namespace, cpperrors):
         '''
 
         members += \
-            [ "private:"
-            , "  const uint8_t m_first_error;"
+            [ "protected:"
+            , "  uint8_t m_first_error;"
             ]
 
         ctor = "dispatcher"
         ctors += \
-            [ "%s(uint8_t first_error)" % ctor
+            [ "%s(void)" % ctor
+            , "{}"
+            , ""
+            , "%s(uint8_t first_error)" % ctor
             , "  : m_first_error(first_error)"
             , "{}"
             , ""
             , "%s(const xpp::%s::extension & extension)" % (ctor, ns)
             , "  : %s(extension->first_error)" % ctor
             , "{}"
+            , ""
+            , "uint8_t"
+            , "first_error(void)"
+            , "{"
+            , "  return m_first_error;"
+            , "}"
+            , ""
+            , "void"
+            , "first_error(uint8_t first_error)"
+            , "{"
+            , "  m_first_error = first_error;"
+            , "}"
             ]
 
     # >>> if end <<<
@@ -80,7 +95,7 @@ def error_dispatcher_class(namespace, cpperrors):
         typedef = ""
 
     if len(ctors) > 0:
-        ctors = "\n".join(map(lambda s: "    " + s, ctors)) + "\n"
+        ctors = "\n".join(map(lambda s: ("    " if len(s) > 0 else "") + s, ctors)) + "\n"
     else:
         ctors = ""
 
