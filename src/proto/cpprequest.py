@@ -17,7 +17,7 @@ void
 {
   xpp::generic::check<Connection, xpp::%s::error::dispatcher>(
       std::forward<Connection>(c),
-      xcb_%s_checked(
+      %s_checked(
           std::forward<Connection>(c),
           std::forward<Parameter>(parameter) ...));
 }
@@ -26,17 +26,17 @@ template<typename ... Parameter>
 void
 %s(Parameter && ... parameter)
 {
-  xcb_%s(std::forward<Parameter>(parameter) ...);
+  %s(std::forward<Parameter>(parameter) ...);
 }
 '''
 
-def _void_request_function(ns, name):
+def _void_request_function(ns, name, c_name):
     return _templates['void_request_function'] % \
             ( name
             , ns
+            , c_name
             , name
-            , name
-            , name
+            , c_name
             )
 
 _templates['reply_request_function'] = \
@@ -158,6 +158,10 @@ class CppRequest(object):
         self.accessors = []
         self.parameter_list = ParameterList()
 
+        self.c_name = "xcb" \
+            + (("_" + get_namespace(namespace)) if namespace.is_ext else "") \
+            + "_" + self.request_name
+
     def add(self, param):
         self.parameter_list.add(param)
 
@@ -172,7 +176,7 @@ class CppRequest(object):
             if len(void_functions) > 0:
                 return void_functions
             else:
-                return _void_request_function(get_namespace(self.namespace), self.request_name)
+                return _void_request_function(get_namespace(self.namespace), self.request_name, self.c_name)
 
         else:
             cppreply = CppReply(self.namespace, self.request.name, cppcookie, self.reply, self.accessors, self.parameter_list)
