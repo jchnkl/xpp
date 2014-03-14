@@ -34,7 +34,7 @@ class connection
       : xpp::core::core(std::forward<Parameters>(parameters) ...)
     {
       prefetch_data<Extensions ...>();
-      get_data<Extensions ...>();
+      init_extensions<Extensions ...>();
       m_root_window = screen_of_display(default_screen())->root;
     }
 
@@ -81,17 +81,17 @@ class connection
 
     template<typename Extension, typename Next, typename ... Rest>
     void
-    get_data(void) const
+    init_extensions(void) const
     {
-      static_cast<Extension *>(this)->get_data();
-      get_data<Next, Rest ...>();
+      static_cast<Extension *>(this)->init();
+      init_extensions<Next, Rest ...>();
     }
 
     template<typename Extension>
     void
     get_data(void) const
     {
-      static_cast<Extension *>(this)->get_data();
+      static_cast<Extension *>(this)->init();
     }
 
 }; // class connection

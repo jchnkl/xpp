@@ -36,7 +36,7 @@ class extension
     }
 
     virtual
-    void get_data(void)
+    void init(void)
     {
       m_extension = xcb_get_extension_data(*this, Id);
     }
