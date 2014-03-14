@@ -6,20 +6,25 @@ _templates = {}
 _templates['reply_class'] = \
 '''\
 namespace reply {
-template<typename Connection, typename Check>
+
+namespace detail {
+
+template<typename Connection,
+         typename Check,
+         typename CookieFunction>
 class %s
-  : public xpp::generic::reply<%s<Connection, Check>,
+  : public xpp::generic::reply<%s<Connection, Check, CookieFunction>,
                                Connection,
                                Check,
                                SIGNATURE(%s_reply),
-                               SIGNATURE(%s)>
+                               CookieFunction>
 {
   public:
-    typedef xpp::generic::reply<%s<Connection, Check>,
+    typedef xpp::generic::reply<%s<Connection, Check, CookieFunction>,
                                 Connection,
                                 Check,
                                 SIGNATURE(%s_reply),
-                                SIGNATURE(%s)>
+                                CookieFunction>
                                   base;
 
     template<typename C, typename ... Parameter>
@@ -38,6 +43,23 @@ class %s
 %s\
 %s\
 }; // class %s
+
+}; // namespace detail
+
+namespace checked {
+template<typename Connection>
+using %s = detail::%s<
+    Connection, xpp::generic::checked_tag,
+    SIGNATURE(%s)>;
+}; // namespace checked
+
+namespace unchecked {
+template<typename Connection>
+using %s = detail::%s<
+    Connection, xpp::generic::unchecked_tag,
+    SIGNATURE(%s_unchecked)>;
+}; // namespace unchecked
+
 }; // namespace reply
 '''
 
@@ -45,16 +67,20 @@ def _reply_class(name, c_name, ns, cookie, accessors):
     return _templates['reply_class'] % \
             ( name
             , name # base class
-            , c_name # base class
-            , c_name # base class
+            , c_name # %s_reply
             , name # typedef
-            , c_name # typedef
-            , c_name # typedef base
+            , c_name # %s_reply
             , name # c'tor
             , ns
             , cookie.make_static_getter()
             , accessors
-            , name
+            , name # // class %s
+            , name # checked { using %s =
+            , name # checked { detail::%s
+            , c_name # checked { SIGNATURE
+            , name # unchecked { using %s =
+            , name # unchecked { detail::%s
+            , c_name # unchecked { SIGNATURE
             )
 
 _templates['reply_member_accessor'] = \
