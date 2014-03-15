@@ -35,7 +35,7 @@ class event
     }
 
     virtual
-    Event * const
+    Event *
     operator->(void) const
     {
       return reinterpret_cast<Event * const>(m_event.get());

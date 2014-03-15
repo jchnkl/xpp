@@ -9,7 +9,7 @@ namespace xpp { namespace generic {
 
 template<xcb_extension_t * Id>
 class extension
-  : virtual protected xpp::xcb::type<xcb_connection_t * const>
+  : virtual protected xpp::xcb::type<xcb_connection_t *>
 {
   public:
     virtual ~extension(void)
@@ -23,14 +23,14 @@ class extension
     }
 
     virtual
-    const xcb_query_extension_reply_t * const
+    const xcb_query_extension_reply_t *
     operator->(void) const
     {
       return m_extension;
     }
 
     virtual
-    operator const xcb_query_extension_reply_t * const(void) const
+    operator const xcb_query_extension_reply_t *(void) const
     {
       return m_extension;
     }

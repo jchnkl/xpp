@@ -34,7 +34,7 @@ class error : public std::runtime_error {
     }
 
     virtual
-    Error * const
+    Error *
     operator->(void) const
     {
       return reinterpret_cast<Error * const>(m_error.get());
