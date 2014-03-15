@@ -57,6 +57,7 @@ class core
         return shared_generic_event_ptr(event, std::free);
       }
 
+      check_connection();
       throw std::runtime_error(producer + " failed");
     }
 
@@ -305,7 +306,7 @@ class core
     }
 
     void
-    check(void)
+    check_connection(void) const
     {
       switch (xcb_connection_has_error(m_c.get())) {
         case XCB_CONN_ERROR:
