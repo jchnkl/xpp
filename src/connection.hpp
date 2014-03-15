@@ -98,6 +98,22 @@ class connection
       static_cast<error_dispatcher>(*this).first_error(extension->first_error);
     }
 
+    template<typename Extension, typename Next, typename ... Rest>
+    void
+    check(const std::shared_ptr<xcb_generic_error_t> & error) const
+    {
+      check<Extension>(error);
+      check<Next, Rest ...>(error);
+    }
+
+    template<typename Extension>
+    void
+    check(const std::shared_ptr<xcb_generic_error_t> & error) const
+    {
+      using error_dispatcher = typename Extension::error_dispatcher;
+      auto & dispatcher = static_cast<const error_dispatcher &>(*this);
+      dispatcher(error);
+    }
 }; // class connection
 
 template<>
