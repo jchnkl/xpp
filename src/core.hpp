@@ -9,7 +9,7 @@
 namespace xpp {
 
 class core
-  : public xpp::xcb::type<xcb_connection_t * const>
+  : public xpp::xcb::type<xcb_connection_t *>
 {
   public:
     explicit
@@ -51,14 +51,14 @@ class core
     {}
 
     virtual
-    xcb_connection_t * const
+    xcb_connection_t *
     operator*(void) const
     {
       return m_c.get();
     }
 
     virtual
-    operator xcb_connection_t * const(void) const
+    operator xcb_connection_t *(void) const
     {
       return m_c.get();
     }
@@ -184,7 +184,7 @@ class core
     // The result must not be freed.
     // This storage is managed by the cache itself.
     virtual
-    const xcb_query_extension_reply_t * const
+    const xcb_query_extension_reply_t *
     get_extension_data(xcb_extension_t * ext) const
     {
       return xcb_get_extension_data(m_c.get(), ext);
@@ -198,7 +198,7 @@ class core
     }
 
     virtual
-    const xcb_setup_t * const
+    const xcb_setup_t *
     get_setup(void) const
     {
       return xcb_get_setup(m_c.get());
@@ -250,7 +250,7 @@ class core
       return xcb_generate_id(m_c.get());
     }
 
-    xcb_screen_t * const
+    xcb_screen_t *
     screen_of_display(int screen)
     {
       xcb_screen_iterator_t iter;
