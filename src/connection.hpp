@@ -92,7 +92,10 @@ class connection
     void
     init_extensions(void)
     {
-      static_cast<Extension *>(this)->init();
+      using error_dispatcher = typename Extension::error_dispatcher &;
+      Extension & extension = static_cast<Extension &>(*this);
+      extension.init();
+      static_cast<error_dispatcher>(*this).first_error(extension->first_error);
     }
 
 }; // class connection
