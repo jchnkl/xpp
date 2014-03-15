@@ -208,10 +208,11 @@ class core
     }
 
     virtual
-    xcb_generic_error_t *
+    std::shared_ptr<xcb_generic_error_t>
     request_check(xcb_void_cookie_t cookie) const
     {
-      return xcb_request_check(m_c.get(), cookie);
+      return std::shared_ptr<xcb_generic_error_t>(
+          xcb_request_check(m_c.get(), cookie));
     }
 
     virtual
