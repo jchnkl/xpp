@@ -1,6 +1,9 @@
 include ../flags.makefile
 
+# CXX=clang
 CXXFLAGS+=-g
+# CXXFLAGS+=-Wextra
+# CXXFLAGS+=-ftime-report
 
 CPPSRCS=event.cpp \
         requests.cpp \
