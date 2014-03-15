@@ -22,9 +22,9 @@ class connection
   protected:
     typedef connection<Extensions ...> self;
 
-    operator self &(void) const
+    operator const self &(void) const
     {
-      return const_cast<self &>(*this);
+      return *this;
     }
 
   public:
