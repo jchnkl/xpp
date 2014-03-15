@@ -11,6 +11,11 @@ namespace xpp {
 class core
   : public xpp::xcb::type<xcb_connection_t *>
 {
+  protected:
+    int m_screen = 0;
+    // reference counting for xcb_connection_t
+    std::shared_ptr<xcb_connection_t> m_c;
+
   public:
     explicit
     core(xcb_connection_t * c)
@@ -262,11 +267,6 @@ class core
 
       return NULL;
     }
-
-  private:
-    int m_screen = 0;
-    // reference counting for xcb_connection_t
-    std::shared_ptr<xcb_connection_t> m_c;
 
 }; // class core
 
