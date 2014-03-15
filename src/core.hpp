@@ -12,9 +12,26 @@ class core
   : public xpp::xcb::type<xcb_connection_t *>
 {
   protected:
+    using shared_generic_event_ptr = std::shared_ptr<xcb_generic_event_t>;
+
     int m_screen = 0;
     // reference counting for xcb_connection_t
     std::shared_ptr<xcb_connection_t> m_c;
+
+    shared_generic_event_ptr
+    dispatch(const std::string & producer, xcb_generic_event_t * event) const
+    {
+      if (event) {
+        if (event->response_type == 0) {
+          throw std::shared_ptr<xcb_generic_error_t>(
+              reinterpret_cast<xcb_generic_error_t *>(event));
+        }
+
+        return shared_generic_event_ptr(event, std::free);
+      }
+
+      throw std::runtime_error(producer + " failed");
+    }
 
   public:
     explicit
@@ -97,15 +114,10 @@ class core
     }
 
     virtual
-    std::shared_ptr<xcb_generic_event_t>
+    shared_generic_event_ptr
     wait_for_event(void) const
     {
-      xcb_generic_event_t * event = xcb_wait_for_event(m_c.get());
-      if (event) {
-        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
-      } else {
-        throw std::runtime_error("xcb_wait_for_event failed");
-      }
+      return dispatch("wait_for_event", xcb_wait_for_event(m_c.get()));
     }
 
     virtual
@@ -145,15 +157,11 @@ class core
     }
 
     virtual
-    std::shared_ptr<xcb_generic_event_t>
+    shared_generic_event_ptr
     wait_for_special_event(xcb_special_event_t * se) const
     {
-      xcb_generic_event_t * event = xcb_wait_for_special_event(m_c.get(), se);
-      if (event) {
-        return std::shared_ptr<xcb_generic_event_t>(event, std::free);
-      } else {
-        throw std::runtime_error("xcb_wait_for_event failed");
-      }
+      return dispatch("wait_for_special_event",
+                      xcb_wait_for_special_event(m_c.get(), se));
     }
 
     virtual
