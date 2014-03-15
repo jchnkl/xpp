@@ -66,7 +66,7 @@ class connection
 
     template<typename Extension, typename Next, typename ... Rest>
     void
-    prefetch_data(void) const
+    prefetch_data(void)
     {
       static_cast<Extension *>(this)->prefetch_data();
       prefetch_data<Next, Rest ...>();
@@ -74,14 +74,14 @@ class connection
 
     template<typename Extension>
     void
-    prefetch_data(void) const
+    prefetch_data(void)
     {
       static_cast<Extension *>(this)->prefetch_data();
     }
 
     template<typename Extension, typename Next, typename ... Rest>
     void
-    init_extensions(void) const
+    init_extensions(void)
     {
       static_cast<Extension *>(this)->init();
       init_extensions<Next, Rest ...>();
@@ -89,7 +89,7 @@ class connection
 
     template<typename Extension>
     void
-    get_data(void) const
+    init_extensions(void)
     {
       static_cast<Extension *>(this)->init();
     }
