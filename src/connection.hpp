@@ -43,7 +43,7 @@ class connection
     {}
 
     virtual
-    operator xcb_connection_t * const(void) const
+    operator xcb_connection_t *(void) const
     {
       return *(static_cast<const core &>(*this));
     }
