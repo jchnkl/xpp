@@ -8,6 +8,33 @@
 
 namespace xpp {
 
+class connection_error
+  : public std::runtime_error
+{
+  public:
+    connection_error(uint8_t code, const std::string & description)
+      : std::runtime_error(description + "(" + std::to_string(code) + ")")
+      , m_code(code)
+      , m_description(description)
+    {}
+
+    uint8_t
+    code(void)
+    {
+      return m_code;
+    }
+
+    std::string
+    description(void)
+    {
+      return m_description;
+    }
+
+  protected:
+    uint8_t m_code;
+    std::string m_description;
+};
+
 class core
   : public xpp::xcb::type<xcb_connection_t *>
 {
@@ -276,6 +303,35 @@ class core
       return NULL;
     }
 
+    void
+    check(void)
+    {
+      switch (xcb_connection_has_error(m_c.get())) {
+        case XCB_CONN_ERROR:
+          throw(connection_error(
+                XCB_CONN_ERROR, "XCB_CONN_ERROR"));
+
+        case XCB_CONN_CLOSED_EXT_NOTSUPPORTED:
+          throw(connection_error(XCB_CONN_CLOSED_EXT_NOTSUPPORTED,
+                                 "XCB_CONN_CLOSED_EXT_NOTSUPPORTED"));
+
+        case XCB_CONN_CLOSED_MEM_INSUFFICIENT:
+          throw(connection_error(XCB_CONN_CLOSED_MEM_INSUFFICIENT,
+                                 "XCB_CONN_CLOSED_MEM_INSUFFICIENT"));
+
+        case XCB_CONN_CLOSED_REQ_LEN_EXCEED:
+          throw(connection_error(XCB_CONN_CLOSED_REQ_LEN_EXCEED,
+                                 "XCB_CONN_CLOSED_REQ_LEN_EXCEED"));
+
+        case XCB_CONN_CLOSED_PARSE_ERR:
+          throw(connection_error(XCB_CONN_CLOSED_PARSE_ERR,
+                                 "XCB_CONN_CLOSED_PARSE_ERR"));
+
+        case XCB_CONN_CLOSED_INVALID_SCREEN:
+          throw(connection_error(XCB_CONN_CLOSED_INVALID_SCREEN,
+                                 "XCB_CONN_CLOSED_INVALID_SCREEN"));
+      };
+    }
 }; // class core
 
 }; // namespace xpp
