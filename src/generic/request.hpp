@@ -76,7 +76,7 @@ class reply<Derived,
       return *get();
     }
 
-    Reply * const
+    Reply *
     operator->(void)
     {
       return get().get();
