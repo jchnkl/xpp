@@ -61,17 +61,6 @@ class registry
       return dispatch<xpp::x::extension, Extensions ...>(event);
     }
 
-    template<typename Event>
-    void
-    operator()(const Event & event) const
-    {
-      try {
-        for (auto & item : m_dispatchers.at(opcode<Event>())) {
-          item.second->dispatch(event);
-        }
-      } catch (...) {}
-    }
-
     template<typename Event, typename ... Rest>
     void
     attach(priority p, sink<Event, Rest ...> * s)
@@ -110,12 +99,38 @@ class registry
       return opcode<Event>(m_c.template extension<typename Event::extension>());
     }
 
+    template<typename Event>
+    void
+    handle(const Event & event) const
+    {
+      try {
+        for (auto & item : m_dispatchers.at(opcode<Event>())) {
+          item.second->dispatch(event);
+        }
+      } catch (...) {}
+    }
+
+    struct handler {
+      handler(const registry<Connection, Extensions ...> & registry)
+        : m_registry(registry)
+      {}
+
+      const registry<Connection, Extensions ...> & m_registry;
+
+      template<typename Event>
+      void
+      operator()(const Event & event) const
+      {
+        m_registry.handle(event);
+      }
+    };
+
     template<typename Extension>
     bool
     dispatch(const std::shared_ptr<xcb_generic_event_t> & event) const
     {
       typedef const typename Extension::template event_dispatcher<Connection> & dispatcher;
-      return static_cast<dispatcher>(*this)(*this, event);
+      return static_cast<dispatcher>(*this)(handler(*this), event);
     }
 
     template<typename Extension, typename Next, typename ... Rest>
