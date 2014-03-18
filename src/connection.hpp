@@ -68,6 +68,32 @@ class connection
       return make()(*this, m_root_window);
     }
 
+    virtual
+    shared_generic_event_ptr
+    wait_for_event(void) const
+    {
+      try {
+        return core::wait_for_event();
+      } catch (const std::shared_ptr<xcb_generic_error_t> & error) {
+        check<xpp::x::extension, Extensions ...>(error);
+      }
+      // re-throw any exception caused by wait_for_event
+      throw;
+    }
+
+    virtual
+    shared_generic_event_ptr
+    wait_for_special_event(xcb_special_event_t * se) const
+    {
+      try {
+        return core::wait_for_special_event(se);
+      } catch (const std::shared_ptr<xcb_generic_error_t> & error) {
+        check<xpp::x::extension, Extensions ...>(error);
+      }
+      // re-throw any exception caused by wait_for_special_event
+      throw;
+    }
+
   private:
     xcb_window_t m_root_window;
 
