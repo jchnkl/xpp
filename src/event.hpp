@@ -43,19 +43,15 @@ class registry
   : public xpp::x::event::dispatcher<Connection>
   , public Extensions::template event_dispatcher<Connection> ...
 {
-  protected:
-    operator Connection(void) const
-    {
-      return m_c;
-    }
-
   public:
     typedef unsigned int priority;
 
     template<typename C>
     explicit
     registry(C && c)
-      : Extensions::template event_dispatcher<Connection>(std::forward<C>(c)) ...
+      : xpp::x::event::dispatcher<Connection>(std::forward<C>(c))
+      , Extensions::template event_dispatcher<Connection>(
+          std::forward<C>(c), c.template extension<Extensions>()) ...
       , m_c(std::forward<C>(c))
     {}
 
