@@ -92,26 +92,22 @@ class registry
     Connection m_c;
     std::unordered_map<uint8_t, priority_map> m_dispatchers;
 
-    template<typename C, typename Event, typename Extension>
-    struct opcode_getter {
-      uint8_t operator()(C && c)
-      {
-        return Event::opcode(static_cast<const Extension &>(std::forward<C>(c)));
-      }
-    };
+    template<typename Event>
+    uint8_t opcode(const xpp::x::extension & extension) const
+    {
+      return Event::opcode();
+    }
 
-    template<typename C, typename Event>
-    struct opcode_getter<C, Event, xpp::x::extension> {
-      uint8_t operator()(C &&)
-      {
-        return Event::opcode();
-      }
-    };
+    template<typename Event, typename Extension>
+    uint8_t opcode(const Extension & extension) const
+    {
+      return Event::opcode(extension);
+    }
 
     template<typename Event>
     uint8_t opcode(void) const
     {
-      return opcode_getter<Connection, Event, typename Event::extension>()(m_c);
+      return opcode<Event>(m_c.template extension<typename Event::extension>());
     }
 
     template<typename Extension>
