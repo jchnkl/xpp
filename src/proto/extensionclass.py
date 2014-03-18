@@ -14,9 +14,12 @@ class ExtensionClass(object):
         # else:
         ns = get_namespace(self.namespace)
         if self.namespace.is_ext:
-            base = "\n  : public xpp::generic::extension<&xcb_%s_id>\n" % ns
+            base = "\n  : public xpp::generic::extension<extension, &xcb_%s_id>\n" % ns
+            ctor = "    using base = xpp::generic::extension<extension, &xcb_%s_id>;\n" % ns + \
+                   "    using base::base;\n"
         else:
             base = " "
+            ctor = ""
 
         return \
 '''\
@@ -28,6 +31,7 @@ namespace error { class dispatcher; };
 
 class extension%s{
   public:
+%s\
     template<typename Connection>
     using protocol = xpp::%s::protocol<Connection>;
     template<typename Connection>
@@ -35,6 +39,7 @@ class extension%s{
     using error_dispatcher = xpp::%s::error::dispatcher;
 };\
 ''' % (base,
+       ctor,
        ns, # typedef xpp::protocol::%s protocol;
        ns, # typedef xpp::event::dispatcher::%s dispatcher;
        ns) # typedef xpp::error::dispatcher::%s dispatcher;

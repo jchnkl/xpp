@@ -7,50 +7,52 @@
 
 namespace xpp { namespace generic {
 
-template<xcb_extension_t * Id>
+template<typename Derived, xcb_extension_t * Id>
 class extension
-  : virtual protected xpp::xcb::type<xcb_connection_t *>
 {
   public:
-    virtual ~extension(void)
-    {}
+    extension(xcb_connection_t * const c)
+      : m_c(c)
+    {
+      prefetch();
+    }
 
-    virtual
     const xcb_query_extension_reply_t &
     operator*(void) const
     {
       return *m_extension;
     }
 
-    virtual
     const xcb_query_extension_reply_t *
     operator->(void) const
     {
       return m_extension;
     }
 
-    virtual
     operator const xcb_query_extension_reply_t *(void) const
     {
       return m_extension;
     }
 
-    virtual
-    void init(void)
+    Derived &
+    get(void)
     {
-      m_extension = xcb_get_extension_data(*this, Id);
+      m_extension = xcb_get_extension_data(m_c, Id);
+      return static_cast<Derived &>(*this);
     }
 
-    virtual
-    void prefetch_data(void)
+    Derived &
+    prefetch(void)
     {
-      xcb_prefetch_extension_data(*this, Id);
+      xcb_prefetch_extension_data(m_c, Id);
+      return static_cast<Derived &>(*this);
     }
 
   private:
+    xcb_connection_t * m_c = nullptr;
     // The result must not be freed.
     // This storage is managed by the cache itself.
-    const xcb_query_extension_reply_t * m_extension = NULL;
+    const xcb_query_extension_reply_t * m_extension = nullptr;
 }; // class extension
 
 }; }; // namespace xpp::generic
