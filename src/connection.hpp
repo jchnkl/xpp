@@ -12,13 +12,14 @@ namespace xpp {
 template<typename ... Extensions>
 class connection
   : public xpp::core
-  , public xpp::x::extension
-  , public xpp::x::extension::error_dispatcher
-  , public xpp::x::extension::protocol<connection<Extensions ...> &>
-  , public Extensions ...
-  , public Extensions::error_dispatcher ...
-  , public Extensions::template protocol<connection<Extensions ...> &> ...
   , public xpp::generic::error_dispatcher
+  , public xpp::x::extension::protocol<const connection<Extensions ...> &>
+  , public Extensions::template protocol<const connection<Extensions ...> &> ...
+  // private interfaces: extensions and error_dispatcher
+  , private xpp::x::extension
+  , private xpp::x::extension::error_dispatcher
+  , private Extensions ...
+  , private Extensions::error_dispatcher ...
 {
   protected:
     typedef connection<Extensions ...> self;
@@ -33,9 +34,11 @@ class connection
     explicit
     connection(Parameters && ... parameters)
       : xpp::core::core(std::forward<Parameters>(parameters) ...)
+      , xpp::x::extension::protocol<const connection<Extensions ...> &>(*this)
+      , Extensions::template protocol<const self &>(*this) ...
+      , Extensions(static_cast<xcb_connection_t *>(*this)) ...
+      , Extensions::error_dispatcher(static_cast<Extensions &>(*this).get()) ...
     {
-      prefetch_data<Extensions ...>();
-      init_extensions<Extensions ...>();
       m_root_window = screen_of_display(default_screen())->root;
     }
 
@@ -99,40 +102,6 @@ class connection
 
     template<typename Extension, typename Next, typename ... Rest>
     void
-    prefetch_data(void)
-    {
-      prefetch_data<Extension>();
-      prefetch_data<Next, Rest ...>();
-    }
-
-    template<typename Extension>
-    void
-    prefetch_data(void)
-    {
-      static_cast<Extension *>(this)->prefetch_data();
-      std::cerr << "prefetch_data" << std::endl;
-    }
-
-    template<typename Extension, typename Next, typename ... Rest>
-    void
-    init_extensions(void)
-    {
-      init_extensions<Extension>();
-      init_extensions<Next, Rest ...>();
-    }
-
-    template<typename Extension>
-    void
-    init_extensions(void)
-    {
-      using error_dispatcher = typename Extension::error_dispatcher &;
-      Extension & extension = static_cast<Extension &>(*this);
-      extension.init();
-      static_cast<error_dispatcher>(*this).first_error(extension->first_error);
-    }
-
-    template<typename Extension, typename Next, typename ... Rest>
-    void
     check(const std::shared_ptr<xcb_generic_error_t> & error) const
     {
       check<Extension>(error);
@@ -153,6 +122,7 @@ template<>
 template<typename ... Parameters>
 connection<>::connection(Parameters && ... parameters)
   : xpp::core::core(std::forward<Parameters>(parameters) ...)
+  , xpp::x::extension::protocol<const connection<> &>(*this)
 {
   m_root_window = screen_of_display(static_cast<core &>(*this).default_screen())->root;
 }
