@@ -6,20 +6,15 @@
 
 namespace xpp { namespace generic {
 
-template<typename Connection, typename Event, int OpCode>
-class event
-{
-
+template<typename Event>
+class event {
   public:
-    template<typename C>
-    event(C && c, const std::shared_ptr<xcb_generic_event_t> & event)
-      : m_c(std::forward<C>(c))
-      , m_event(event)
+    event(const std::shared_ptr<xcb_generic_event_t> & event)
+      : m_event(event)
     {}
 
     virtual
     ~event(void) {}
-
 
     virtual
     operator const Event &(void) const
@@ -41,10 +36,7 @@ class event
       return reinterpret_cast<Event * const>(m_event.get());
     }
 
-    static const int opcode = OpCode;
-
   protected:
-    Connection m_c;
     std::shared_ptr<xcb_generic_event_t> m_event;
 }; // class event
 
