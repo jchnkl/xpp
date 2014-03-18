@@ -45,7 +45,7 @@ dispatch(const Object & object,
                    std::is_base_of<xpp::generic::error_dispatcher, Object>());
 }
 
-template<typename Derived, typename Error, int OpCode>
+template<typename Derived, typename Error>
 class error
   : public std::runtime_error
 {
@@ -84,11 +84,9 @@ class error
     std::string
     get_error_description(xcb_generic_error_t * error) const
     {
-      return std::string(Derived::opcode_literal)
+      return std::string(Derived::description())
         + " (" + std::to_string(error->error_code) + ")";
     }
-
-    static const int opcode = OpCode;
 
     std::shared_ptr<xcb_generic_error_t> m_error;
 }; // class error

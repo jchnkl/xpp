@@ -70,7 +70,6 @@ def error_dispatcher_class(namespace, cpperrors):
             , "{}"
             ]
 
-
     # >>> if end <<<
 
     if len(typedef) > 0:
@@ -153,9 +152,6 @@ class CppError(object):
             ]
 
         if self.namespace.is_ext:
-            '''
-            typedef = [ "typedef xpp::%s::extension extension;" % ns ]
-            '''
             opcode_accessor += \
                 [ ""
                 , "static uint8_t opcode(uint8_t first_error)"
@@ -173,12 +169,6 @@ class CppError(object):
                 [ "protected:"
                 , "  uint8_t m_first_error;"
                 ]
-
-        else:
-            pass
-            '''
-            typedef = [ "typedef void extension;" ]
-            '''
 
         if len(opcode_accessor) > 0:
             opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"
