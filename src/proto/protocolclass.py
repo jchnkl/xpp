@@ -15,13 +15,19 @@ _templates['protocol_class'] = \
 """\
 template<typename Connection>
 class protocol
-  : virtual protected xpp::generic::connection<Connection>
 {
   public:
 %s\
+    template<typename C>
+    protocol(C && c)
+      : m_c(std::forward<C>(c))
+    {}
+
     virtual ~protocol(void) {}
 
 %s\
+  protected:
+    Connection m_c;
 }; // class protocol
 """
 
