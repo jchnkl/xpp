@@ -45,7 +45,7 @@ all: ${XMLPROTOS}
 gch: ${HPPPROTOS}
 
 ${HPPPROTOS}:
-	-${CXX} ${CXXFLAGS} ${LDFLAGS} -c $@
+	-${CXX} ${CXXFLAGS} ${LDFLAGS} -c $(if $(filter $@,xproto.hpp),x.hpp,$(@))
 
 ${XMLPROTOS}:
 	-${PYTHON} ${CLIENT} -p ${XCBGEN} ${PROTODIR}/$@ > $(if $(filter $@,xproto.xml),x.hpp,$(@:%.xml=%.hpp))
