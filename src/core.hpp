@@ -36,7 +36,6 @@ class connection_error
 };
 
 class core
-  : public xpp::xcb::type<xcb_connection_t *>
 {
   protected:
     using shared_generic_event_ptr = std::shared_ptr<xcb_generic_event_t>;
