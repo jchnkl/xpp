@@ -58,6 +58,13 @@ class connection
       check<xpp::x::extension, Extensions ...>(error);
     }
 
+    template<typename Extension>
+    const Extension &
+    extension(void) const
+    {
+      return static_cast<const Extension &>(*this);
+    }
+
     // TODO
     // virtual operator Display * const(void) const
     // {
