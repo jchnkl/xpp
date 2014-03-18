@@ -11,15 +11,16 @@ _templates['error_dispatcher_class'] = \
 '''\
 namespace error {
 
-class dispatcher {
+class dispatcher
+{
   public:
 %s\
 %s\
 
     void
-    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
+    operator()(const std::shared_ptr<xcb_generic_error_t> &%s) const
     {
-%s
+%s\
     }
 
 %s\
@@ -28,64 +29,47 @@ class dispatcher {
 }; // namespace error
 '''
 
-_templates['error_dispatcher_class_impl'] = \
-'''\
-namespace xpp { namespace %s { namespace error {
+def _error_dispatcher_class(typedef, ctors, switch, members, has_errors):
+    return _templates['error_dispatcher_class'] % \
+        ( typedef
+        , ctors
+        , " error" if has_errors else ""
+        , switch if has_errors else ""
+        , members
+        )
 
-void
-dispatcher::operator()(xcb_generic_error_t * error) const
-{
-%s
-}
-
-}; }; // namespace xpp::%s::error
-'''
 
 def error_dispatcher_class(namespace, cpperrors):
     ns = get_namespace(namespace)
+
+    ctor_name = "dispatcher"
 
     typedef = []
     ctors = []
     members = []
     opcode_switch = "error->error_code"
 
+    typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
+
     # >>> if begin <<<
     if namespace.is_ext:
         opcode_switch = "error->error_code - m_first_error"
-        '''
-        typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
-        '''
 
         members += \
             [ "protected:"
             , "  uint8_t m_first_error;"
             ]
 
-        ctor = "dispatcher"
-        ctors += \
-            [ "%s(void)" % ctor
-            , "{}"
-            , ""
-            , "%s(uint8_t first_error)" % ctor
+        ctors = \
+            [ "%s(uint8_t first_error)" % (ctor_name)
             , "  : m_first_error(first_error)"
             , "{}"
             , ""
-            , "%s(const xpp::%s::extension & extension)" % (ctor, ns)
-            , "  : %s(extension->first_error)" % ctor
+            , "%s(const xpp::%s::extension & extension)" % (ctor_name, ns)
+            , "  : %s(extension->first_error)" % ctor_name
             , "{}"
-            , ""
-            , "uint8_t"
-            , "first_error(void)"
-            , "{"
-            , "  return m_first_error;"
-            , "}"
-            , ""
-            , "void"
-            , "first_error(uint8_t first_error)"
-            , "{"
-            , "  m_first_error = first_error;"
-            , "}"
             ]
+
 
     # >>> if end <<<
 
@@ -104,11 +88,12 @@ def error_dispatcher_class(namespace, cpperrors):
     else:
         members = ""
 
-    return _templates['error_dispatcher_class'] \
-        % (typedef,
-           ctors,
-           error_switch_cases(cpperrors, opcode_switch, "error"),
-           members)
+    switch = error_switch_cases(cpperrors, opcode_switch, "error")
+    return _error_dispatcher_class(typedef,
+                                   ctors,
+                                   switch,
+                                   members,
+                                   len(cpperrors) > 0)
 
 def error_switch_cases(cpperrors, arg_switch, arg_error):
     cases = ""
@@ -119,7 +104,7 @@ def error_switch_cases(cpperrors, arg_switch, arg_error):
             , ""
             ]
 
-    cases += "\n      switch (%s) {\n\n" % arg_switch
+    cases += "      switch (%s) {\n\n" % arg_switch
     for e in errors:
         cases += "\n".join(templ) % (e.opcode_name, e.opcode, e.scoped_name())
     cases += "      };\n"
@@ -158,6 +143,7 @@ class CppError(object):
     def make_class(self):
         ns = get_namespace(self.namespace)
         typedef = []
+        members = []
 
         opcode_accessor = \
             [ "static uint8_t opcode(void)"
@@ -183,6 +169,11 @@ class CppError(object):
                 , "}"
                 ]
 
+            members = \
+                [ "protected:"
+                , "  uint8_t m_first_error;"
+                ]
+
         else:
             pass
             '''
@@ -193,6 +184,11 @@ class CppError(object):
             opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"
         else:
             opcode_accessor = ""
+
+        if len(members) > 0:
+            members = "\n" + "\n".join(map(lambda s: "  " + s, members)) + "\n"
+        else:
+            members = ""
 
         if len(typedef) > 0:
             typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n\n"
@@ -207,26 +203,29 @@ class CppError(object):
 namespace error {
 class %s
   : public xpp::generic::error<%s,
-                               %s,
                                %s>
 {
   public:
 %s\
-    using xpp::generic::error<%s, %s, %s>::error;
+    using xpp::generic::error<%s, %s>::error;
 
     virtual ~%s(void) {}
 
+%s
+    static std::string description(void)
+    {
+      return std::string("%s");
+    }
 %s\
-    static constexpr const char * opcode_literal = "%s";
 }; // class %s
 }; // namespace error
 ''' % (self.get_name(), # class %s
        self.get_name(), # : public xpp::generic::error<%s,
-       self.c_name, # %s,
-       self.opcode_name, # : %s>
+       self.c_name, # %s>
        typedef,
-       self.get_name(), self.c_name, self.opcode_name, # using xpp::generic::error<%s, %s, %s>::error;
+       self.get_name(), self.c_name, # using xpp::generic::error<%s, %s>::error;
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
        self.opcode_name, # static constexpr const char * opcode_literal
+       members,
        self.get_name()) # // class %s
