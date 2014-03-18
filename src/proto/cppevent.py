@@ -52,7 +52,6 @@ namespace event {
 
 template<typename Connection>
 class dispatcher
-  : virtual protected xpp::generic::connection<Connection>
 {
   public:
 %s\
@@ -60,19 +59,33 @@ class dispatcher
 
     template<typename Handler>
     bool
-    operator()(const Handler & handler, const std::shared_ptr<xcb_generic_event_t> & event) const
-    {
+    operator()(Handler%s,
+               const std::shared_ptr<xcb_generic_event_t> &%s) const
+    {\
 %s
       return false;
     }
+
 %s\
 }; // class dispatcher
 
 }; // namespace event
 '''
 
+def _event_dispatcher_class(typedef, ctors, switch, members, has_events):
+    return _templates['event_dispatcher_class'] % \
+        ( typedef
+        , ctors
+        , " handler" if has_events else ""
+        , " event" if has_events else ""
+        , switch if has_events else ""
+        , members
+        )
+
 def event_dispatcher_class(namespace, cppevents):
     ns = get_namespace(namespace)
+
+    ctor_name = "dispatcher"
 
     typedef = []
     ctors = []
@@ -81,40 +94,35 @@ def event_dispatcher_class(namespace, cppevents):
     opcode_switch = "event->response_type & ~0x80"
     typedef = [ "typedef xpp::%s::extension extension;\n" % ns ]
 
+    members = \
+        [ "protected:"
+        , "  Connection m_c;"
+        ]
+
+    ctors = \
+        [ "template<typename C>"
+        , "%s(C && c)" % ctor_name
+        , "  : m_c(std::forward<C>(c))"
+        , "{}"
+        ]
 
     # >>> if begin <<<
     if namespace.is_ext:
         opcode_switch = "(event->response_type & ~0x80) - m_first_event"
 
-        members += \
-            [ "protected:"
-            , "  uint8_t m_first_event;"
-            ]
+        members += [ "  uint8_t m_first_event;" ]
 
-        ctor = "dispatcher"
-        ctors += \
-            [ "%s(void)" % ctor
+        ctors = \
+            [ "template<typename C>"
+            , "%s(C && c, uint8_t first_event)" % (ctor_name)
+            , "  : m_c(std::forward<C>(c))"
+            , "  , m_first_event(first_event)"
             , "{}"
             , ""
-            , "%s(uint8_t first_event)" % ctor
-            , "  : m_first_event(first_event)"
+            , "template<typename C>"
+            , "%s(C && c, const xpp::%s::extension & extension)" % (ctor_name, ns)
+            , "  : %s(std::forward<C>(c), extension->first_event)" % ctor_name
             , "{}"
-            , ""
-            , "%s(const xpp::%s::extension & extension)" % (ctor, ns)
-            , "  : %s(extension->first_event)" % ctor
-            , "{}"
-            , ""
-            , "uint8_t"
-            , "first_event(void)"
-            , "{"
-            , "  return m_first_event;"
-            , "}"
-            , ""
-            , "void"
-            , "first_event(uint8_t first_event)"
-            , "{"
-            , "  m_first_event = first_event;"
-            , "}"
             ]
 
     # >>> if end <<<
@@ -134,16 +142,19 @@ def event_dispatcher_class(namespace, cppevents):
     else:
         members = ""
 
-    return _templates['event_dispatcher_class'] \
-        % (typedef,
-           ctors,
-           event_switch_cases(cppevents, opcode_switch, "handler", "event"),
-           members)
+    switch = event_switch_cases(cppevents, opcode_switch, "handler", "event", namespace)
 
-def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
+    return _event_dispatcher_class(typedef,
+                                   ctors,
+                                   switch,
+                                   members,
+                                   len(cppevents) > 0)
+
+def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event, ns):
     cases = ""
+    first_event_arg = ", m_first_event" if ns.is_ext else ""
     templ = [ "        case %s:"
-            , "          %s(" % arg_handler + "%s<Connection>" + "(static_cast<Connection>(*this), %s));" % arg_event
+            , "          %s(" % arg_handler + "%s<Connection>" + "(m_c%s, %s));" % (first_event_arg, arg_event)
             , "          return true;"
             , ""
             , ""
@@ -171,7 +182,7 @@ def event_switch_cases(cppevents, arg_switch, arg_handler, arg_event):
             cases += "\n".join(templ) % (e.opcode_name, e.scoped_name())
         cases += "      };\n"
 
-    return cases
+    return cases if len(cppevents) > 0 else ""
 
 ########## EVENT ##########
 
@@ -228,7 +239,27 @@ class CppEvent(object):
 
         ns = get_namespace(self.namespace)
 
+        extension = "xpp::%s::extension" % ns
+
+        ctor = \
+            [ "template<typename C>"
+            , "%s(C && c," % self.get_name()
+            , (" " * len(self.get_name())) + " const std::shared_ptr<xcb_generic_event_t> & event)"
+            , "  : base(event)"
+            , "  , m_c(std::forward<C>(c))"
+            , "{}"
+            ]
+
+        m_first_event = ""
+
         typedef = [ "typedef xpp::%s::extension extension;" % ns ]
+
+        description = \
+            [ "static std::string description(void)"
+            , "{"
+            , "  return std::string(\"%s\");" % self.opcode_name
+            , "}"
+            ]
 
         opcode_accessor = \
             [ "static uint8_t opcode(void)"
@@ -237,10 +268,9 @@ class CppEvent(object):
             , "}"
             ]
 
+        first_event = []
+
         if self.namespace.is_ext:
-            '''
-            typedef = [ "typedef xpp::%s::extension extension;" % ns ]
-            '''
             opcode_accessor += \
                 [ ""
                 , "static uint8_t opcode(uint8_t first_event)"
@@ -254,16 +284,35 @@ class CppEvent(object):
                 , "}"
                 ]
 
-        else:
-            pass
-            '''
-            typedef = [ "typedef void extension;" ]
-            '''
+            first_event = \
+                [ "uint8_t first_event(void)"
+                , "{"
+                , "  return m_first_event;"
+                , "}"
+                ]
+
+            ctor = \
+                [ "template<typename C>"
+                , "%s(C && c," % self.get_name()
+                , (" " * len(self.get_name())) + " uint8_t first_event,"
+                , (" " * len(self.get_name())) + " const std::shared_ptr<xcb_generic_event_t> & event)"
+                , "  : base(event)"
+                , "  , m_c(std::forward<C>(c))"
+                , "  , m_first_event(first_event)"
+                , "{}"
+                ]
+
+            m_first_event = "    const uint8_t m_first_event;\n"
 
         if len(opcode_accessor) > 0:
             opcode_accessor = "\n".join(map(lambda s: "    " + s, opcode_accessor)) + "\n"
         else:
             opcode_accessor = ""
+
+        if len(ctor) > 0:
+            ctor = "\n".join(map(lambda s: "    " + s, ctor)) + "\n"
+        else:
+            ctor = ""
 
         if len(typedef) > 0:
             typedef = "\n".join(map(lambda s: "    " + s, typedef)) + "\n\n"
@@ -277,35 +326,51 @@ class CppEvent(object):
             member_accessors = ""
             member_accessors_special = ""
 
+        if len(description) > 0:
+            description = "\n" + "\n".join(map(lambda s: "    " + s, description)) + "\n"
+        else:
+            description = ""
+
+        if len(first_event) > 0:
+            first_event = "\n" + "\n".join(map(lambda s: "    " + s, first_event)) + "\n"
+        else:
+            first_event = ""
+
         return \
 '''
 namespace event {
 template<typename Connection>
 class %s
-  : public xpp::generic::event<Connection,
-                               %s,
-                               %s>
+  : public xpp::generic::event<%s>
 {
   public:
 %s\
-    typedef xpp::generic::event<Connection, %s, %s> base;
+    typedef xpp::generic::event<%s> base;
 
-    using base::base;
+%s\
 
     virtual ~%s(void) {}
 
 %s\
 %s\
+%s\
+%s\
+  protected:
+    Connection m_c;
+%s\
 }; // class %s
 %s\
 }; // namespace event
 ''' % (self.get_name(), # class %s
-       self.c_name, # : public xpp::generic::event<%s,
-       self.opcode_name, # %s>
+       self.c_name, # %s>
        typedef,
-       self.c_name, self.opcode_name, # typedef xpp::generic::event<%s, %s>::base;
+       self.c_name, # typedef xpp::generic::event<%s>::base;
+       ctor,
        self.get_name(), # virtual ~%s(void) {}
        opcode_accessor,
+       description,
+       first_event,
        member_accessors,
+       m_first_event,
        self.get_name(), # // class %s
        member_accessors_special)
