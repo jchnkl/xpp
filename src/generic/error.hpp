@@ -7,10 +7,49 @@
 
 namespace xpp { namespace generic {
 
-template<typename Derived, typename Error, int OpCode>
-class error : public std::runtime_error {
+class error_dispatcher {
   public:
+    virtual
+      void operator()(const std::shared_ptr<xcb_generic_error_t> &) const = 0;
+};
 
+namespace detail {
+
+template<typename Object>
+void
+dispatch(const Object & object,
+         const std::shared_ptr<xcb_generic_error_t> & error,
+         std::true_type)
+{
+  static_cast<const xpp::generic::error_dispatcher &>(object)(error);
+}
+
+template<typename Object>
+void
+dispatch(const Object &,
+         const std::shared_ptr<xcb_generic_error_t> & error,
+         std::false_type)
+{
+  throw error;
+}
+
+}; // namespace detail
+
+template<typename Object>
+void
+dispatch(const Object & object,
+         const std::shared_ptr<xcb_generic_error_t> & error)
+{
+  detail::dispatch(object,
+                   error,
+                   std::is_base_of<xpp::generic::error_dispatcher, Object>());
+}
+
+template<typename Derived, typename Error, int OpCode>
+class error
+  : public std::runtime_error
+{
+  public:
     error(const std::shared_ptr<xcb_generic_error_t> & error)
       : runtime_error(get_error_description(error.get()))
       , m_error(error)

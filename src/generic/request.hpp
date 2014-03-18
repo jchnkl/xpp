@@ -5,6 +5,7 @@
 #include <memory>
 #include <cstdlib>
 #include <xcb/xcb.h>
+#include "error.hpp"
 #include "signature.hpp"
 
 #define REPLY_TEMPLATE \
@@ -27,58 +28,6 @@
 
 namespace xpp { namespace generic {
 
-template<typename ... Types>
-class error_handler;
-
-template<typename Dispatcher>
-class error_handler<Dispatcher>
-{
-  public:
-    template<typename Connection>
-    error_handler(Connection && c)
-      : m_dispatcher(static_cast<const Dispatcher &>(std::forward<Connection>(c)))
-    {}
-
-    void
-    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
-    {
-      m_dispatcher(error);
-    }
-
-  protected:
-    Dispatcher m_dispatcher;
-};
-
-template<>
-class error_handler<void>
-{
-  public:
-    template<typename Connection>
-    error_handler(Connection &&)
-    {}
-
-    void
-    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
-    {
-      throw error;
-    }
-};
-
-template<typename Connection, typename Dispatcher>
-class error_handler<Connection, Dispatcher>
-  : public std::conditional<std::is_convertible<Connection, Dispatcher>::value,
-                            error_handler<Dispatcher>,
-                            error_handler<void>>::type
-{
-  public:
-    typedef typename std::conditional<
-                              std::is_convertible<Connection, Dispatcher>::value,
-                              error_handler<Dispatcher>,
-                              error_handler<void>>::type
-                                base;
-    using base::base;
-};
-
 template<typename Connection, typename Dispatcher>
 void
 check(Connection && c, const xcb_void_cookie_t & cookie)
@@ -86,8 +35,8 @@ check(Connection && c, const xcb_void_cookie_t & cookie)
   xcb_generic_error_t * error =
     xcb_request_check(std::forward<Connection>(c), cookie);
   if (error) {
-    error_handler<Connection, Dispatcher>(std::forward<Connection>(c))(
-        std::shared_ptr<xcb_generic_error_t>(error, std::free));
+    dispatch(std::forward<Connection>(c),
+             std::shared_ptr<xcb_generic_error_t>(error, std::free));
   }
 }
 
@@ -162,8 +111,7 @@ class reply<Derived,
       auto reply = std::shared_ptr<Reply>(ReplyFunction(m_c, m_cookie, &error),
                                           std::free);
       if (error) {
-        static_cast<Derived &>(*this).handle(
-            std::shared_ptr<xcb_generic_error_t>(error, std::free));
+        dispatch(m_c, std::shared_ptr<xcb_generic_error_t>(error, std::free));
       }
       return reply;
     }

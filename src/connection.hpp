@@ -18,6 +18,7 @@ class connection
   , public Extensions ...
   , public Extensions::error_dispatcher ...
   , public Extensions::template protocol<connection<Extensions ...> &> ...
+  , public xpp::generic::error_dispatcher
 {
   protected:
     typedef connection<Extensions ...> self;
@@ -46,6 +47,12 @@ class connection
     operator xcb_connection_t *(void) const
     {
       return *(static_cast<const core &>(*this));
+    }
+
+    void
+    operator()(const std::shared_ptr<xcb_generic_error_t> & error) const
+    {
+      check<xpp::x::extension, Extensions ...>(error);
     }
 
     // TODO

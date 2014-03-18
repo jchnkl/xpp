@@ -32,14 +32,6 @@ class %s
       : base(std::forward<C>(c), std::forward<Parameter>(parameter) ...)
     {}
 
-    void
-    handle(const std::shared_ptr<xcb_generic_error_t> & error) const
-    {
-      using error_handler =
-        xpp::generic::error_handler<Connection, xpp::%s::error::dispatcher>;
-      (error_handler(base::m_c))(error);
-    }
-
 %s\
 %s\
 }; // class %s
@@ -71,7 +63,6 @@ def _reply_class(name, c_name, ns, cookie, accessors):
             , name # typedef
             , c_name # %s_reply
             , name # c'tor
-            , ns
             , cookie.make_static_getter()
             , accessors
             , name # // class %s
