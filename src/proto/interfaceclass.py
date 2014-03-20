@@ -11,10 +11,10 @@ from cpperror import error_dispatcher_class
 
 _templates = {}
 
-_templates['protocol_class'] = \
+_templates['interface_class'] = \
 """\
 template<typename Derived, typename Connection>
-class protocol
+class interface
 {
   protected:
     Connection
@@ -26,24 +26,24 @@ class protocol
   public:
 %s\
 
-    virtual ~protocol(void) {}
+    virtual ~interface(void) {}
 
-    const protocol<Derived, Connection> &
+    const interface<Derived, Connection> &
     %s(void)
     {
       return *this;
     }
 
 %s\
-}; // class protocol
+}; // class interface
 """
 
 _ignore_events = \
         { "XCB_PRESENT_GENERIC" }
 
-########## PROTOCOLCLASS ##########
+########## INTERFACECLASS ##########
 
-class ProtocolClass(object):
+class InterfaceClass(object):
     def __init__(self):
         self.requests = []
         self.events = []
@@ -78,9 +78,9 @@ class ProtocolClass(object):
             typedef = ""
 
 
-        return (_templates['protocol_class'] \
+        return (_templates['interface_class'] \
             % (typedef, ns, methods)) + \
               '\n' + event_dispatcher_class(self.namespace, self.events) + \
               '\n' + error_dispatcher_class(self.namespace, self.errors)
 
-########## PROTOCOLCLASS ##########
+########## INTERFACECLASS ##########

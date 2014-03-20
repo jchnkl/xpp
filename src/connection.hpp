@@ -13,8 +13,8 @@ namespace detail {
 
 template<typename Connection, typename ... Extensions>
 class interfaces
-  : public xpp::x::extension::protocol<interfaces<Connection, Extensions ...>, Connection>
-  , public Extensions::template protocol<interfaces<Connection, Extensions ...>, Connection> ...
+  : public xpp::x::extension::interface<interfaces<Connection, Extensions ...>, Connection>
+  , public Extensions::template interface<interfaces<Connection, Extensions ...>, Connection> ...
 {
   public:
     Connection

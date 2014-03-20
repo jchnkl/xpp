@@ -24,7 +24,7 @@ class ExtensionClass(object):
         return \
 '''\
 template<typename Derived, typename Connection>
-class protocol;
+class interface;
 
 namespace event { template<typename Connection> class dispatcher; };
 namespace error { class dispatcher; };
@@ -33,13 +33,13 @@ class extension%s{
   public:
 %s\
     template<typename Derived, typename Connection>
-    using protocol = xpp::%s::protocol<Derived, Connection>;
+    using interface = xpp::%s::interface<Derived, Connection>;
     template<typename Connection>
     using event_dispatcher = xpp::%s::event::dispatcher<Connection>;
     using error_dispatcher = xpp::%s::error::dispatcher;
 };\
 ''' % (base,
        ctor,
-       ns, # typedef xpp::protocol::%s protocol;
+       ns, # typedef xpp::interface::%s interface;
        ns, # typedef xpp::event::dispatcher::%s dispatcher;
        ns) # typedef xpp::error::dispatcher::%s dispatcher;

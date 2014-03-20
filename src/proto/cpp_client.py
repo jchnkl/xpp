@@ -24,14 +24,14 @@ from accessor import Accessor
 from parameter import Parameter
 from cpprequest import CppRequest
 from objectclass import ObjectClass
-from protocolclass import ProtocolClass
+from interfaceclass import InterfaceClass
 from extensionclass import ExtensionClass
 
 _cpp_request_names = []
 _cpp_request_objects = {}
 
 # see c_open()
-_protocol_class = ProtocolClass()
+_interface_class = InterfaceClass()
 
 _cpp_events = []
 _cpp_errors = []
@@ -203,7 +203,7 @@ def c_open(self):
     # _ns.header = "test"
     _ns.c_ext_global_name = _n(_ns.prefix + ('id',))
 
-    _protocol_class.set_namespace(_ns)
+    _interface_class.set_namespace(_ns)
 
     # Build the type-name collision avoidance table used by c_enum
     build_collision_table()
@@ -271,8 +271,8 @@ def c_close(self):
 
 
     _h('')
-    _h(_protocol_class.make_proto())
-    # sys.stderr.write(_protocol_class.make_proto())
+    _h(_interface_class.make_proto())
+    # sys.stderr.write(_interface_class.make_proto())
 
     _h('')
     # _h('}; // namespace xpp')
@@ -2212,7 +2212,7 @@ def _cpp_request_helper(self, name, is_void):
 
     _cpp_request_objects[request_name].make_wrapped()
 
-    _protocol_class.add(_cpp_request_objects[request_name])
+    _interface_class.add(_cpp_request_objects[request_name])
 
     for key in _object_classes:
         _object_classes[key].set_namespace(_ns)
@@ -3014,7 +3014,7 @@ def cpp_event(self, name):
 
     cpp_event = CppEvent(self.opcodes[name], opcode, c_name, _ns, name, self.fields)
     _cpp_events.append(cpp_event)
-    _protocol_class.add_event(cpp_event)
+    _interface_class.add_event(cpp_event)
 
 def c_error(self, name):
     '''
@@ -3050,7 +3050,7 @@ def cpp_error(self, name):
     c_name = _t(self.name + ('error',))
     cpp_error = CppError(self, _ns, name, c_name, self.opcodes[name], opcode_name)
     _cpp_errors.append(cpp_error)
-    _protocol_class.add_error(cpp_error)
+    _interface_class.add_error(cpp_error)
 
     # if self.name == name:
     #     # Structure definition
