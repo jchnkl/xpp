@@ -17,16 +17,11 @@ class interfaces
   , public Extensions::template protocol<interfaces<Connection, Extensions ...>, Connection> ...
 {
   public:
-    template<typename C>
-    interfaces(C && c)
-      : m_c(std::forward<C>(c))
-    {}
     Connection
     connection(void) const
     {
-      return m_c;
+      return static_cast<const Connection &>(*this);
     }
-    Connection & m_c;
 }; // class interfaces
 
 }; // namespace detail
