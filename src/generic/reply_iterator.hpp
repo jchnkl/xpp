@@ -202,7 +202,8 @@ class iterator<Connection,
                LENGTH_SIGNATURE>
 {
   protected:
-    using data_t = typename xpp::generic::conversion_type<Object>::type;
+    using data_t = typename std::conditional<std::is_void<Data>::value,
+      typename xpp::generic::conversion_type<Object>::type, Data>::type;
     using make = xpp::generic::factory::make<Connection, data_t, Object>;
 
     Connection m_c;
