@@ -42,18 +42,29 @@ class ObjectClass(object):
         else:
             return \
 """\
-template<typename Connection>
+template<typename Derived, typename Connection>
 class %s
-  : virtual public xpp::xcb::type<const %s &>
-  , virtual protected xpp::generic::connection<Connection>
 {
+  protected:
+    Connection
+    connection(void) const
+    {
+      return static_cast<const Derived *>(this)->connection();
+    }
+
+    const %s &
+    resource(void) const
+    {
+      return static_cast<const Derived *>(this)->resource();
+    }
+
   public:
     virtual ~%s(void) {}
 
 %s
 }; // class %s
 """ % (name,   # class %s
-       c_name, # public xpp::xcb::type<const %s &>
+       c_name, # %s resource(void) { ... }
        name, # virtual ~%s(void)
        methods,
        name) # }; // class %s

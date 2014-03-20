@@ -13,21 +13,28 @@ _templates = {}
 
 _templates['protocol_class'] = \
 """\
-template<typename Connection>
+template<typename Derived, typename Connection>
 class protocol
 {
+  protected:
+    Connection
+    connection(void) const
+    {
+      return static_cast<const Derived *>(this)->connection();
+    }
+
   public:
 %s\
-    template<typename C>
-    protocol(C && c)
-      : m_c(std::forward<C>(c))
-    {}
 
     virtual ~protocol(void) {}
 
+    const protocol<Derived, Connection> &
+    %s(void)
+    {
+      return *this;
+    }
+
 %s\
-  protected:
-    Connection m_c;
 }; // class protocol
 """
 
@@ -72,7 +79,7 @@ class ProtocolClass(object):
 
 
         return (_templates['protocol_class'] \
-            % (typedef, methods)) + \
+            % (typedef, ns, methods)) + \
               '\n' + event_dispatcher_class(self.namespace, self.events) + \
               '\n' + error_dispatcher_class(self.namespace, self.errors)
 

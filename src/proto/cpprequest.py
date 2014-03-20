@@ -70,21 +70,23 @@ def _reply_request_function(name):
 _templates['inline_reply_class'] = \
 '''\
     template<typename ... Parameter>
-    reply::checked::%s<Connection>
+    auto
     %s(Parameter && ... parameter) const
+    -> reply::checked::%s<Connection>
     {
       return xpp::%s::%s(
-          static_cast<Connection>(*this),
+          connection(),
           %s\
           std::forward<Parameter>(parameter) ...);
     }
 
     template<typename ... Parameter>
-    reply::unchecked::%s<Connection>
+    auto
     %s_unchecked(Parameter && ... parameter) const
+    -> reply::unchecked::%s<Connection>
     {
       return xpp::%s::%s_unchecked(
-          static_cast<Connection>(*this),
+          connection(),
           %s\
           std::forward<Parameter>(parameter) ...);
     }
@@ -92,13 +94,13 @@ _templates['inline_reply_class'] = \
 
 def _inline_reply_class(request_name, method_name, member, ns):
     return _templates['inline_reply_class'] % \
-            ( request_name
-            , method_name
+            ( method_name
+            , request_name
             , ns
             , request_name
             , member
-            , request_name
             , method_name
+            , request_name
             , ns
             , request_name
             , member
@@ -110,7 +112,7 @@ _templates['inline_void_class'] = \
     void
     %s_checked(Parameter && ... parameter) const
     {
-      xpp::%s::%s_checked(static_cast<Connection>(*this),
+      xpp::%s::%s_checked(connection(),
                           %s\
                           std::forward<Parameter>(parameter) ...);
     }
@@ -119,7 +121,7 @@ _templates['inline_void_class'] = \
     void
     %s(Parameter && ... parameter) const
     {
-      xpp::%s::%s(static_cast<Connection>(*this),
+      xpp::%s::%s(connection(),
                   %s\
                   std::forward<Parameter>(parameter) ...);
     }
@@ -186,7 +188,7 @@ class CppRequest(object):
         member = ""
         method_name = self.name
         if not is_connection:
-            member = "*this,\n"
+            member = "resource(),\n"
             method_name = replace_class(method_name, class_name)
 
         if self.is_void:
