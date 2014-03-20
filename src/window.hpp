@@ -9,17 +9,10 @@
 namespace xpp {
 
 template<typename Connection>
-class window : public xpp::x::window<Connection>
-             , public xpp::x::drawable<Connection>
+class window : public xpp::x::window<window<Connection>, Connection>
+             , public xpp::x::drawable<window<Connection>, Connection>
 {
-  protected:
-    operator Connection(void) const
-    {
-      return m_c;
-    }
-
   public:
-
     window(const Connection c)
       : m_c(c)
     {}
@@ -146,8 +139,20 @@ class window : public xpp::x::window<Connection>
       for (auto & item : m_values) {
         values.push_back(item.second);
       }
-      xpp::x::window<Connection>::configure(m_mask, values.data());
+      xpp::x::window<window<Connection>, Connection>::configure(m_mask, values.data());
       return *this;
+    }
+
+    Connection
+    connection(void) const
+    {
+      return m_c;
+    }
+
+    const xcb_window_t &
+    resource(void) const
+    {
+      return *m_window;
     }
 
   private:
