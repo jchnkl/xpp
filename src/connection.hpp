@@ -9,12 +9,33 @@
 
 namespace xpp {
 
+namespace detail {
+
+template<typename Connection, typename ... Extensions>
+class interfaces
+  : public xpp::x::extension::protocol<interfaces<Connection, Extensions ...>, Connection>
+  , public Extensions::template protocol<interfaces<Connection, Extensions ...>, Connection> ...
+{
+  public:
+    template<typename C>
+    interfaces(C && c)
+      : m_c(std::forward<C>(c))
+    {}
+    Connection
+    connection(void) const
+    {
+      return m_c;
+    }
+    Connection & m_c;
+}; // class interfaces
+
+}; // namespace detail
+
 template<typename ... Extensions>
 class connection
   : public xpp::core
   , public xpp::generic::error_dispatcher
-  , public xpp::x::extension::protocol<const connection<Extensions ...> &>
-  , public Extensions::template protocol<const connection<Extensions ...> &> ...
+  , public detail::interfaces<connection<Extensions ...>, Extensions ...>
   // private interfaces: extensions and error_dispatcher
   , private xpp::x::extension
   , private xpp::x::extension::error_dispatcher
@@ -24,18 +45,13 @@ class connection
   protected:
     typedef connection<Extensions ...> self;
 
-    operator const self &(void) const
-    {
-      return *this;
-    }
 
   public:
     template<typename ... Parameters>
     explicit
     connection(Parameters && ... parameters)
       : xpp::core::core(std::forward<Parameters>(parameters) ...)
-      , xpp::x::extension::protocol<const connection<Extensions ...> &>(*this)
-      , Extensions::template protocol<const self &>(*this) ...
+      , detail::interfaces<connection<Extensions ...>, Extensions ...>(*this)
       , Extensions(static_cast<xcb_connection_t *>(*this)) ...
       , Extensions::error_dispatcher(static_cast<Extensions &>(*this).get()) ...
     {
@@ -129,7 +145,7 @@ template<>
 template<typename ... Parameters>
 connection<>::connection(Parameters && ... parameters)
   : xpp::core::core(std::forward<Parameters>(parameters) ...)
-  , xpp::x::extension::protocol<const connection<> &>(*this)
+  , detail::interfaces<connection<>>(*this)
 {
   m_root_window = screen_of_display(static_cast<core &>(*this).default_screen())->root;
 }
