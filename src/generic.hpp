@@ -6,6 +6,7 @@
 #include "generic/event.hpp"
 #include "generic/factory.hpp"
 #include "generic/request.hpp"
+#include "generic/resource.hpp"
 #include "generic/extension.hpp"
 #include "generic/signature.hpp"
 #include "generic/connection.hpp"
