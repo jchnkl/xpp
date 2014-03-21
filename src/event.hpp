@@ -82,7 +82,7 @@ class registry
     std::unordered_map<uint8_t, priority_map> m_dispatchers;
 
     template<typename Event>
-    uint8_t opcode(const xpp::x::extension & extension) const
+    uint8_t opcode(const xpp::x::extension &) const
     {
       return Event::opcode();
     }
