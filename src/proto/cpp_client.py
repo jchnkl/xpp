@@ -26,6 +26,7 @@ from cpprequest import CppRequest
 from objectclass import ObjectClass
 from interfaceclass import InterfaceClass
 from extensionclass import ExtensionClass
+from resource_classes import _resource_classes
 
 _cpp_request_names = []
 _cpp_request_objects = {}
@@ -36,24 +37,10 @@ _interface_class = InterfaceClass()
 _cpp_events = []
 _cpp_errors = []
 
-          # XPROTO
-_object_classes = \
-          { "10" : ObjectClass("DRAWABLE")
-          , "30" : ObjectClass("WINDOW")
-          , "40" : ObjectClass("PIXMAP")
-          , "50" : ObjectClass("ATOM")
-          , "60" : ObjectClass("CURSOR")
-          , "70" : ObjectClass("FONT")
-          , "80" : ObjectClass("GCONTEXT")
-          , "90" : ObjectClass("FONTABLE")
-          # , "KEYCODE" : []
+_object_classes = {}
 
-          # RANDR
-          , "100" : ObjectClass("MODE")
-          , "120" : ObjectClass("CRTC")
-          , "130" : ObjectClass("OUTPUT")
-          , "140" : ObjectClass("PROVIDER")
-          }
+for i, v in enumerate(_resource_classes):
+    _object_classes[i] = ObjectClass(v)
 
         # , "render" : collections.OrderedDict( \
         #         {
