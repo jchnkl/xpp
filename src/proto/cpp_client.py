@@ -38,14 +38,14 @@ _cpp_errors = []
 
           # XPROTO
 _object_classes = \
-          { "10" : ObjectClass("DRAWABLE", False)
-          , "30" : ObjectClass("WINDOW", False)
-          , "40" : ObjectClass("PIXMAP", False)
-          , "50" : ObjectClass("ATOM", False)
-          , "60" : ObjectClass("CURSOR", False)
-          , "70" : ObjectClass("FONT", False)
-          , "80" : ObjectClass("GCONTEXT", False)
-          , "90" : ObjectClass("FONTABLE", False)
+          { "10" : ObjectClass("DRAWABLE")
+          , "30" : ObjectClass("WINDOW")
+          , "40" : ObjectClass("PIXMAP")
+          , "50" : ObjectClass("ATOM")
+          , "60" : ObjectClass("CURSOR")
+          , "70" : ObjectClass("FONT")
+          , "80" : ObjectClass("GCONTEXT")
+          , "90" : ObjectClass("FONTABLE")
           # , "KEYCODE" : []
 
           # RANDR

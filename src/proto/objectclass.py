@@ -10,9 +10,8 @@ from utils import \
         _ext
 
 class ObjectClass(object):
-    def __init__(self, name, use_ns=True):
+    def __init__(self, name):
         self.name = name
-        self.use_ns = use_ns
         self.requests = []
 
     def add(self, request):
@@ -25,7 +24,7 @@ class ObjectClass(object):
 
     def set_namespace(self, namespace):
         self.namespace = namespace
-        name = (get_namespace(namespace) + "_") if self.use_ns else ""
+        name = (get_namespace(namespace) + "_") if namespace.is_ext else ""
         self.c_name = "xcb_%s_t" % (name + self.name.lower())
 
     def make_inline(self):
