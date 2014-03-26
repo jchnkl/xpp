@@ -1,7 +1,6 @@
 #ifndef XPP_GENERIC_HPP
 #define XPP_GENERIC_HPP
 
-#include "generic/type.hpp"
 #include "generic/error.hpp"
 #include "generic/event.hpp"
 #include "generic/factory.hpp"

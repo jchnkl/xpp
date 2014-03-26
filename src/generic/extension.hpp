@@ -3,7 +3,6 @@
 
 // #include <iostream>
 #include <xcb/xcb.h>
-#include "type.hpp"
 
 namespace xpp { namespace generic {
 
