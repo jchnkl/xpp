@@ -4,11 +4,8 @@
 #include <iostream> // std::{hex,dec}
 #include <memory> // std::shared_ptr
 #include "iterator_traits.hpp"
-// #include <map>
-// #include <vector>
 
-// #include "../proto/x.hpp"
-#include <xcb/xcb.h>
+#include <xcb/xcb.h> // xcb_generate_id
 
 namespace xpp {
 
