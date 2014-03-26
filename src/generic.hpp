@@ -9,7 +9,6 @@
 #include "generic/resource.hpp"
 #include "generic/extension.hpp"
 #include "generic/signature.hpp"
-#include "generic/connection.hpp"
 #include "generic/reply_iterator.hpp"
 #include "generic/iterator_traits.hpp"
 #include "generic/input_iterator_adapter.hpp"
