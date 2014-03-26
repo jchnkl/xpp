@@ -3,7 +3,6 @@
 
 #include "core.hpp"
 #include "generic/factory.hpp"
-#include "generic/connection.hpp"
 
 #include "proto/x.hpp"
 
