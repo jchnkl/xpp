@@ -82,6 +82,14 @@ class connection
 
     template<typename Window = xcb_window_t>
     Window
+    root(void)
+    {
+      using make = xpp::generic::factory::make<self, xcb_window_t, Window>;
+      return make()(*this, m_root_window);
+    }
+
+    template<typename Window = xcb_window_t>
+    Window
     root(void) const
     {
       using make = xpp::generic::factory::make<self, xcb_window_t, Window>;
