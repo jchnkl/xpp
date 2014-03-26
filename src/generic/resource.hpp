@@ -43,9 +43,41 @@ class resource
                               ResourceId, Interfaces ...>
 {
   protected:
+    using self = resource<Connection, ResourceId, Interfaces ...>;
+
     Connection m_c;
     // reference counting for Resource object
     std::shared_ptr<ResourceId> m_resource;
+
+    resource(Connection c)
+      : m_c(c)
+    {}
+
+    template<typename C, typename Create, typename Destroy>
+    static
+    self
+    make(C && c, Create create, Destroy destroy)
+    {
+      self resource(std::forward<C>(c));
+
+      auto xid = xcb_generate_id(std::forward<C>(c));
+
+      // class create before instatiating the shared_ptr
+      // create might fail and throw an error, hence shared_ptr would hold an
+      // invalid xid, causing possibly another exception in destroy()
+      // when create() throws, then the shared_ptr will not be created
+      create(std::forward<C>(c), xid);
+
+      resource.m_resource =
+        std::shared_ptr<ResourceId>(new ResourceId(xid),
+          [&](ResourceId * r)
+          {
+            destroy(resource.m_c, *r);
+            delete r;
+          });
+
+      return resource;
+    }
 
   public:
     template<typename C>
@@ -53,25 +85,6 @@ class resource
       : m_c(std::forward<C>(c))
       , m_resource(std::make_shared<ResourceId>(resource_id))
     {}
-
-    template<typename C>
-    resource(const ResourceId & resource_id, C && c)
-      : m_c(std::forward<C>(c))
-      , m_resource(std::make_shared<ResourceId>(resource_id))
-    {}
-
-    template<typename C, typename Create, typename Destroy>
-    resource(C && c, Create create, Destroy destroy)
-      : m_c(std::forward<C>(c))
-      , m_resource(new ResourceId(xcb_generate_id(std::forward<C>(c))),
-                   [&](ResourceId * r)
-                   {
-                     destroy(*r);
-                     delete r;
-                   })
-    {
-      create(*m_resource);
-    }
 
     virtual
     void
