@@ -60,6 +60,11 @@ class iterator<Connection,
                NEXT_SIGNATURE,
                SIZEOF_SIGNATURE,
                GETITERATOR_SIGNATURE>
+  : public std::iterator<typename std::input_iterator_tag,
+                         Object,
+                         typename std::size_t,
+                         Object *,
+                         const Object &>
 {
   protected:
     using self = iterator<Connection,
@@ -199,6 +204,11 @@ class iterator<Connection,
                Object,
                ACCESSOR_SIGNATURE,
                LENGTH_SIGNATURE>
+  : public std::iterator<typename std::input_iterator_tag,
+                         Object,
+                         typename std::size_t,
+                         Object *,
+                         const Object &>
 {
   protected:
     using data_t = typename std::conditional<std::is_void<Data>::value,
