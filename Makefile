@@ -1,9 +1,7 @@
-DIRS=src src/tests
+all:
+	${MAKE} -C src/proto
 
-%: ${DIRS}
-	@ true
-
-${DIRS}:
-	${MAKE} -C $@ ${MAKECMDGOALS}
+examples:
+	${MAKE} -C src/examples
 
 .PHONY: ${DIRS}
