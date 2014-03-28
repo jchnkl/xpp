@@ -148,7 +148,11 @@ struct value_iterator
 
 template<typename T, bool B = true>
 struct value_type {
-  typedef typename T::value_type type;
+  typedef typename std::conditional<
+    has_member_second<typename T::value_type>::value,
+    typename T::value_type::second_type,
+    typename T::value_type>::type
+      type;
 };
 
 template<typename T>

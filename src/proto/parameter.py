@@ -174,7 +174,7 @@ class ParameterList(object):
                             + param.c_name + '.size())'))
 
                     self.iter_calls.append(Parameter(None, \
-                            c_name='const_cast<const ' + param_type + ' *>(' \
+                            c_name='const_cast<const vector_type *>(' \
                             + param.c_name + '.data())'))
 
                     self.iter_2nd_lvl_calls.append(Parameter(None, \
