@@ -144,8 +144,6 @@ struct value_iterator
   using base::base;
 };
 
-// }; // namespace iterator
-
 template<typename T, bool B = true>
 struct value_type {
   typedef typename std::conditional<
