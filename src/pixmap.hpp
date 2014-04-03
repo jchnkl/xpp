@@ -36,7 +36,7 @@ class pixmap
         std::forward<C>(c),
         [&](const Connection & c, const xcb_pixmap_t & pixmap)
         {
-          xpp::x::create_pixmap(c, depth, drawable, width, height);
+          xpp::x::create_pixmap(c, depth, pixmap, drawable, width, height);
         },
         [&](const Connection & c, const xcb_pixmap_t & pixmap)
         {
@@ -54,7 +54,7 @@ class pixmap
         std::forward<C>(c),
         [&](const Connection & c, const xcb_pixmap_t & pixmap)
         {
-          xpp::x::create_pixmap_checked(c, depth, drawable, width, height);
+          xpp::x::create_pixmap_checked(c, depth, pixmap, drawable, width, height);
         },
         [&](const Connection & c, const xcb_pixmap_t & pixmap)
         {
