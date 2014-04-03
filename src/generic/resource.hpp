@@ -86,6 +86,19 @@ class resource
       , m_resource(std::make_shared<ResourceId>(resource_id))
     {}
 
+    resource(const resource<Connection, ResourceId, Interfaces ...> & other)
+      : m_c(other.m_c)
+      , m_resource(other.m_resource)
+    {}
+
+    virtual
+    void
+    operator=(const resource<Connection, ResourceId, Interfaces ...> & other)
+    {
+      m_c = other.m_c;
+      m_resource = other.m_resource;
+    }
+
     virtual
     void
     operator=(const ResourceId & resource)
